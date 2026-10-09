@@ -1,7 +1,8 @@
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// The store behind "continue this album where I left off": *which track* was current, and where.
 @Suite("ResumeStore")

@@ -1,6 +1,7 @@
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 private func track(_ id: String) -> Track {
     Track(id: id, title: "Track \(id)", artist: "Artist", album: "Album", durationSecs: 200)

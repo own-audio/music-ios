@@ -3,7 +3,8 @@ import AudioToolbox
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// Real Core Audio, real (short, synthesized) audio files — no `AVAudioFile`, no mocked parser.
 ///

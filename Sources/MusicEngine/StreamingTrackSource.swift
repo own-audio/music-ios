@@ -121,3 +121,16 @@ public actor StreamingTrackSource {
         }
     }
 }
+
+extension TrackFileCache {
+    /// Streams `trackId` progressively. Throws `StreamingTrackSource.FallbackToLocalPlaybackRequired`
+    /// for audio that can't be decoded in pieces; the caller then plays the full file instead.
+    public func stream(
+        trackId: String, onBuffer: @Sendable (AudioStreamDecoder.DecodedBuffer) async -> Void,
+        onFormatKnown: @Sendable (AudioStreamDecoder.FormatInfo) async -> Void = { _ in }
+    ) async throws {
+        // A fresh source per track: it carries decoder state that must not leak into the next.
+        let source = StreamingTrackSource(fileCache: self, session: urlSession)
+        try await source.stream(trackId: trackId, onBuffer: onBuffer, onFormatKnown: onFormatKnown)
+    }
+}

@@ -1,7 +1,8 @@
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 @Suite("ReplayGain")
 struct ReplayGainTests {

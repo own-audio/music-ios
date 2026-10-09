@@ -1,7 +1,8 @@
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// The real failure this guards: Navidrome 0.64.0 answered `stream.view` with HTTP 200 and a
 /// 182-byte Subsonic error body after its id migration, and a download path that only checked

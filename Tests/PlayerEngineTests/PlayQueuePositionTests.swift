@@ -1,6 +1,7 @@
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 @Suite("PlayQueue position")
 struct PlayQueuePositionTests {

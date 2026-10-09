@@ -2,7 +2,8 @@ import AVFoundation
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// A real `AVAudioEngine` scheduling real decoded buffers from the fixtures, with only the
 /// network mocked. Proves the engine reaches a genuinely playing state; whether it *sounds*

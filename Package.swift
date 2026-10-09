@@ -2,17 +2,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "PlayerEngine",
+    name: "player-engine",
     // macOS only so `swift test` runs on the host without a simulator.
     platforms: [.iOS(.v18), .macOS(.v15)],
     products: [
-        .library(name: "PlayerEngine", targets: ["PlayerEngine"])
+        // What an app imports to play music. It re-exports PlayerCore.
+        .library(name: "MusicEngine", targets: ["MusicEngine"]),
+        // The parts every kind of player shares: Now Playing, sleep timer, resume points, the
+        // file cache. A spoken-word engine (audiobooks, podcasts) will build on it too.
+        .library(name: "PlayerCore", targets: ["PlayerCore"]),
     ],
     targets: [
-        .target(name: "PlayerEngine"),
+        .target(name: "PlayerCore"),
+        .target(name: "MusicEngine", dependencies: ["PlayerCore"]),
         .testTarget(
             name: "PlayerEngineTests",
-            dependencies: ["PlayerEngine"],
+            dependencies: ["MusicEngine", "PlayerCore"],
             // Short synthesized tones, so the decoder is tested against real audio bytes.
             resources: [.copy("Fixtures")]
         ),

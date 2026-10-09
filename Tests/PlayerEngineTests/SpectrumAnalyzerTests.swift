@@ -2,7 +2,8 @@ import AVFoundation
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 @Suite("SpectrumAnalyzer")
 struct SpectrumAnalyzerTests {

@@ -2,7 +2,8 @@ import AVFoundation
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// The network plumbing around `AudioStreamDecoder`: real fixture bytes served through
 /// `MockURLProtocol`, so the actual `URLSession.bytes` path runs without a live server.

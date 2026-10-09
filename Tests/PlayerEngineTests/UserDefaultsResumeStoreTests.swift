@@ -1,7 +1,8 @@
 import Foundation
 import Testing
 
-@testable import PlayerEngine
+@testable import MusicEngine
+@testable import PlayerCore
 
 /// The concrete, `UserDefaults`-backed store — `ResumeStoreTests` already covers the
 /// contract against the in-memory double; this covers the one thing that's specific to this

@@ -32,20 +32,12 @@ public actor TrackFileCache {
         localFile = lookup
     }
 
-    func resolveRemoteURL(trackId: String) async throws -> URL {
+    public func resolveRemoteURL(trackId: String) async throws -> URL {
         try await remoteURL(trackId)
     }
 
-    /// Streams `trackId` progressively. Throws `StreamingTrackSource.FallbackToLocalPlaybackRequired`
-    /// for audio that can't be decoded in pieces; the caller then plays the full file instead.
-    public func stream(
-        trackId: String, onBuffer: @Sendable (AudioStreamDecoder.DecodedBuffer) async -> Void,
-        onFormatKnown: @Sendable (AudioStreamDecoder.FormatInfo) async -> Void = { _ in }
-    ) async throws {
-        // A fresh source per track: it carries decoder state that must not leak into the next.
-        let source = StreamingTrackSource(fileCache: self, session: session)
-        try await source.stream(trackId: trackId, onBuffer: onBuffer, onFormatKnown: onFormatKnown)
-    }
+    /// The session downloads go through, for engines that stream with the same one.
+    public nonisolated var urlSession: URLSession { session }
 
     /// A local file if one already exists, without starting a download; that is the decision
     /// between streaming and playing from disk.
