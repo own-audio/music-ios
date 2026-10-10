@@ -42,7 +42,7 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   (capabilities: ratings, instant mix, podcasts, lower bitrate, …). A Subsonic source on
   SubsonicKit; every screen moves onto the layer. All of the Subsonic app's UI tests pass.
 - [x] **M2: Jellyfin.** All UI tests pass against Navidrome, own.audio and Jellyfin
-  (2026-10-10); archiving the old repositories is still to do. A Jellyfin source on JellyfinKit, with what the Jellyfin app had:
+  (2026-10-10); the old repositories are archived with a pointer here. A Jellyfin source on JellyfinKit, with what the Jellyfin app had:
   Quick Connect, the music-library picker, favorites as hearts, instant mix, playback
   reporting, smaller streams on mobile data. Adding a server finds out what it is (Jellyfin's
   public info, else a Subsonic ping). All of the Jellyfin app's UI tests pass against
