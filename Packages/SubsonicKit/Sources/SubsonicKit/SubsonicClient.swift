@@ -296,8 +296,15 @@ public struct SubsonicClient: Sendable {
     // MARK: - URLs for the player and image loading
 
     /// Synchronous: auth is computed locally, so there is nothing to fetch first.
-    public func streamURL(songId: String) -> URL {
-        buildURL(path: "stream", query: [URLQueryItem(name: "id", value: songId)])
+    /// The original, or with `maxBitRate` (kbps) an MP3 the server makes on the fly. A server
+    /// that doesn't transcode, or whose original already fits, sends the original.
+    public func streamURL(songId: String, maxBitRate: Int? = nil) -> URL {
+        var query = [URLQueryItem(name: "id", value: songId)]
+        if let maxBitRate {
+            query.append(URLQueryItem(name: "maxBitRate", value: String(maxBitRate)))
+            query.append(URLQueryItem(name: "format", value: "mp3"))
+        }
+        return buildURL(path: "stream", query: query)
     }
 
     public func coverURL(id: String, size: Int? = nil) -> URL {

@@ -45,18 +45,29 @@ struct SettingsView: View {
 
             Section {
                 Picker("On Mobile Data", selection: Binding(
-                    get: { model.mobileBitrate },
-                    set: { model.mobileBitrate = $0 }
+                    get: { model.mobileData },
+                    set: { model.mobileData = $0 }
                 )) {
-                    ForEach(AppModel.mobileBitrateChoices, id: \.self) { bitrate in
-                        Text(bitrate.map { String(localized: "\($0 / 1000) kbps") } ?? String(localized: "Original")).tag(bitrate)
-                    }
+                    Text("Original").tag(AppModel.MobileData.original)
+                    Text("Saver").tag(AppModel.MobileData.saver)
+                    Text("Downloaded Only").tag(AppModel.MobileData.downloadedOnly)
                 }
-                .accessibilityIdentifier("settings.mobileBitrate")
+                .accessibilityIdentifier("settings.mobileData")
+                if model.mobileData == .saver {
+                    Picker("Saver Quality", selection: Binding(
+                        get: { model.saverBitrate },
+                        set: { model.saverBitrate = $0 }
+                    )) {
+                        ForEach(AppModel.saverBitrateChoices, id: \.self) { bitrate in
+                            Text("\(bitrate / 1000) kbps").tag(bitrate)
+                        }
+                    }
+                    .accessibilityIdentifier("settings.saverBitrate")
+                }
             } header: {
                 Text("Streaming")
             } footer: {
-                Text("On mobile data, a server that can (Jellyfin today) makes a smaller MP3 of each song as it plays. On Wi-Fi, and for downloads, it's always the original file.")
+                Text("Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this iPhone while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file.")
             }
 
             CrossfadeSettings(settings: model.playbackSettings)

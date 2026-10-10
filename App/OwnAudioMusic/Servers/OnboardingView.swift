@@ -10,6 +10,7 @@ struct OnboardingView: View {
     @State private var isConnecting = false
     @State private var errorMessage: String?
     @State private var isQuickConnecting = false
+    @State private var isTryingDemo = false
     @FocusState private var focus: Field?
 
     private enum Field { case address, username, password, name }
@@ -36,6 +37,7 @@ struct OnboardingView: View {
                     .font(.subheadline)
                     .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
                     .accessibilityIdentifier("addServer.quickConnect")
+                demo
                 notes
                 Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
                     Text("Free and open source · MPL-2.0")
@@ -63,7 +65,7 @@ struct OnboardingView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                 .accessibilityHidden(true)
-            Text(verbatim: "own.subsonic")
+            Text(verbatim: "own.audio Music")
                 .font(.largeTitle.bold())
             Text("Your music, from your own server.")
                 .font(.title3)
@@ -151,10 +153,40 @@ struct OnboardingView: View {
         .accessibilityIdentifier("addServer.connect")
     }
 
+    /// Someone without a server yet can still see what the app does.
+    private var demo: some View {
+        VStack(spacing: Theme.Spacing.xs) {
+            Divider().padding(.vertical, Theme.Spacing.sm)
+            Text("No server yet?")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button {
+                tryDemo()
+            } label: {
+                Group {
+                    if isTryingDemo {
+                        ProgressView()
+                    } else {
+                        Text("Try the Demo Library")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(isConnecting || isTryingDemo)
+            .accessibilityIdentifier("addServer.demo")
+            Text("A shared own.audio server with sample music. Remove it in Settings when you add your own.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+
     private var notes: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             note("checkmark.shield", "Your sign-in stays in this iPhone's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept.")
-            note("info.circle", "own.audio: sign in with your email and the Subsonic key from the web app's settings.")
+            note("info.circle", "own.audio: sign in with your account's email and password.")
             note("network", "Without http:// or https://, the app tries https and then http, so a server at home works as typed.")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -180,6 +212,21 @@ struct OnboardingView: View {
                 errorMessage = error.localizedDescription
             }
             isConnecting = false
+        }
+    }
+
+    private func tryDemo() {
+        focus = nil
+        isTryingDemo = true
+        errorMessage = nil
+        Task {
+            do {
+                try await model.addDemoServer()
+                Haptics.impact(.medium)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isTryingDemo = false
         }
     }
 }

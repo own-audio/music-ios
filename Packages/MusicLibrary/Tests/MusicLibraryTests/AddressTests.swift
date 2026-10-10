@@ -80,4 +80,30 @@ struct AddressTests {
         #expect(won?.url.absoluteString == "https://music.example.com")
         #expect(won?.serverId == "server-1")
     }
+
+    @Test("a server reinstalled from scratch is still found at the public https name it was added with, never at a home address")
+    func reinstalled() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { request in
+            switch request.url?.host() ?? "" {
+            case "music.example.com", "192.168.1.20":
+                return .init(statusCode: 200, body: Data(#"{"Id":"server-2","ServerName":"Home","Version":"12"}"#.utf8))
+            default:
+                throw URLError(.cannotConnectToHost)
+            }
+        }
+        let r = record()
+        let won = await ServerSetup.race(
+            r, candidates: [URL(string: "https://music.example.com")!, URL(string: "http://192.168.1.20:8096")!],
+            expectedId: "server-1", urlSession: mock.urlSession
+        )
+        #expect(won?.url.absoluteString == "https://music.example.com")
+        #expect(won?.serverId == "server-2")
+
+        var home = record()
+        home.host = URL(string: "http://192.168.1.20:8096")!
+        let none = await ServerSetup.race(
+            home, candidates: [URL(string: "http://192.168.1.20:8096")!], expectedId: "server-1", urlSession: mock.urlSession
+        )
+        #expect(none == nil)
+    }
 }

@@ -139,7 +139,7 @@ extension ServerSetup {
     public static func race(
         _ record: ServerRecord, candidates: [URL], expectedId: String?, urlSession: URLSession
     ) async -> AddressCheck? {
-        await withTaskGroup(of: AddressCheck?.self) { group in
+        let same: AddressCheck? = await withTaskGroup(of: AddressCheck?.self) { group in
             for url in candidates {
                 group.addTask {
                     guard let check = try? await check(record, at: url, urlSession: urlSession) else { return nil }
@@ -157,5 +157,78 @@ extension ServerSetup {
             }
             return nil
         }
+        if let same { return same }
+        return await reidentified(record, candidates: candidates, expectedId: expectedId, urlSession: urlSession)
+    }
+
+    /// A server that was reinstalled or restored from scratch answers with a new identity. The
+    /// address the listener added is still trusted then if it is a public https name, whose
+    /// certificate already says whose server it is; the caller adopts the new identity.
+    /// Home and VPN addresses never get this: the same private address on another network is
+    /// someone else's server.
+    private static func reidentified(
+        _ record: ServerRecord, candidates: [URL], expectedId: String?, urlSession: URLSession
+    ) async -> AddressCheck? {
+        let host = record.host
+        guard expectedId != nil, host.scheme == "https", AddressScope.infer(host) == .public,
+              candidates.contains(host),
+              let check = try? await check(record, at: host, urlSession: urlSession),
+              check.serverId != nil
+        else { return nil }
+        return check
     }
 }
+
+extension ServerSetup {
+    /// An own.audio server's Subsonic key for an account, fetched with the account's email and
+    /// password: own.audio's Subsonic API takes the key, not the password, and nobody should
+    /// have to copy it out of the web app. Throws `.signInRejected` for a wrong password.
+    public static func ownAudioSubsonicKey(host: URL, email: String, password: String, urlSession: URLSession) async throws -> (username: String, key: String) {
+        struct Login: Decodable { let token: String }
+        struct Key: Decodable { let username: String; let api_key: String }
+
+        var login = URLRequest(url: host.appending(path: "api/v1/auth/login"))
+        login.httpMethod = "POST"
+        login.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        login.httpBody = try JSONEncoder().encode(["email": email, "password": password])
+        let (loginData, loginResponse) = try await data(for: login, urlSession)
+        switch (loginResponse as? HTTPURLResponse)?.statusCode {
+        case 200: break
+        case 400, 401, 403: throw SourceError.signInRejected
+        case let code?: throw SourceError.http(code)
+        default: throw SourceError.network
+        }
+        guard let token = try? JSONDecoder().decode(Login.self, from: loginData).token else { throw SourceError.unreadable }
+
+        var keyRequest = URLRequest(url: host.appending(path: "api/v1/users/me/subsonic-key"))
+        keyRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (keyData, keyResponse) = try await data(for: keyRequest, urlSession)
+        guard (keyResponse as? HTTPURLResponse)?.statusCode == 200,
+              let key = try? JSONDecoder().decode(Key.self, from: keyData)
+        else { throw SourceError.unreadable }
+        // The account's email as the server stores it, which may differ in case from what was typed.
+        return (key.username, key.api_key)
+    }
+
+    /// The account a public demo server offers to strangers (`demo` in its discovery answer).
+    public static func ownAudioDemoAccount(host: URL, urlSession: URLSession) async throws -> (email: String, password: String) {
+        struct Body: Decodable {
+            struct Demo: Decodable { let email: String; let password: String }
+            let demo: Demo?
+        }
+        let (data, response) = try await data(for: URLRequest(url: host.appending(path: "api/v1/server")), urlSession)
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
+              let demo = try? JSONDecoder().decode(Body.self, from: data).demo
+        else { throw SourceError.unreadable }
+        return (demo.email, demo.password)
+    }
+
+    private static func data(for request: URLRequest, _ session: URLSession) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(for: request)
+        } catch {
+            throw SourceError.network
+        }
+    }
+}
+

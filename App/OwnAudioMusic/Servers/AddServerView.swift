@@ -49,7 +49,7 @@ struct AddServerView: View {
                     .onSubmit { if canConnect { connect() } }
                     .accessibilityIdentifier("addServer.password")
             } footer: {
-                Text("Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password.")
+                Text("Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your account's email and password.")
             }
 
             Section {

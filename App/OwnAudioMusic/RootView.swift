@@ -125,11 +125,21 @@ private struct OfflineBanner: View {
         if model.isOffline {
             HStack(spacing: Theme.Spacing.sm) {
                 Image(systemName: "wifi.slash")
-                Text(model.isOfflineByChoice ? "Offline mode · downloaded music only" : "No network · downloaded music only")
+                if model.downloadedOnly || !model.isOfflineByChoice {
+                    Text(model.isOfflineByChoice ? "Offline mode · downloaded music only" : "No network · downloaded music only")
+                } else {
+                    Text("Mobile data · downloaded music only")
+                }
                 Spacer(minLength: 0)
                 if model.isOfflineByChoice {
-                    Button("Turn Off") { model.downloadedOnly = false }
-                        .font(.footnote.weight(.semibold))
+                    if model.downloadedOnly {
+                        Button("Turn Off") { model.downloadedOnly = false }
+                            .font(.footnote.weight(.semibold))
+                    } else {
+                        // "Downloaded only" on mobile data: stream smaller files instead.
+                        Button("Stream") { model.mobileData = .saver }
+                            .font(.footnote.weight(.semibold))
+                    }
                 }
             }
             .font(.footnote)

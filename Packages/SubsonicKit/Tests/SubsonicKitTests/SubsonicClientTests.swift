@@ -459,6 +459,10 @@ struct SubsonicClientTests {
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         #expect(items.contains { $0.name == "id" && $0.value == "so-1" })
         #expect(items.contains { $0.name == "u" && $0.value == "alice" })
+        #expect(!items.contains { $0.name == "maxBitRate" })
+        let smaller = URLComponents(url: api.streamURL(songId: "so-1", maxBitRate: 192), resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(smaller.contains { $0.name == "maxBitRate" && $0.value == "192" })
+        #expect(smaller.contains { $0.name == "format" && $0.value == "mp3" })
     }
 
     @Test("a server under a sub-path keeps it")

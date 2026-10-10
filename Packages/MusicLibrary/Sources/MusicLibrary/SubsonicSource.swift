@@ -10,7 +10,9 @@ public struct SubsonicSource: MusicSource {
         self.client = client
     }
 
-    public var capabilities: Capabilities { [.ratings] }
+    /// Navidrome, Gonic, Airsonic and own.audio transcode on request; a server that doesn't
+    /// ignores the parameters and sends the original, so asking is always safe.
+    public var capabilities: Capabilities { [.ratings, .lowerBitrate] }
 
     public var albumSorts: [AlbumSort] {
         [.name, .artist, .newest, .recentlyPlayed, .mostPlayed, .random, .favorites, .highestRated]
@@ -186,7 +188,7 @@ public struct SubsonicSource: MusicSource {
     // MARK: - URLs
 
     public func streamURL(songId: String, maxBitrate: Int?) -> URL {
-        client.streamURL(songId: songId)
+        client.streamURL(songId: songId, maxBitRate: maxBitrate.map { $0 / 1000 })
     }
 
     public func downloadURL(songId: String) -> URL {

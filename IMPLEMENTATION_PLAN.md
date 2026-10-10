@@ -48,10 +48,12 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   public info, else a Subsonic ping). All of the Jellyfin app's UI tests pass against
   Jellyfin; the Subsonic ones still pass. The two old repositories are archived with a
   pointer here.
-- [ ] **M3: own.audio.** Sign in with an own.audio account (email and password, Google); the
+- [x] **M3: own.audio.** Done 2026-10-10 for email and password, plus a demo button; Google
+  sign-in later (needs an OAuth client for the new bundle id). Sign in with an own.audio account (email and password, Google); the
   app fetches the Subsonic key itself. Library through the Subsonic source; own.audio's own API
   for what Subsonic lacks, as the server grows it.
-- [ ] **M4: Data and quality.** "On mobile data: Original / Saver / Downloaded only"; iOS Low
+- [x] **M4: Data and quality.** Done 2026-10-10; seeking in a transcoded stream with
+  `timeOffset` is still open (scrubbing waits for the song to arrive). "On mobile data: Original / Saver / Downloaded only"; iOS Low
   Data Mode; Subsonic `maxBitRate`/`format` where the server transcodes; changes made offline
   (favorites, ratings, playlist edits) queued and sent later.
 - [x] **M5: Several addresses per server.** Done 2026-10-10 (needs own.audio server 1.0.0-beta.3

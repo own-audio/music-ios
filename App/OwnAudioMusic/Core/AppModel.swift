@@ -60,32 +60,61 @@ final class AppModel {
     /// No network, or the listener chose downloaded music only. Screens then show what is on the
     /// phone and what was seen before, and the player passes over songs that aren't downloaded.
     var isOffline: Bool {
-        downloadedOnly || !network.isConnected || Self.isSimulatingOffline
+        downloadedOnly || !network.isConnected || Self.isSimulatingOffline || isOnMobileDataDownloadsOnly
     }
 
     /// The listener chose it, rather than the network being gone.
-    var isOfflineByChoice: Bool { downloadedOnly && network.isConnected && !Self.isSimulatingOffline }
+    var isOfflineByChoice: Bool { (downloadedOnly || isOnMobileDataDownloadsOnly) && network.isConnected && !Self.isSimulatingOffline }
 
-    private func applyOfflineState() {
-        offlineSwitch.isOn = isOffline
-        engine.requiresLocalFiles = isOffline
+    /// "Downloaded only" on mobile data, and the phone is on mobile data now.
+    var isOnMobileDataDownloadsOnly: Bool {
+        mobileData == .downloadedOnly && (network.isExpensive || Self.isSimulatingMobileData)
     }
 
-    /// Bits per second to stream at on mobile data; nil streams the original file. Downloads are
-    /// always the original.
-    var mobileBitrate: Int? {
+    private func applyOfflineState() {
+        let wasOffline = offlineSwitch.isOn
+        offlineSwitch.isOn = isOffline
+        engine.requiresLocalFiles = isOffline
+        // Back online by choice (Offline Mode off, or Wi-Fi again): send what waited.
+        if wasOffline, !isOffline, hasLoaded {
+            Task { await flushPendingChanges() }
+        }
+    }
+
+    /// What to do on mobile data. Wi-Fi always streams the original; downloads are always the
+    /// original.
+    enum MobileData: String, CaseIterable {
+        /// The original file.
+        case original
+        /// A smaller stream where the server makes one (`saverBitrate`).
+        case saver
+        /// Only what is downloaded, as if offline.
+        case downloadedOnly
+    }
+
+    var mobileData: MobileData {
         didSet {
-            UserDefaults.standard.set(mobileBitrate ?? 0, forKey: Self.mobileBitrateKey)
+            UserDefaults.standard.set(mobileData.rawValue, forKey: Self.mobileDataKey)
+            applyStreamQuality()
+            applyOfflineState()
+        }
+    }
+
+    /// Bits per second for `saver`.
+    var saverBitrate: Int {
+        didSet {
+            UserDefaults.standard.set(saverBitrate, forKey: Self.saverBitrateKey)
             applyStreamQuality()
         }
     }
 
-    static let mobileBitrateChoices: [Int?] = [nil, 320_000, 192_000, 128_000]
+    static let saverBitrateChoices = [320_000, 192_000, 128_000]
 
     /// iOS Low Data Mode caps the stream at 128 kbps whatever was chosen: the listener asked the
     /// whole phone to save data.
     private func applyStreamQuality() {
-        var bitrate = network.isExpensive || Self.isSimulatingMobileData ? mobileBitrate : nil
+        let onMobileData = network.isExpensive || Self.isSimulatingMobileData
+        var bitrate: Int? = onMobileData && mobileData == .saver ? saverBitrate : nil
         if network.isConstrained { bitrate = min(bitrate ?? 128_000, 128_000) }
         let registry = registry
         Task { await registry.setMaxBitrate(bitrate) }
@@ -105,7 +134,8 @@ final class AppModel {
     private static let scrobblingKey = "scrobblingEnabled"
     private static let downloadedOnlyKey = "downloadedOnly"
     private static let deviceIdKey = "deviceId"
-    private static let mobileBitrateKey = "mobileBitrate"
+    private static let mobileDataKey = "mobileData"
+    private static let saverBitrateKey = "saverBitrate"
 
     /// How this app shows up in the server's list of devices. The id is made once and kept, so
     /// a reinstall is one device, not a new one each launch.
@@ -139,6 +169,7 @@ final class AppModel {
     private var scrobbler: ScrobbleTracker?
     private var scrobbleTickTask: Task<Void, Never>?
     private let pendingScrobbles = PendingScrobbles()
+    private let pendingChanges = PendingChanges()
     private let responseCache = DiskResponseCache()
     private let offlineSwitch = OfflineSwitch()
     /// Short timeouts: on a network that is there but goes nowhere, the default minute per
@@ -173,8 +204,16 @@ final class AppModel {
         }
         scrobblingEnabled = UserDefaults.standard.object(forKey: Self.scrobblingKey) as? Bool ?? true
         downloadedOnly = UserDefaults.standard.bool(forKey: Self.downloadedOnlyKey)
-        let savedBitrate = UserDefaults.standard.integer(forKey: Self.mobileBitrateKey)
-        mobileBitrate = savedBitrate > 0 ? savedBitrate : nil
+        let defaults = UserDefaults.standard
+        mobileData = defaults.string(forKey: Self.mobileDataKey).flatMap(MobileData.init(rawValue:)) ?? .saver
+        saverBitrate = defaults.integer(forKey: Self.saverBitrateKey).nonZero ?? 192_000
+        #if DEBUG
+        // UI tests: `-mobileBitrate 128000` is Saver at that rate.
+        if let bitrate = defaults.integer(forKey: "mobileBitrate").nonZero {
+            mobileData = .saver
+            saverBitrate = bitrate
+        }
+        #endif
         applyOfflineState()
         applyStreamQuality()
         network.onChange = { [weak self] connected in
@@ -185,6 +224,7 @@ final class AppModel {
                 Task {
                     await self.chooseAddresses()
                     await self.flushPendingScrobbles()
+                    await self.flushPendingChanges()
                 }
             }
         }
@@ -234,6 +274,7 @@ final class AppModel {
         downloads.resume()
         Task { await chooseAddresses() }
         await flushPendingScrobbles()
+        await flushPendingChanges()
     }
 
     /// Finds out what kind of server is at `address` and signs in before saving anything, so a
@@ -256,21 +297,51 @@ final class AppModel {
             return
         }
         guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
-        switch await ServerSetup.subsonicCheck(host: host, username: username, password: password, urlSession: Self.session) {
-        case .ok: break
-        case .rejected: throw AddServerError.rejected
-        case .unreachable: throw AddServerError.unreachable
-        }
         // An own.audio server answers its own discovery request too, with its identity and
         // addresses; any other Subsonic server doesn't.
         let ownAudio = try? await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+        var username = username
+        var secret = password
+        switch await ServerSetup.subsonicCheck(host: host, username: username, password: password, urlSession: Self.session) {
+        case .ok:
+            break
+        case .rejected:
+            // own.audio's Subsonic API takes a per-account key, not the password: with the
+            // account's email and password the app fetches the key itself.
+            guard ownAudio != nil else { throw AddServerError.rejected }
+            do {
+                (username, secret) = try await ServerSetup.ownAudioSubsonicKey(host: host, email: username, password: password, urlSession: Self.session)
+            } catch SourceError.signInRejected {
+                throw AddServerError.rejected
+            } catch {
+                throw AddServerError.unreachable
+            }
+            guard await ServerSetup.subsonicCheck(host: host, username: username, password: secret, urlSession: Self.session) == .ok else {
+                throw AddServerError.rejected
+            }
+        case .unreachable:
+            throw AddServerError.unreachable
+        }
         var record = ServerRecord(
             displayName: displayName(name, fallback: ownAudio != nil ? "own.audio" : (host.host ?? address)),
             kind: ownAudio != nil ? .ownAudio : .subsonic, host: host,
-            auth: .subsonic(username: username, password: password), serverId: ownAudio?.id
+            auth: .subsonic(username: username, password: secret), serverId: ownAudio?.id
         )
         record.learn(ownAudio?.addresses ?? [])
         try await save(record)
+    }
+
+    /// The public own.audio demo, signed in with the account it offers to anyone.
+    static let demoServer = URL(string: "https://demopi.own.audio")!
+
+    func addDemoServer() async throws {
+        let account: (email: String, password: String)
+        do {
+            account = try await ServerSetup.ownAudioDemoAccount(host: Self.demoServer, urlSession: Self.session)
+        } catch {
+            throw AddServerError.unreachable
+        }
+        try await addServer(address: Self.demoServer.absoluteString, username: account.email, password: account.password, name: "own.audio demo")
     }
 
     /// The Jellyfin server at `address`, if there is one. Without a scheme, each likely address
@@ -559,11 +630,16 @@ final class AppModel {
         favoriteIds.contains(compositeId)
     }
 
-    /// Flips the favorite at once and puts it back if the server refuses.
+    /// Flips the favorite at once and puts it back if the server refuses. Offline, it is kept
+    /// and sent when the server can be reached.
     func toggleFavorite(_ compositeId: String, kind: FavoriteKind) async throws {
         guard let (source, itemId) = await resolve(compositeId) else { return }
         let adding = !favoriteIds.contains(compositeId)
         note(compositeId, isFavorite: adding)
+        if isOffline, let serverId = TrackID.parse(compositeId)?.serverId {
+            pendingChanges.add(.init(serverId: serverId, itemId: itemId, change: .favorite(kind: kind.storedName, isFavorite: adding), madeAt: Date()))
+            return
+        }
         do {
             try await source.setFavorite(kind, id: itemId, adding)
         } catch {
@@ -577,6 +653,10 @@ final class AppModel {
         guard let (source, itemId) = await resolve(compositeId) else { return }
         let previous = ratings[compositeId]
         ratings[compositeId] = rating == 0 ? nil : rating
+        if isOffline, let serverId = TrackID.parse(compositeId)?.serverId {
+            pendingChanges.add(.init(serverId: serverId, itemId: itemId, change: .rating(rating), madeAt: Date()))
+            return
+        }
         do {
             try await source.setRating(id: itemId, rating: rating)
         } catch {
@@ -598,6 +678,47 @@ final class AppModel {
 
     func compositeId(_ itemId: String) -> String? {
         activeServerId.map { TrackID.make(serverId: $0, itemId: itemId) }
+    }
+
+    /// Adds songs to a playlist on the active server; offline, kept and sent later.
+    func addToPlaylist(_ playlistId: String, songIds: [String]) async throws {
+        guard let serverId = activeServerId, let source = activeSource else { return }
+        if isOffline {
+            pendingChanges.add(.init(serverId: serverId, itemId: playlistId, change: .addToPlaylist(playlistId: playlistId, songIds: songIds), madeAt: Date()))
+            return
+        }
+        try await source.addToPlaylist(id: playlistId, songIds: songIds)
+    }
+
+    /// Sends the changes made offline, oldest first. Stops at the first that can't reach the
+    /// server (it is tried again next time); drops one the server refuses for good (the song or
+    /// playlist is gone), so it can't block the rest.
+    func flushPendingChanges() async {
+        guard hasLoaded, !isOffline else { return }
+        var done: [PendingChanges.Entry] = []
+        for entry in pendingChanges.all {
+            guard let source = sources[entry.serverId] else {
+                // The server was removed; there's nowhere to send it.
+                if !servers.contains(where: { $0.id == entry.serverId }) { done.append(entry) }
+                continue
+            }
+            do {
+                switch entry.change {
+                case .favorite(let kind, let isFavorite):
+                    try await source.setFavorite(FavoriteKind(storedName: kind), id: entry.itemId, isFavorite)
+                case .rating(let value):
+                    try await source.setRating(id: entry.itemId, rating: value)
+                case .addToPlaylist(let playlistId, let songIds):
+                    try await source.addToPlaylist(id: playlistId, songIds: songIds)
+                }
+                done.append(entry)
+            } catch SourceError.network, SourceError.offline {
+                break
+            } catch {
+                done.append(entry)
+            }
+        }
+        pendingChanges.remove(done)
     }
 
     // MARK: - Lyrics
@@ -744,7 +865,8 @@ final class AppModel {
             // Keep up with addresses the server names (a new VPN, a changed home address).
             var updated = record
             updated.learn(won.addresses)
-            if updated.serverId == nil, let id = won.serverId, record.kind != .subsonic { updated.serverId = id }
+            // A server reinstalled from scratch (or the demo after its nightly reset) has a new id.
+            if let id = won.serverId, record.kind != .subsonic { updated.serverId = id }
             if updated != record { try? await update(updated) }
         }
         if changed { await rebuildClients() }
@@ -802,4 +924,8 @@ extension Error {
             return String(localized: "This server doesn't support that.")
         }
     }
+}
+
+private extension Int {
+    var nonZero: Int? { self == 0 ? nil : self }
 }

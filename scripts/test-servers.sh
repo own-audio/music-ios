@@ -18,7 +18,7 @@
 #   JELLYFIN_PASSWORD=…
 #   JELLYFIN_DOWNLOAD_ALBUM="a small album"           # optional
 #
-# Usage: scripts/test-servers.sh [navidrome|ownaudio|jellyfin] [--live-only]
+# Usage: scripts/test-servers.sh [navidrome|ownaudio|jellyfin|demo] [--live-only]
 # One UI test only: ONLY_TESTING=testPartlyDownloadedAlbumPlaysOffline scripts/test-servers.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -63,7 +63,8 @@ if [[ "$only" == all || "$only" == ownaudio ]]; then
   key=$(curl -sf -A music-ios-tests "$OWNAUDIO_HOST/api/v1/users/me/subsonic-key" -H "Authorization: Bearer $token" \
     | python3 -c "import sys,json; print(json.load(sys.stdin)['api_key'])")
   subsonic_live ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$key"
-  [[ "$live_only" == "--live-only" ]] || ui_tests ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$key" "${OWNAUDIO_DOWNLOAD_ALBUM:-}"
+  # The app takes the account password and fetches the key itself.
+  [[ "$live_only" == "--live-only" ]] || ui_tests ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$OWNAUDIO_ACCOUNT_PASSWORD" "${OWNAUDIO_DOWNLOAD_ALBUM:-}"
 fi
 
 if [[ "$only" == all || "$only" == jellyfin ]]; then
@@ -71,4 +72,12 @@ if [[ "$only" == all || "$only" == jellyfin ]]; then
   (cd Packages/JellyfinKit && JELLYFIN_HOST="$JELLYFIN_HOST" JELLYFIN_USER="$JELLYFIN_USER" JELLYFIN_PASSWORD="$JELLYFIN_PASSWORD" \
     swift test --filter Live 2>&1 | grep -E "✘|Test run")
   [[ "$live_only" == "--live-only" ]] || ui_tests jellyfin "$JELLYFIN_HOST" "$JELLYFIN_USER" "$JELLYFIN_PASSWORD" "${JELLYFIN_DOWNLOAD_ALBUM:-}"
+fi
+
+if [[ "$only" == all || "$only" == demo ]] && [[ "$live_only" != "--live-only" ]]; then
+  echo "== demo: Try the Demo Library"
+  xcodegen generate >/dev/null
+  TEST_RUNNER_DEMO=1 xcodebuild test -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic -destination "id=$SIM" \
+    -derivedDataPath "$OUT/DerivedData" -only-testing:OwnAudioMusicUITests/DemoTests 2>&1 \
+    | grep -E "Test Case.*(passed|failed)|\*\* TEST" || true
 fi

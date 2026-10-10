@@ -161,9 +161,8 @@ struct AddToPlaylistSheet: View {
     }
 
     private func add(to playlist: Playlist) {
-        guard let client = model.activeSource else { return }
         Haptics.impact(.light)
-        model.perform { try await client.addToPlaylist(id: playlist.id, songIds: songIds) }
+        model.perform { try await model.addToPlaylist(playlist.id, songIds: songIds) }
         dismiss()
     }
 

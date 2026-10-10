@@ -1438,16 +1438,6 @@
         }
       }
     },
-    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic a s Jellyfinem; aplikace sama pozná který. Bez http:// nebo https:// zkusí https a pak http. Přihlášení zůstává v klíčence telefonu.\n\nown.audio: přihlaste se e-mailem a klíčem Subsonic z nastavení webové aplikace, ne heslem k účtu."
-          }
-        }
-      }
-    },
     "You're offline, and none of these songs are downloaded." : {
       "localizations" : {
         "cs" : {
@@ -1825,16 +1815,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Otevře přehrávač"
-          }
-        }
-      }
-    },
-    "own.audio: sign in with your email and the Subsonic key from the web app's settings." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "own.audio: přihlaste se e-mailem a klíčem Subsonic z nastavení webové aplikace."
           }
         }
       }
@@ -2721,16 +2701,6 @@
         }
       }
     },
-    "Without http:// or https://, http is used. The password stays in this phone's Keychain and is never sent to the server, only a one-time token made from it.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bez http:// nebo https:// se použije http. Heslo zůstává v klíčence tohoto telefonu a na server se nikdy neposílá, jen jednorázový token z něj vytvořený.\n\nown.audio: přihlaste se e-mailem a klíčem Subsonic z nastavení webové aplikace, ne heslem k účtu."
-          }
-        }
-      }
-    },
     "Your music, from your own server." : {
       "localizations" : {
         "cs" : {
@@ -2747,6 +2717,116 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Heslo zůstává v klíčence tohoto iPhonu. Odesílá se jen jednorázový token z něj vytvořený."
+          }
+        }
+      }
+    },
+    "Saver" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úsporně"
+          }
+        }
+      }
+    },
+    "Downloaded Only" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jen stažené"
+          }
+        }
+      }
+    },
+    "Saver Quality" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kvalita při úspoře"
+          }
+        }
+      }
+    },
+    "Stream" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamovat"
+          }
+        }
+      }
+    },
+    "Mobile data · downloaded music only" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobilní data · jen stažená hudba"
+          }
+        }
+      }
+    },
+    "Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this iPhone while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úsporně: server pošle každou skladbu jako menší MP3; server, který to neumí, pošle originál. Jen stažené: na mobilních datech hraje jen to, co je v tomto iPhonu. Se zapnutým režimem nízkých dat v iOS se streamuje nejvýš 128 kb/s. Na Wi-Fi a při stahování jde vždy originální soubor."
+          }
+        }
+      }
+    },
+    "No server yet?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ještě nemáte server?"
+          }
+        }
+      }
+    },
+    "Try the Demo Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyzkoušet ukázkovou knihovnu"
+          }
+        }
+      }
+    },
+    "A shared own.audio server with sample music. Remove it in Settings when you add your own." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílený server own.audio s ukázkovou hudbou. Až přidáte vlastní, odeberete ho v Nastavení."
+          }
+        }
+      }
+    },
+    "own.audio: sign in with your account's email and password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio: přihlaste se e-mailem a heslem ke svému účtu."
+          }
+        }
+      }
+    },
+    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your account's email and password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic i s Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto telefonu.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
           }
         }
       }

@@ -52,7 +52,17 @@ package, merged into this repository — is in `docs/history/`.
   one. No location permission needed.
 - own.audio servers are recognised as such when added (they answer own.audio's discovery
   request): their identity and addresses come with them.
+- **own.audio accounts**: sign in with the account's email and password; the app fetches the
+  account's Subsonic key itself (the key still works too).
+- **Try the Demo Library** on the first screen: signs in to the public own.audio demo with the
+  account it offers, for anyone without a server yet. The first screen says own.audio Music.
+- **On mobile data: Original, Saver or Downloaded Only** (Settings → Streaming), with the
+  Saver quality (320, 192 or 128 kbps). Saver asks Subsonic servers for a smaller MP3
+  (`maxBitRate`, `format=mp3`) as Jellyfin already did; Downloaded Only plays just what is on
+  the phone and says so in the banner, with a button to stream anyway.
 - iOS Low Data Mode caps streams at 128 kbps where the server makes smaller streams.
+- Favorites, ratings and songs added to a playlist while offline are kept and sent when the
+  server can be reached again, in order; the screens show them at once.
 - Saved server answers are filed under the server, not the address, so switching addresses
   keeps them.
 - UI test: the server's connection screen ends up connected (on Jellyfin from the home
