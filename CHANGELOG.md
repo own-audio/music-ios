@@ -57,6 +57,8 @@ package, merged into this repository — is in `docs/history/`.
 - **Sign in with Apple** for own.audio servers that offer it (the server lists the app's bundle
   id in `AUTH__APPLE__CLIENT_IDS`): Apple's identity token becomes a session on the server, and
   the app fetches the account's Subsonic key with it; only the key is kept.
+- The address people know from the browser works for the hosted service: `own.audio` and
+  `app.own.audio` lead to `api.own.audio`, `app-canary.own.audio` to `api-canary.own.audio`.
 - TestFlight and development builds offer **own.audio canary** as a one-tap address, for testing
   against the server version that runs there first. The App Store build doesn't list it.
 - **Try the Demo Library** on the first screen: signs in to the public own.audio demo with the

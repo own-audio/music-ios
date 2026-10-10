@@ -107,3 +107,15 @@ struct AddressTests {
         #expect(none == nil)
     }
 }
+
+@Suite("own.audio addresses from the browser")
+struct OwnAudioAPIAddressTests {
+    @Test("the web app and the site lead to the API; any other address stays as typed")
+    func aliases() {
+        #expect(ServerSetup.ownAudioAPIAddress("app-canary.own.audio") == "https://api-canary.own.audio")
+        #expect(ServerSetup.ownAudioAPIAddress("https://App.Own.Audio/") == "https://api.own.audio")
+        #expect(ServerSetup.ownAudioAPIAddress(" own.audio ") == "https://api.own.audio")
+        #expect(ServerSetup.ownAudioAPIAddress("api-canary.own.audio") == "api-canary.own.audio")
+        #expect(ServerSetup.ownAudioAPIAddress("192.168.1.20:4533") == "192.168.1.20:4533")
+    }
+}

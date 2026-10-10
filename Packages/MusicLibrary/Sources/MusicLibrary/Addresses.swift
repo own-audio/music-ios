@@ -194,6 +194,21 @@ extension ServerSetup {
 }
 
 extension ServerSetup {
+    /// The hosted service's API for the addresses people know from the browser: the web app
+    /// (`app.own.audio`, `app-canary.own.audio`) and the site (`own.audio`) serve pages, not
+    /// the API, so they would never answer as a server. Anything else is returned as typed.
+    public static func ownAudioAPIAddress(_ address: String) -> String {
+        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bare = trimmed.lowercased()
+            .replacingOccurrences(of: "https://", with: "").replacingOccurrences(of: "http://", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        switch bare {
+        case "own.audio", "www.own.audio", "app.own.audio": return "https://api.own.audio"
+        case "app-canary.own.audio", "canary.own-audio-app.pages.dev": return "https://api-canary.own.audio"
+        default: return trimmed
+        }
+    }
+
     /// An own.audio server's Subsonic key for an account, fetched with the account's email and
     /// password: own.audio's Subsonic API takes the key, not the password, and nobody should
     /// have to copy it out of the web app. Throws `.signInRejected` for a wrong password.

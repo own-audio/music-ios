@@ -305,6 +305,7 @@ final class AppModel {
     /// (it answers a public info request); otherwise the address is tried as a Subsonic server.
     /// For Jellyfin only the session token is saved, never the password.
     func addServer(address: String, username: String, password: String, name: String) async throws {
+        let address = ServerSetup.ownAudioAPIAddress(address)
         if let (host, info) = try await findJellyfin(address) {
             let session: JellyfinSession
             do {
@@ -358,6 +359,7 @@ final class AppModel {
     /// token for a session, and the app fetches the account's Subsonic key with it, as it does
     /// after an email-and-password sign-in. Only the key is kept.
     func addOwnAudioServer(address: String, appleIdentityToken: String, fullName: String?, name: String) async throws {
+        let address = ServerSetup.ownAudioAPIAddress(address)
         guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
         let info: ServerSetup.OwnAudioInfo
         do {
