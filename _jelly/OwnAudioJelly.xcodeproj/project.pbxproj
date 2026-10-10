@@ -1,0 +1,681 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01166F168697740E8952A4E3 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B34DE82A5D47A4B62845506B /* FavoritesView.swift */; };
+		029F225EB0AE804A778713CA /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4413E1A83F7D21338DE6A3D /* SearchView.swift */; };
+		0DE1238AAE71CB7F3D219622 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C58C42B5DCEF4E82E3465A /* Theme.swift */; };
+		10411FCBC4301C0B9D37FB8A /* OfflineLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C517C40D5AE4F585B4A63B9 /* OfflineLibrary.swift */; };
+		12940AEA83D04025527E9FEF /* TrackID.swift in Sources */ = {isa = PBXBuildFile; fileRef = F84B871A7D29B4B8D6F68623 /* TrackID.swift */; };
+		1415E66259A8EBC0F49D2338 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96400A35428D6D4238DE11E /* PlayerView.swift */; };
+		170D24E09313D7DA145DAEA8 /* CoverArtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F24A613E883BB5D70131027 /* CoverArtView.swift */; };
+		2057E876F91510CCC8897575 /* CoverArtLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D004A98E624B3FEE0F8DA77 /* CoverArtLoader.swift */; };
+		3A861F77751AD3E7CC0B4A03 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D08C2A7DCB19875CAC6A8 /* CarPlaySceneDelegate.swift */; };
+		3B3CCCA8344C8F7564C52E23 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A729D1202E0EC86DFF81BB5 /* HomeView.swift */; };
+		3FCA5A95B675543A091EB9F8 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E5F294965B7524D935A8CE /* DownloadManager.swift */; };
+		40A5E6D0C6E191CF2A39711D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2052D7AC3DF94155D4D04778 /* Assets.xcassets */; };
+		445F61E3FDD6A64267CCCEA7 /* ClientRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6A5C8001D47A58BD739745 /* ClientRegistry.swift */; };
+		4D4726AEB4F3F14098DD2FDB /* ServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC739785CF870444A25434D /* ServersView.swift */; };
+		501120B196E3E87EAB8DD0D3 /* PlaybackSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF4EE4049CFA4C0D67BE7CD /* PlaybackSmokeTests.swift */; };
+		53D8A9060AB1776C75F7DB9E /* LyricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02F6E6122FBD95CBD24A73F /* LyricsView.swift */; };
+		57948E9733E49D56AB0C8FB0 /* PlayerSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = E699279C9B52E96977A311D0 /* PlayerSheets.swift */; };
+		65E546EC92B41D9778CCCBA6 /* AlbumsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AAE47A9DC78877D7810317 /* AlbumsView.swift */; };
+		6DC0B56ADAEE2AE88886CECB /* ArtistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70863FB8AE89224DD165FD7F /* ArtistDetailView.swift */; };
+		6F4E49ACB5A6AB8275F23182 /* SongActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B035F8FA05C3A3533059FAD /* SongActions.swift */; };
+		72DA67A727E633C665E63F7B /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4880B09F3054525E916AD254 /* DownloadsView.swift */; };
+		77FC1286B4FEBA89F0BE1422 /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3498FDBD668473AD2BB4DAE /* PlaylistsView.swift */; };
+		7831DD983549E1ECBE9EF355 /* PendingScrobbles.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAE5DAF4E35FA966F728657 /* PendingScrobbles.swift */; };
+		78DD7431557DFA457CF8576A /* AlbumDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100852A86BA24D5F67963081 /* AlbumDetailView.swift */; };
+		7B0A3541BE7139C2D6C4B1B7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B26A3DCA6E92F60E63366C /* OnboardingView.swift */; };
+		7F02BDCBA24025D59D078044 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D9682D45D22EF79DA6338F /* RootView.swift */; };
+		86BF592696DB2AD0E938C72B /* OwnAudioJellyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C413FE37107CBE3703C28D8 /* OwnAudioJellyApp.swift */; };
+		8F792A0F99291835C53CBF33 /* PlayerSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC842AC23540D50D6398E80 /* PlayerSupport.swift */; };
+		94EF00B9FA87FF72CF45DA3A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 97CFB003F99BBCE9CBCACAB4 /* Localizable.xcstrings */; };
+		9BD5DA627B6BC7C878227668 /* MusicEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 78FDE0BFC2D4AD2117AE34F5 /* MusicEngine */; };
+		9BD9B2D8AF708B9E87EBEE33 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4986A857C1FC05B3F16C7C2 /* NetworkMonitor.swift */; };
+		9D3C1F2E0DA965D12F8D9D0D /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8354519FF5A68C0B9167F3F6 /* ArtistsView.swift */; };
+		A8122CC9795ABCFF2006FA05 /* AddServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B29025AC6477D3E8718C7CC /* AddServerView.swift */; };
+		ADF6DE83B8EACB6073CB035A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6460E84E3FEEC6F0E1765D3F /* AppModel.swift */; };
+		B3A02F1CDD5E392B40DB51B9 /* QuickConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4781ED0F6CEC76083D987E /* QuickConnectView.swift */; };
+		B8501DAD771F957AD71E632F /* LibraryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C93296C93A544543E877BAA /* LibraryComponents.swift */; };
+		BA543DD48030348CC1E3DA62 /* MiniPlayerBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86E2DD5EFFB7233052C40945 /* MiniPlayerBar.swift */; };
+		C1D5ADFB77F2E42F49C921C6 /* JellyfinKit in Frameworks */ = {isa = PBXBuildFile; productRef = F9112887EC055FB3E982E247 /* JellyfinKit */; };
+		D1BCD81E7D5E6167BAE10C41 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 73ED54A40605680CCADF4477 /* InfoPlist.xcstrings */; };
+		D9A892112D36D54B37273506 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CEF0965F3D017C042F07DC63 /* PrivacyInfo.xcprivacy */; };
+		E0BC5DCA857B5D47377F9378 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A20ABEF3E17ADA400F35D8 /* LibraryView.swift */; };
+		E7EC5C303A197101E7896CCC /* EqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E8F13DD939DC01293084F5 /* EqualizerView.swift */; };
+		EA9F7B580872E35BE87B329A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1958AC52FD2B7C39923565E2 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		EBF30DA9B601C76092AA1D91 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3840931AEB48A889A3E7A72F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5EC3939D17B7C9B2D63E627C;
+			remoteInfo = OwnAudioJelly;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0489C026737824246BB516E7 /* OwnAudioJellyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = OwnAudioJellyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		096C0FFF5497A8B45F0B2BB0 /* JellyfinKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = JellyfinKit; path = Packages/JellyfinKit; sourceTree = SOURCE_ROOT; };
+		100852A86BA24D5F67963081 /* AlbumDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumDetailView.swift; sourceTree = "<group>"; };
+		1629F24D5AE436E532237492 /* OwnAudioJelly.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OwnAudioJelly.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1958AC52FD2B7C39923565E2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		1B29025AC6477D3E8718C7CC /* AddServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddServerView.swift; sourceTree = "<group>"; };
+		1C517C40D5AE4F585B4A63B9 /* OfflineLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineLibrary.swift; sourceTree = "<group>"; };
+		1D004A98E624B3FEE0F8DA77 /* CoverArtLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverArtLoader.swift; sourceTree = "<group>"; };
+		2052D7AC3DF94155D4D04778 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2B035F8FA05C3A3533059FAD /* SongActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongActions.swift; sourceTree = "<group>"; };
+		2E6A5C8001D47A58BD739745 /* ClientRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientRegistry.swift; sourceTree = "<group>"; };
+		2F24A613E883BB5D70131027 /* CoverArtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverArtView.swift; sourceTree = "<group>"; };
+		4880B09F3054525E916AD254 /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
+		4A729D1202E0EC86DFF81BB5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		4C93296C93A544543E877BAA /* LibraryComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryComponents.swift; sourceTree = "<group>"; };
+		4E8D08C2A7DCB19875CAC6A8 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		5C413FE37107CBE3703C28D8 /* OwnAudioJellyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnAudioJellyApp.swift; sourceTree = "<group>"; };
+		5DC739785CF870444A25434D /* ServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServersView.swift; sourceTree = "<group>"; };
+		6460E84E3FEEC6F0E1765D3F /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		68E5F294965B7524D935A8CE /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		70863FB8AE89224DD165FD7F /* ArtistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistDetailView.swift; sourceTree = "<group>"; };
+		72E8F13DD939DC01293084F5 /* EqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerView.swift; sourceTree = "<group>"; };
+		73ED54A40605680CCADF4477 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		8354519FF5A68C0B9167F3F6 /* ArtistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistsView.swift; sourceTree = "<group>"; };
+		86E2DD5EFFB7233052C40945 /* MiniPlayerBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerBar.swift; sourceTree = "<group>"; };
+		8F4781ED0F6CEC76083D987E /* QuickConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickConnectView.swift; sourceTree = "<group>"; };
+		95A20ABEF3E17ADA400F35D8 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		97CFB003F99BBCE9CBCACAB4 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A02F6E6122FBD95CBD24A73F /* LyricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsView.swift; sourceTree = "<group>"; };
+		A3498FDBD668473AD2BB4DAE /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
+		A6B08BDC6F73D585EF03D8FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		ACF4EE4049CFA4C0D67BE7CD /* PlaybackSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSmokeTests.swift; sourceTree = "<group>"; };
+		B0D9682D45D22EF79DA6338F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		B34DE82A5D47A4B62845506B /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		B4986A857C1FC05B3F16C7C2 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		B4B26A3DCA6E92F60E63366C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		CEF0965F3D017C042F07DC63 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		D7AAE47A9DC78877D7810317 /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
+		E3C58C42B5DCEF4E82E3465A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		E699279C9B52E96977A311D0 /* PlayerSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerSheets.swift; sourceTree = "<group>"; };
+		ECAE5DAF4E35FA966F728657 /* PendingScrobbles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingScrobbles.swift; sourceTree = "<group>"; };
+		F4413E1A83F7D21338DE6A3D /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		F84B871A7D29B4B8D6F68623 /* TrackID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackID.swift; sourceTree = "<group>"; };
+		F96400A35428D6D4238DE11E /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		FBC842AC23540D50D6398E80 /* PlayerSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerSupport.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E022309A321A3561749E7AE6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1D5ADFB77F2E42F49C921C6 /* JellyfinKit in Frameworks */,
+				9BD5DA627B6BC7C878227668 /* MusicEngine in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E1F347FCC1C82D021969CFA = {
+			isa = PBXGroup;
+			children = (
+				93A90EB4A722E7E750DFDF28 /* App */,
+				614F92A76B1B4A91D1486DBB /* Packages */,
+				F2C95D0FF8F6B68DC0905471 /* UITests */,
+				119C2ADA0B72FA11C0790741 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		119C2ADA0B72FA11C0790741 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1629F24D5AE436E532237492 /* OwnAudioJelly.app */,
+				0489C026737824246BB516E7 /* OwnAudioJellyUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3A81B7E110EAE601D1CC6C6F /* Servers */ = {
+			isa = PBXGroup;
+			children = (
+				1B29025AC6477D3E8718C7CC /* AddServerView.swift */,
+				B4B26A3DCA6E92F60E63366C /* OnboardingView.swift */,
+				8F4781ED0F6CEC76083D987E /* QuickConnectView.swift */,
+				5DC739785CF870444A25434D /* ServersView.swift */,
+			);
+			path = Servers;
+			sourceTree = "<group>";
+		};
+		614F92A76B1B4A91D1486DBB /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				096C0FFF5497A8B45F0B2BB0 /* JellyfinKit */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		7BAF0E05C0E0A4980D4A3F7A /* OwnAudioJelly */ = {
+			isa = PBXGroup;
+			children = (
+				2052D7AC3DF94155D4D04778 /* Assets.xcassets */,
+				4E8D08C2A7DCB19875CAC6A8 /* CarPlaySceneDelegate.swift */,
+				A6B08BDC6F73D585EF03D8FA /* Info.plist */,
+				73ED54A40605680CCADF4477 /* InfoPlist.xcstrings */,
+				97CFB003F99BBCE9CBCACAB4 /* Localizable.xcstrings */,
+				5C413FE37107CBE3703C28D8 /* OwnAudioJellyApp.swift */,
+				CEF0965F3D017C042F07DC63 /* PrivacyInfo.xcprivacy */,
+				B0D9682D45D22EF79DA6338F /* RootView.swift */,
+				B93089809AD4C1A49E494118 /* Core */,
+				F9C02C6E3666811195B24E7A /* Library */,
+				8002720EF901600296C4CFFF /* Player */,
+				3A81B7E110EAE601D1CC6C6F /* Servers */,
+				8BEB4D97637B37015DEEC00A /* Settings */,
+			);
+			path = OwnAudioJelly;
+			sourceTree = "<group>";
+		};
+		8002720EF901600296C4CFFF /* Player */ = {
+			isa = PBXGroup;
+			children = (
+				72E8F13DD939DC01293084F5 /* EqualizerView.swift */,
+				A02F6E6122FBD95CBD24A73F /* LyricsView.swift */,
+				86E2DD5EFFB7233052C40945 /* MiniPlayerBar.swift */,
+				E699279C9B52E96977A311D0 /* PlayerSheets.swift */,
+				FBC842AC23540D50D6398E80 /* PlayerSupport.swift */,
+				F96400A35428D6D4238DE11E /* PlayerView.swift */,
+			);
+			path = Player;
+			sourceTree = "<group>";
+		};
+		8BEB4D97637B37015DEEC00A /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				1958AC52FD2B7C39923565E2 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		93A90EB4A722E7E750DFDF28 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				7BAF0E05C0E0A4980D4A3F7A /* OwnAudioJelly */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B93089809AD4C1A49E494118 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				6460E84E3FEEC6F0E1765D3F /* AppModel.swift */,
+				2E6A5C8001D47A58BD739745 /* ClientRegistry.swift */,
+				1D004A98E624B3FEE0F8DA77 /* CoverArtLoader.swift */,
+				68E5F294965B7524D935A8CE /* DownloadManager.swift */,
+				B4986A857C1FC05B3F16C7C2 /* NetworkMonitor.swift */,
+				1C517C40D5AE4F585B4A63B9 /* OfflineLibrary.swift */,
+				ECAE5DAF4E35FA966F728657 /* PendingScrobbles.swift */,
+				E3C58C42B5DCEF4E82E3465A /* Theme.swift */,
+				F84B871A7D29B4B8D6F68623 /* TrackID.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		F2C95D0FF8F6B68DC0905471 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				ACF4EE4049CFA4C0D67BE7CD /* PlaybackSmokeTests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		F9C02C6E3666811195B24E7A /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				100852A86BA24D5F67963081 /* AlbumDetailView.swift */,
+				D7AAE47A9DC78877D7810317 /* AlbumsView.swift */,
+				70863FB8AE89224DD165FD7F /* ArtistDetailView.swift */,
+				8354519FF5A68C0B9167F3F6 /* ArtistsView.swift */,
+				2F24A613E883BB5D70131027 /* CoverArtView.swift */,
+				4880B09F3054525E916AD254 /* DownloadsView.swift */,
+				B34DE82A5D47A4B62845506B /* FavoritesView.swift */,
+				4A729D1202E0EC86DFF81BB5 /* HomeView.swift */,
+				4C93296C93A544543E877BAA /* LibraryComponents.swift */,
+				95A20ABEF3E17ADA400F35D8 /* LibraryView.swift */,
+				A3498FDBD668473AD2BB4DAE /* PlaylistsView.swift */,
+				F4413E1A83F7D21338DE6A3D /* SearchView.swift */,
+				2B035F8FA05C3A3533059FAD /* SongActions.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5EC3939D17B7C9B2D63E627C /* OwnAudioJelly */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7569BE78ED2B163FBB3AA201 /* Build configuration list for PBXNativeTarget "OwnAudioJelly" */;
+			buildPhases = (
+				2DD90AAE7ED48BA2371C5F88 /* Sources */,
+				621C2B85DC995558411029C8 /* Resources */,
+				E022309A321A3561749E7AE6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OwnAudioJelly;
+			packageProductDependencies = (
+				F9112887EC055FB3E982E247 /* JellyfinKit */,
+				78FDE0BFC2D4AD2117AE34F5 /* MusicEngine */,
+			);
+			productName = OwnAudioJelly;
+			productReference = 1629F24D5AE436E532237492 /* OwnAudioJelly.app */;
+			productType = "com.apple.product-type.application";
+		};
+		64791EA09FF04A3047D0506F /* OwnAudioJellyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 95800F1BA5D7FCE61FA362C7 /* Build configuration list for PBXNativeTarget "OwnAudioJellyUITests" */;
+			buildPhases = (
+				8A48C0184955047E77626554 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				43845E57CB6A9DF59C0C93A3 /* PBXTargetDependency */,
+			);
+			name = OwnAudioJellyUITests;
+			packageProductDependencies = (
+			);
+			productName = OwnAudioJellyUITests;
+			productReference = 0489C026737824246BB516E7 /* OwnAudioJellyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3840931AEB48A889A3E7A72F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5EC3939D17B7C9B2D63E627C = {
+						ProvisioningStyle = Automatic;
+					};
+					64791EA09FF04A3047D0506F = {
+						ProvisioningStyle = Automatic;
+						TestTargetID = 5EC3939D17B7C9B2D63E627C;
+					};
+				};
+			};
+			buildConfigurationList = 3C3E52BA5ACE4A501BD38C5A /* Build configuration list for PBXProject "OwnAudioJelly" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				cs,
+				en,
+			);
+			mainGroup = 0E1F347FCC1C82D021969CFA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0E0E8C4233FFA6F4AD676FD1 /* XCRemoteSwiftPackageReference "player-engine" */,
+				79F0808D40A09A04EF71AA14 /* XCLocalSwiftPackageReference "Packages/JellyfinKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 119C2ADA0B72FA11C0790741 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5EC3939D17B7C9B2D63E627C /* OwnAudioJelly */,
+				64791EA09FF04A3047D0506F /* OwnAudioJellyUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		621C2B85DC995558411029C8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40A5E6D0C6E191CF2A39711D /* Assets.xcassets in Resources */,
+				D1BCD81E7D5E6167BAE10C41 /* InfoPlist.xcstrings in Resources */,
+				94EF00B9FA87FF72CF45DA3A /* Localizable.xcstrings in Resources */,
+				D9A892112D36D54B37273506 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2DD90AAE7ED48BA2371C5F88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8122CC9795ABCFF2006FA05 /* AddServerView.swift in Sources */,
+				78DD7431557DFA457CF8576A /* AlbumDetailView.swift in Sources */,
+				65E546EC92B41D9778CCCBA6 /* AlbumsView.swift in Sources */,
+				ADF6DE83B8EACB6073CB035A /* AppModel.swift in Sources */,
+				6DC0B56ADAEE2AE88886CECB /* ArtistDetailView.swift in Sources */,
+				9D3C1F2E0DA965D12F8D9D0D /* ArtistsView.swift in Sources */,
+				3A861F77751AD3E7CC0B4A03 /* CarPlaySceneDelegate.swift in Sources */,
+				445F61E3FDD6A64267CCCEA7 /* ClientRegistry.swift in Sources */,
+				2057E876F91510CCC8897575 /* CoverArtLoader.swift in Sources */,
+				170D24E09313D7DA145DAEA8 /* CoverArtView.swift in Sources */,
+				3FCA5A95B675543A091EB9F8 /* DownloadManager.swift in Sources */,
+				72DA67A727E633C665E63F7B /* DownloadsView.swift in Sources */,
+				E7EC5C303A197101E7896CCC /* EqualizerView.swift in Sources */,
+				01166F168697740E8952A4E3 /* FavoritesView.swift in Sources */,
+				3B3CCCA8344C8F7564C52E23 /* HomeView.swift in Sources */,
+				B8501DAD771F957AD71E632F /* LibraryComponents.swift in Sources */,
+				E0BC5DCA857B5D47377F9378 /* LibraryView.swift in Sources */,
+				53D8A9060AB1776C75F7DB9E /* LyricsView.swift in Sources */,
+				BA543DD48030348CC1E3DA62 /* MiniPlayerBar.swift in Sources */,
+				9BD9B2D8AF708B9E87EBEE33 /* NetworkMonitor.swift in Sources */,
+				10411FCBC4301C0B9D37FB8A /* OfflineLibrary.swift in Sources */,
+				7B0A3541BE7139C2D6C4B1B7 /* OnboardingView.swift in Sources */,
+				86BF592696DB2AD0E938C72B /* OwnAudioJellyApp.swift in Sources */,
+				7831DD983549E1ECBE9EF355 /* PendingScrobbles.swift in Sources */,
+				57948E9733E49D56AB0C8FB0 /* PlayerSheets.swift in Sources */,
+				8F792A0F99291835C53CBF33 /* PlayerSupport.swift in Sources */,
+				1415E66259A8EBC0F49D2338 /* PlayerView.swift in Sources */,
+				77FC1286B4FEBA89F0BE1422 /* PlaylistsView.swift in Sources */,
+				B3A02F1CDD5E392B40DB51B9 /* QuickConnectView.swift in Sources */,
+				7F02BDCBA24025D59D078044 /* RootView.swift in Sources */,
+				029F225EB0AE804A778713CA /* SearchView.swift in Sources */,
+				4D4726AEB4F3F14098DD2FDB /* ServersView.swift in Sources */,
+				EA9F7B580872E35BE87B329A /* SettingsView.swift in Sources */,
+				6F4E49ACB5A6AB8275F23182 /* SongActions.swift in Sources */,
+				0DE1238AAE71CB7F3D219622 /* Theme.swift in Sources */,
+				12940AEA83D04025527E9FEF /* TrackID.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A48C0184955047E77626554 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				501120B196E3E87EAB8DD0D3 /* PlaybackSmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		43845E57CB6A9DF59C0C93A3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5EC3939D17B7C9B2D63E627C /* OwnAudioJelly */;
+			targetProxy = EBF30DA9B601C76092AA1D91 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		050A77A4FEF9C86D49627B67 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/OwnAudioJelly/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = audio.own.jelly;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		66C220A625F2B46EA21CEF75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/OwnAudioJelly/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = audio.own.jelly;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		70E967AE02FE12B76C50366F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = audio.own.OwnAudioJellyUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OwnAudioJelly;
+			};
+			name = Debug;
+		};
+		94E420E4335401B0CFFAE22E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DFCC675D3BF77605ED92572A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = audio.own.OwnAudioJellyUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OwnAudioJelly;
+			};
+			name = Release;
+		};
+		FFA0490C005EB15B8686D2DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3C3E52BA5ACE4A501BD38C5A /* Build configuration list for PBXProject "OwnAudioJelly" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				94E420E4335401B0CFFAE22E /* Debug */,
+				FFA0490C005EB15B8686D2DC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7569BE78ED2B163FBB3AA201 /* Build configuration list for PBXNativeTarget "OwnAudioJelly" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				050A77A4FEF9C86D49627B67 /* Debug */,
+				66C220A625F2B46EA21CEF75 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		95800F1BA5D7FCE61FA362C7 /* Build configuration list for PBXNativeTarget "OwnAudioJellyUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				70E967AE02FE12B76C50366F /* Debug */,
+				DFCC675D3BF77605ED92572A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		79F0808D40A09A04EF71AA14 /* XCLocalSwiftPackageReference "Packages/JellyfinKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/JellyfinKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0E0E8C4233FFA6F4AD676FD1 /* XCRemoteSwiftPackageReference "player-engine" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/own-audio/player-engine";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		78FDE0BFC2D4AD2117AE34F5 /* MusicEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0E0E8C4233FFA6F4AD676FD1 /* XCRemoteSwiftPackageReference "player-engine" */;
+			productName = MusicEngine;
+		};
+		F9112887EC055FB3E982E247 /* JellyfinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JellyfinKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3840931AEB48A889A3E7A72F /* Project object */;
+}

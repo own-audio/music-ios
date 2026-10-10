@@ -1,0 +1,15 @@
+{
+  "originHash" : "14c07a5146d4f04c1e69eda65ef4e71afb5feaaea87498b2badc420332ea00fd",
+  "pins" : [
+    {
+      "identity" : "player-engine",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/own-audio/player-engine",
+      "state" : {
+        "revision" : "6ab9cce604961c97ffc5e7400fdb19d7d991bd6e",
+        "version" : "0.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

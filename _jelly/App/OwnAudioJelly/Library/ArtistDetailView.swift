@@ -1,0 +1,101 @@
+import JellyfinKit
+import SwiftUI
+
+struct ArtistDetailView: View {
+    @Environment(AppModel.self) private var model
+    let artist: Artist
+    @State private var state: LoadState<[Album]> = .loading
+    @State private var isStarting = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Theme.Spacing.lg) {
+                ArtistImage(artist: artist, size: 160)
+                    .padding(.top, Theme.Spacing.md)
+                Text(artist.name)
+                    .font(.title.bold())
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.Spacing.screenEdge)
+
+                PlayShuffleButtons(isEnabled: !isStarting && !(albums?.isEmpty ?? true)) {
+                    playAll(shuffled: false)
+                } shuffle: {
+                    playAll(shuffled: true)
+                }
+                .padding(.horizontal, Theme.Spacing.screenEdge)
+
+                LoadStateView(state: state, retry: load) { albums in
+                    AlbumGrid(albums: albums)
+                }
+                .frame(minHeight: 200)
+            }
+            .padding(.bottom, Theme.Spacing.xl)
+        }
+        .navigationTitle(artist.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let id = model.compositeId(artist.id) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    let favorite = model.isFavorite(id)
+                    Button {
+                        Haptics.selection()
+                        model.perform { try await model.toggleFavorite(id) }
+                    } label: {
+                        Image(systemName: favorite ? "heart.fill" : "heart")
+                    }
+                    .accessibilityLabel(favorite ? "Remove Artist from Favorites" : "Add Artist to Favorites")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.playInstantMix(itemId: artist.id)
+                    } label: {
+                        Image(systemName: "wand.and.stars")
+                    }
+                    .accessibilityLabel("Instant Mix")
+                    .disabled(model.isOffline)
+                }
+            }
+        }
+        .onAppear {
+            // The artist list says whether it is a favorite; remember that for the button.
+            model.learn(artists: [artist])
+        }
+        .task(id: model.isOffline) { await load() }
+    }
+
+    private var albums: [Album]? {
+        if case .loaded(let albums) = state { albums } else { nil }
+    }
+
+    private func load() async {
+        if model.isOffline {
+            state = .loaded(model.offlineAlbums(artist: artist))
+            return
+        }
+        guard let client = model.activeClient else { return }
+        do {
+            state = .loaded(try await client.albums(artistId: artist.id))
+        } catch {
+            state = .failed(error.userMessage)
+        }
+    }
+
+    /// Fetches every album's songs, so this costs one request per album.
+    private func playAll(shuffled: Bool) {
+        guard let albums, let client = model.activeClient else { return }
+        if model.isOffline {
+            let ids = Set(albums.map(\.id))
+            model.play(model.offlineSongs.filter { $0.albumId.map(ids.contains) ?? false }, shuffled: shuffled, containerId: "artist:\(artist.id)")
+            return
+        }
+        isStarting = true
+        Task {
+            defer { isStarting = false }
+            var songs: [Song] = []
+            for album in albums {
+                if let loaded = try? await client.album(id: album.id).songs { songs += loaded }
+            }
+            model.play(songs, shuffled: shuffled, containerId: "artist:\(artist.id)")
+        }
+    }
+}

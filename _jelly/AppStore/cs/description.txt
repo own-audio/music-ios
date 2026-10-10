@@ -1,0 +1,30 @@
+Nativní hudební přehrávač pro váš server Jellyfin.
+
+Hraje tak, jak má hudba hrát
+• Přehrávání bez mezer, takže živá a klasická alba plynou tak, jak byla nahrána, nebo prolínání, chcete-li
+• Bezeztrátové FLAC a ALAC, s formátem zobrazeným v přehrávači
+• Začne hrát, ještě než skladba celá dorazí
+• Vyrovnání hlasitosti podle hlasitosti, kterou změřil váš server
+• Ekvalizér s předvolbami
+• Časovaný text, který sleduje skladbu, pokud ho váš server má
+
+Celá vaše knihovna
+• Interpreti, alba, skladby, žánry, playlisty a hledání
+• Nedávno přidané, nedávno hrané, nejhranější, oblíbené
+• Okamžitý mix: skladby podobné této skladbě, albu nebo interpretovi, které vybere váš server
+• Vytváření a úpravy playlistů; oblíbené
+• Přehrání se hlásí vašemu serveru, jako u každé aplikace pro Jellyfin
+
+Offline i na cestách
+• Stáhněte si alba, playlisty nebo jednotlivé skladby a poslouchejte je i bez signálu
+• Menší streamy na mobilních datech, pokud o ně stojíte; na Wi-Fi zůstává původní kvalita
+
+Všude
+• Přihlášení heslem nebo přes Quick Connect
+• Několik serverů najednou, jedna hudební knihovna nebo všechny
+• AirPlay, zamčená obrazovka a Ovládací centrum
+• iPhone a iPad, česky a anglicky
+
+Soukromí od základu: aplikace mluví jen se servery, které přidáte. Heslo poslouží jen k přihlášení a neukládá se. Žádný účet, žádná analytika, žádné reklamy.
+
+Zdarma a s otevřeným kódem pod licencí MPL-2.0. Vytvořilo own.audio. Není spojeno s projektem Jellyfin.

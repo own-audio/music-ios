@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+    <defs><linearGradient id="jellyfin" gradientUnits="userSpaceOnUse" x1="15" y1="10" x2="85" y2="90"><stop offset="0" stop-color="#8A3FAF"/><stop offset="1" stop-color="#0083B8"/></linearGradient></defs>
+    <rect width="100" height="100" fill="#F7F7F8" />
+    
+  <g transform="rotate(0, 50, 50)">
+    <circle cx="50" cy="10" r="4.4" fill="url(#jellyfin)" />
+    <circle cx="41.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+    <circle cx="58.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+  </g>
+  <g transform="rotate(72, 50, 50)">
+    <circle cx="50" cy="10" r="4.4" fill="url(#jellyfin)" />
+    <circle cx="41.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+    <circle cx="58.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+  </g>
+  <g transform="rotate(144, 50, 50)">
+    <circle cx="50" cy="10" r="4.4" fill="url(#jellyfin)" />
+    <circle cx="41.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+    <circle cx="58.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+  </g>
+  <g transform="rotate(216, 50, 50)">
+    <circle cx="50" cy="10" r="4.4" fill="url(#jellyfin)" />
+    <circle cx="41.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+    <circle cx="58.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+  </g>
+  <g transform="rotate(288, 50, 50)">
+    <circle cx="50" cy="10" r="4.4" fill="url(#jellyfin)" />
+    <circle cx="41.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+    <circle cx="58.5" cy="11" r="2.2" fill="url(#jellyfin)" />
+  </g>
+    <g transform="translate(25.483870967741936 15.161290322580648) scale(2.5806451612903225)">
+    <g color="{a}" fill="none" stroke="url(#jellyfin)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      
+    <path d="M8 18.5V8l7.5-1.75v10.25" />
+    <circle cx="5.75" cy="18.5" r="2.25" />
+    <circle cx="13.25" cy="16.5" r="2.25" />
+  
+    </g>
+  </g>
+  <g fill="none" stroke="url(#jellyfin)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M46.225 80.25 L41 85 L46.225 89.75"/>
+    <path d="M53.775 80.25 L59 85 L53.775 89.75"/>
+    <path d="M52.16 79.75 L47.84 90.25"/>
+  </g></svg>

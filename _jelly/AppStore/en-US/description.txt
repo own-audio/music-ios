@@ -1,0 +1,30 @@
+A native music player for your Jellyfin server.
+
+Plays the way music should
+• Gapless playback, so live and classical albums flow as recorded, or crossfade if you prefer
+• Lossless FLAC and ALAC, with the format shown in the player
+• Starts playing while the song is still arriving
+• Volume leveling from the loudness your server measured
+• Equalizer with presets
+• Synced lyrics that follow the song, where your server has them
+
+Your whole library
+• Artists, albums, songs, genres, playlists and search
+• Recently added, recently played, most played, favorites
+• Instant Mix: songs like this song, album or artist, picked by your server
+• Create and edit playlists; mark favorites
+• Plays are reported to your server, as with every Jellyfin app
+
+Offline and on the go
+• Download albums, playlists or single songs and play them with no signal
+• Smaller streams on mobile data if you want them; Wi-Fi stays original
+
+Everywhere
+• Sign in with your password or Quick Connect
+• Several servers at once, one music library or all of them
+• AirPlay, lock screen and Control Center
+• iPhone and iPad, in English and Czech
+
+Private by design: the app talks only to the servers you add. Your password is used once to sign in and isn't stored. No account, no analytics, no ads.
+
+Free and open source under the MPL-2.0. Made by own.audio. Not affiliated with the Jellyfin project.
