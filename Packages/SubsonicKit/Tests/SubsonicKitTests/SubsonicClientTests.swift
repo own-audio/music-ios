@@ -46,7 +46,7 @@ struct SubsonicClientTests {
         let byName = Dictionary(uniqueKeysWithValues: await mock.firstQuery().map { ($0.name, $0.value ?? "") })
         #expect(byName["u"] == "alice")
         #expect(byName["v"] == "1.16.1")
-        #expect(byName["c"] == "own.audio-subsonic")
+        #expect(byName["c"] == "own.audio Music")
         #expect(byName["f"] == "json")
         #expect(byName["p"] == nil)
         let salt = try #require(byName["s"])

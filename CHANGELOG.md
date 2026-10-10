@@ -57,6 +57,10 @@ package, merged into this repository — is in `docs/history/`.
 - **Sign in with Apple** for own.audio servers that offer it (the server lists the app's bundle
   id in `AUTH__APPLE__CLIENT_IDS`): Apple's identity token becomes a session on the server, and
   the app fetches the account's Subsonic key with it; only the key is kept.
+- Search works on iOS 27: the system draws the search tab as an ordinary tab there and kept its
+  field hidden, so there was nothing to type into. The field is always shown on iOS 27; tabs
+  switch through an explicit selection.
+- Subsonic servers see the app as "own.audio Music" (the `c` parameter), not "own.audio-subsonic".
 - **Continue with Google** for own.audio servers that offer it, without Google's SDK: Google's
   page in the system sign-in sheet with PKCE, the code exchanged for an ID token, which the
   server verifies (its `AUTH__GOOGLE__CLIENT_IDS` must list this app's iOS client).

@@ -5,6 +5,9 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var isShowingPlayer = false
+    @State private var tab: AppTab = .home
+
+    private enum AppTab: Hashable { case home, library, playlists, search }
 
     var body: some View {
         Group {
@@ -35,25 +38,27 @@ struct RootView: View {
     }
 
     private var tabs: some View {
-        TabView {
-            Tab("Home", systemImage: "house") {
+        // An explicit selection: iOS 27 drew the search tab as a plain tab without one, and
+        // tapping it didn't switch to it.
+        TabView(selection: $tab) {
+            Tab("Home", systemImage: "house", value: AppTab.home) {
                 NavigationStack {
                     HomeView().libraryDestinations()
                 }
                 .miniPlayerInset { isShowingPlayer = true }
             }
-            Tab("Library", systemImage: "square.stack") {
+            Tab("Library", systemImage: "square.stack", value: AppTab.library) {
                 LibraryTab()
                     .miniPlayerInset { isShowingPlayer = true }
             }
-            Tab("Playlists", systemImage: "music.note.list") {
+            Tab("Playlists", systemImage: "music.note.list", value: AppTab.playlists) {
                 NavigationStack {
                     PlaylistsView().libraryDestinations()
                 }
                 .miniPlayerInset { isShowingPlayer = true }
             }
             // The search role puts it in its own capsule at the trailing edge, as in Apple's apps.
-            Tab("Search", systemImage: "magnifyingglass", role: .search) {
+            Tab("Search", systemImage: "magnifyingglass", value: AppTab.search, role: .search) {
                 NavigationStack {
                     SearchView().libraryDestinations()
                 }

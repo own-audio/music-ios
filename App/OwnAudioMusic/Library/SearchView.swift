@@ -75,7 +75,7 @@ struct SearchView: View {
         .listStyle(.plain)
         .overlay { if isSearching && result == nil { ProgressView() } }
         .navigationTitle("Search")
-        .searchable(text: $query, prompt: "Artists, Albums, Songs")
+        .librarySearchField(text: $query)
         .autocorrectionDisabled()
         .task(id: "\(model.isOffline)|\(query)") { await search() }
     }
@@ -107,6 +107,20 @@ struct SearchView: View {
         } catch {
             guard !Task.isCancelled else { return }
             errorMessage = error.userMessage
+        }
+    }
+}
+
+private extension View {
+    /// iOS 26 moves a search tab's field into the tab bar. iOS 27 draws the search tab as an
+    /// ordinary tab and leaves the field in the navigation bar's drawer, hidden until a pull,
+    /// so the screen had nothing to type into: there it is always shown.
+    @ViewBuilder
+    func librarySearchField(text: Binding<String>) -> some View {
+        if #available(iOS 27.0, *) {
+            searchable(text: text, placement: .navigationBarDrawer(displayMode: .always), prompt: "Artists, Albums, Songs")
+        } else {
+            searchable(text: text, prompt: "Artists, Albums, Songs")
         }
     }
 }

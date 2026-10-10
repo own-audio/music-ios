@@ -35,7 +35,7 @@ public struct SubsonicClient: Sendable {
 
     public init(
         host: URL, username: String, password: String,
-        clientName: String = "own.audio-subsonic", session: URLSession = .shared,
+        clientName: String = "own.audio Music", session: URLSession = .shared,
         cache: ResponseCache? = nil, offline: OfflineSwitch? = nil,
         cacheIdentity: String? = nil
     ) {
