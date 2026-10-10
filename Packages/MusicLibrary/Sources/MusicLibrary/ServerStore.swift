@@ -6,6 +6,9 @@ import os
 
 public enum ServerKind: String, Codable, Sendable, CaseIterable {
     case subsonic, jellyfin
+    /// An own.audio server: its library through Subsonic, and its own API for what Subsonic
+    /// lacks (its identity and addresses today).
+    case ownAudio
 }
 
 /// How the app signs in to a server; kept in the Keychain only.
@@ -29,18 +32,66 @@ public struct ServerRecord: Codable, Sendable, Equatable, Identifiable {
     public let id: UUID
     public var displayName: String
     public let kind: ServerKind
+    /// The address the server was added with.
     public var host: URL
     public var auth: ServerAuth
     /// The music library to show where a server has several; nil shows all of them.
     public var libraryId: String?
+    /// The server's own identity, where its kind has one (Jellyfin, own.audio). An address that
+    /// answers with another id is not this server.
+    public var serverId: String?
+    /// Every other address the server is known by: told by the server, or added by hand.
+    public var addresses: [ServerAddress]
+    public var connection: ConnectionMode
 
-    public init(id: UUID = UUID(), displayName: String, kind: ServerKind, host: URL, auth: ServerAuth, libraryId: String? = nil) {
+    public init(
+        id: UUID = UUID(), displayName: String, kind: ServerKind, host: URL, auth: ServerAuth,
+        libraryId: String? = nil, serverId: String? = nil, addresses: [ServerAddress] = [],
+        connection: ConnectionMode = .automatic
+    ) {
         self.id = id
         self.displayName = displayName
         self.kind = kind
         self.host = host
         self.auth = auth
         self.libraryId = libraryId
+        self.serverId = serverId
+        self.addresses = addresses
+        self.connection = connection
+    }
+
+    /// Saved before addresses existed: those fields start empty.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        kind = try c.decode(ServerKind.self, forKey: .kind)
+        host = try c.decode(URL.self, forKey: .host)
+        auth = try c.decode(ServerAuth.self, forKey: .auth)
+        libraryId = try c.decodeIfPresent(String.self, forKey: .libraryId)
+        serverId = try c.decodeIfPresent(String.self, forKey: .serverId)
+        addresses = try c.decodeIfPresent([ServerAddress].self, forKey: .addresses) ?? []
+        connection = try c.decodeIfPresent(ConnectionMode.self, forKey: .connection) ?? .automatic
+    }
+
+    /// Every address to try, the one it was added with first, each once, the unsafe ones out.
+    public var candidateAddresses: [ServerAddress] {
+        var seen = Set<URL>()
+        return ([ServerAddress(url: host, origin: .added)] + addresses).filter {
+            $0.isSafeToUse && seen.insert(Self.normalized($0.url)).inserted
+        }
+    }
+
+    /// Adds addresses the server named, keeping the ones already known.
+    public mutating func learn(_ named: [ServerAddress]) {
+        let known = Set(candidateAddresses.map { Self.normalized($0.url) })
+        addresses += named.filter { !known.contains(Self.normalized($0.url)) }
+    }
+
+    static func normalized(_ url: URL) -> URL {
+        var text = url.absoluteString
+        while text.hasSuffix("/") { text.removeLast() }
+        return URL(string: text) ?? url
     }
 }
 
@@ -152,18 +203,22 @@ public struct SourceEnvironment: Sendable {
 }
 
 extension ServerRecord {
-    /// The source for this server.
-    public func makeSource(_ environment: SourceEnvironment) -> any MusicSource {
+    /// The source for this server, reached at `address` (the one it was added with unless
+    /// another was chosen). Saved answers are filed under the server, not the address.
+    public func makeSource(_ environment: SourceEnvironment, address: URL? = nil) -> any MusicSource {
+        let url = address ?? host
         switch auth {
         case .subsonic(let username, let password):
-            SubsonicSource(client: SubsonicClient(
-                host: host, username: username, password: password,
-                session: environment.urlSession, cache: environment.cache, offline: environment.offline
+            return SubsonicSource(client: SubsonicClient(
+                host: url, username: username, password: password,
+                session: environment.urlSession, cache: environment.cache, offline: environment.offline,
+                cacheIdentity: id.uuidString
             ))
         case .jellyfin(let session):
-            JellyfinSource(client: JellyfinClient(
-                host: host, session: session, libraryId: libraryId, clientInfo: environment.clientInfo,
-                urlSession: environment.urlSession, cache: environment.cache, offline: environment.offline
+            return JellyfinSource(client: JellyfinClient(
+                host: url, session: session, libraryId: libraryId, clientInfo: environment.clientInfo,
+                urlSession: environment.urlSession, cache: environment.cache, offline: environment.offline,
+                cacheIdentity: id.uuidString
             ))
         }
     }

@@ -101,6 +101,30 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "16-mobile-data-player")
     }
 
+    /// Settings → Servers → the server's connection: it ends up connected through one of its
+    /// addresses (on a Jellyfin or own.audio server reached from its own network, the home
+    /// address it named itself).
+    func testServerConnectionDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        app.buttons["home.settings"].tap()
+        let servers = app.buttons["settings.servers"]
+        XCTAssertTrue(servers.waitForExistence(timeout: 10))
+        servers.tap()
+        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
+        XCTAssertTrue(info.waitForExistence(timeout: 10))
+        info.tap()
+        let status = app.descendants(matching: .any)["serverDetail.status"].firstMatch
+        XCTAssertTrue(status.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            waitUntil(timeout: 20) { status.label.contains("Connected") },
+            "the server should be reached through one of its addresses, got \(status.label)"
+        )
+        screenshot(app, "17-server-connection")
+    }
+
     /// Download an album, then start the app with every server unreachable and play it from
     /// Downloads. `TEST_RUNNER_SERVER_DOWNLOAD_ALBUM` picks a small album; without it, the
     /// first one.

@@ -201,9 +201,13 @@ public struct ServerInfo: Codable, Sendable, Equatable {
     public let id: String
     public let serverName: String
     public let version: String
+    /// The address the server sees itself at on its own network, e.g.
+    /// `http://192.168.1.20:8096`. Behind Docker it can be a container address
+    /// nobody else reaches, so it is a candidate to try, not a fact.
+    public let localAddress: String?
 
     enum CodingKeys: String, CodingKey {
-        case id = "Id", serverName = "ServerName", version = "Version"
+        case id = "Id", serverName = "ServerName", version = "Version", localAddress = "LocalAddress"
     }
 }
 

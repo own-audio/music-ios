@@ -41,6 +41,8 @@ final class AppModel {
                 try await action()
             } catch {
                 actionError = error.userMessage
+                // The address in use may have stopped working (left home, VPN down).
+                if case SourceError.network = error { Task { await chooseAddresses() } }
             }
         }
     }
@@ -80,8 +82,11 @@ final class AppModel {
 
     static let mobileBitrateChoices: [Int?] = [nil, 320_000, 192_000, 128_000]
 
+    /// iOS Low Data Mode caps the stream at 128 kbps whatever was chosen: the listener asked the
+    /// whole phone to save data.
     private func applyStreamQuality() {
-        let bitrate = network.isExpensive || Self.isSimulatingMobileData ? mobileBitrate : nil
+        var bitrate = network.isExpensive || Self.isSimulatingMobileData ? mobileBitrate : nil
+        if network.isConstrained { bitrate = min(bitrate ?? 128_000, 128_000) }
         let registry = registry
         Task { await registry.setMaxBitrate(bitrate) }
     }
@@ -176,7 +181,12 @@ final class AppModel {
             guard let self else { return }
             self.applyOfflineState()
             self.applyStreamQuality()
-            if connected { Task { await self.flushPendingScrobbles() } }
+            if connected {
+                Task {
+                    await self.chooseAddresses()
+                    await self.flushPendingScrobbles()
+                }
+            }
         }
         wireScrobbling()
         // A downloaded song plays from the phone whether or not the server can be reached.
@@ -222,6 +232,7 @@ final class AppModel {
         activeServerId = servers.contains { $0.id == saved } ? saved : servers.first?.id
         hasLoaded = true
         downloads.resume()
+        Task { await chooseAddresses() }
         await flushPendingScrobbles()
     }
 
@@ -250,10 +261,16 @@ final class AppModel {
         case .rejected: throw AddServerError.rejected
         case .unreachable: throw AddServerError.unreachable
         }
-        try await save(ServerRecord(
-            displayName: displayName(name, fallback: host.host ?? address), kind: .subsonic, host: host,
-            auth: .subsonic(username: username, password: password)
-        ))
+        // An own.audio server answers its own discovery request too, with its identity and
+        // addresses; any other Subsonic server doesn't.
+        let ownAudio = try? await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+        var record = ServerRecord(
+            displayName: displayName(name, fallback: ownAudio != nil ? "own.audio" : (host.host ?? address)),
+            kind: ownAudio != nil ? .ownAudio : .subsonic, host: host,
+            auth: .subsonic(username: username, password: password), serverId: ownAudio?.id
+        )
+        record.learn(ownAudio?.addresses ?? [])
+        try await save(record)
     }
 
     /// The Jellyfin server at `address`, if there is one. Without a scheme, each likely address
@@ -279,10 +296,12 @@ final class AppModel {
 
     /// Saves a signed-in Jellyfin server (password or Quick Connect) and makes it the one shown.
     func saveJellyfin(host: URL, info: JellyfinServerInfo, session: JellyfinSession, name: String) async throws {
-        try await save(ServerRecord(
+        var record = ServerRecord(
             displayName: displayName(name, fallback: info.serverName.isEmpty ? (host.host ?? "") : info.serverName),
-            kind: .jellyfin, host: host, auth: .jellyfin(session: session)
-        ))
+            kind: .jellyfin, host: host, auth: .jellyfin(session: session), serverId: info.id
+        )
+        record.learn(info.localAddress.flatMap(URL.init(string:)).map { [ServerAddress(url: $0, origin: .server)] } ?? [])
+        try await save(record)
     }
 
     private func displayName(_ name: String, fallback: String) -> String {
@@ -295,6 +314,8 @@ final class AppModel {
         servers.append(record)
         await rebuildClients()
         activeServerId = record.id
+        // A server that named a home address is worth switching to at once.
+        Task { await chooseAddresses() }
     }
 
     func removeServer(id: UUID) async throws {
@@ -646,8 +667,99 @@ final class AppModel {
 
     private func rebuildClients() async {
         let environment = sourceEnvironment
-        sources = Dictionary(uniqueKeysWithValues: servers.map { ($0.id, $0.makeSource(environment)) })
+        sources = Dictionary(uniqueKeysWithValues: servers.map {
+            ($0.id, $0.makeSource(environment, address: activeAddresses[$0.id]))
+        })
         await registry.set(sources)
+    }
+
+    // MARK: - Connections
+
+    enum ConnectionState: Equatable {
+        case checking
+        case connected(URL)
+        case unreachable
+    }
+
+    /// The address each server is reached at right now, where it isn't the one it was added with.
+    private(set) var activeAddresses: [UUID: URL] = [:]
+    private(set) var connectionStates: [UUID: ConnectionState] = [:]
+    private var choosing: Task<Void, Never>?
+
+    /// For racing addresses: a wrong one must not hold the right one up.
+    private static let raceSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 4
+        configuration.waitsForConnectivity = false
+        return URLSession(configuration: configuration)
+    }()
+
+    /// Picks each server's address for the network the phone is on now: the fixed one where
+    /// the listener chose one, otherwise every known address tried at once, the fastest that
+    /// answers as the same server kept, and remembered for this network so the next start is
+    /// instant. Runs at launch, after every network change and after a request fails to reach
+    /// the server. Overlapping calls join the one running.
+    func chooseAddresses() async {
+        if let choosing { return await choosing.value }
+        let task = Task { await performChooseAddresses() }
+        choosing = task
+        await task.value
+        choosing = nil
+    }
+
+    private func performChooseAddresses() async {
+        guard !isOffline else { return }
+        let network = network.signature
+        var changed = false
+        for record in servers {
+            if case .fixed(let url) = record.connection {
+                changed = changed || activeAddresses[record.id] != url
+                activeAddresses[record.id] = url
+                connectionStates[record.id] = .connected(url)
+                continue
+            }
+            let candidates = record.candidateAddresses.map(\.url)
+            guard candidates.count > 1 || record.serverId != nil else {
+                connectionStates[record.id] = .connected(record.host)
+                continue
+            }
+            // What worked on this network before goes first: used at once, then checked.
+            let rememberedKey = "address.\(record.id.uuidString).\(network)"
+            if let remembered = UserDefaults.standard.string(forKey: rememberedKey).flatMap(URL.init(string:)),
+               candidates.contains(remembered), activeAddresses[record.id] != remembered {
+                activeAddresses[record.id] = remembered
+                changed = true
+            }
+            if connectionStates[record.id] == nil { connectionStates[record.id] = .checking }
+            guard let won = await ServerSetup.race(record, candidates: candidates, expectedId: record.serverId, urlSession: Self.raceSession) else {
+                connectionStates[record.id] = .unreachable
+                continue
+            }
+            UserDefaults.standard.set(won.url.absoluteString, forKey: rememberedKey)
+            connectionStates[record.id] = .connected(won.url)
+            if activeAddresses[record.id] != won.url {
+                activeAddresses[record.id] = won.url
+                changed = true
+            }
+            // Keep up with addresses the server names (a new VPN, a changed home address).
+            var updated = record
+            updated.learn(won.addresses)
+            if updated.serverId == nil, let id = won.serverId, record.kind != .subsonic { updated.serverId = id }
+            if updated != record { try? await update(updated) }
+        }
+        if changed { await rebuildClients() }
+    }
+
+    /// Saves a changed server (addresses, connection mode) and uses it at once.
+    func update(_ record: ServerRecord) async throws {
+        try await store.update(record)
+        if let index = servers.firstIndex(where: { $0.id == record.id }) { servers[index] = record }
+        if case .fixed(let url) = record.connection {
+            activeAddresses[record.id] = url
+        } else if let active = activeAddresses[record.id], !record.candidateAddresses.contains(where: { $0.url == active }) {
+            activeAddresses[record.id] = nil
+        }
+        await rebuildClients()
     }
 }
 

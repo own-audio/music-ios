@@ -11,6 +11,7 @@ struct ServersView: View {
     @State private var checking: Set<UUID> = []
     @State private var errorMessage: String?
     @State private var pickingLibrary: ServerRecord?
+    @State private var showingDetail: UUID?
 
     var body: some View {
         List {
@@ -37,6 +38,9 @@ struct ServersView: View {
         }
         .sheet(item: $pickingLibrary) { server in
             LibraryPickerView(server: server)
+        }
+        .navigationDestination(item: $showingDetail) { id in
+            ServerDetailView(serverId: id)
         }
         .alert("Rename Server", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $newName)
@@ -76,6 +80,14 @@ struct ServersView: View {
                         .foregroundStyle(.tint)
                         .accessibilityLabel("Selected")
                 }
+                Button {
+                    showingDetail = server.id
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Connection")
+                .accessibilityIdentifier("servers.info.\(server.displayName)")
             }
         }
         .accessibilityIdentifier("servers.row.\(server.displayName)")
@@ -150,6 +162,7 @@ extension ServerKind {
         switch self {
         case .subsonic: "Subsonic"
         case .jellyfin: "Jellyfin"
+        case .ownAudio: "own.audio"
         }
     }
 }

@@ -25,6 +25,9 @@ public struct SubsonicClient: Sendable {
     private let session: URLSession
     private let cache: ResponseCache?
     private let offline: OfflineSwitch?
+    /// What saved answers are filed under instead of the address: a server reached at several
+    /// addresses keeps one set of saved answers.
+    private let cacheIdentity: String?
 
     /// Servers use the version only to decide which optional fields to send; none reject an
     /// older one.
@@ -33,7 +36,8 @@ public struct SubsonicClient: Sendable {
     public init(
         host: URL, username: String, password: String,
         clientName: String = "own.audio-subsonic", session: URLSession = .shared,
-        cache: ResponseCache? = nil, offline: OfflineSwitch? = nil
+        cache: ResponseCache? = nil, offline: OfflineSwitch? = nil,
+        cacheIdentity: String? = nil
     ) {
         self.host = host
         self.username = username
@@ -42,6 +46,7 @@ public struct SubsonicClient: Sendable {
         self.session = session
         self.cache = cache
         self.offline = offline
+        self.cacheIdentity = cacheIdentity
     }
 
     /// Accepts "host", "host:port" or a full URL. Defaults to http because most home servers
@@ -315,7 +320,7 @@ public struct SubsonicClient: Sendable {
     /// saved answer.
     func cacheKey(path: String, query: [URLQueryItem]) -> String {
         let params = query.map { "\($0.name)=\($0.value ?? "")" }.sorted().joined(separator: "&")
-        return "\(host.absoluteString)|\(username)|\(path)?\(params)"
+        return "\(cacheIdentity ?? host.absoluteString)|\(username)|\(path)?\(params)"
     }
 
     /// Offline, a saved answer or `.offline` without touching the network. Online, a network

@@ -51,10 +51,14 @@ public struct JellyfinClient: Sendable {
     private let urlSession: URLSession
     private let cache: ResponseCache?
     private let offline: OfflineSwitch?
+    /// What saved answers are filed under instead of the address: a server reached at several
+    /// addresses keeps one set of saved answers.
+    private let cacheIdentity: String?
 
     public init(
         host: URL, session: Session, libraryId: String? = nil, clientInfo: ClientInfo,
-        urlSession: URLSession = .shared, cache: ResponseCache? = nil, offline: OfflineSwitch? = nil
+        urlSession: URLSession = .shared, cache: ResponseCache? = nil, offline: OfflineSwitch? = nil,
+        cacheIdentity: String? = nil
     ) {
         self.host = host
         self.session = session
@@ -63,6 +67,7 @@ public struct JellyfinClient: Sendable {
         self.urlSession = urlSession
         self.cache = cache
         self.offline = offline
+        self.cacheIdentity = cacheIdentity
     }
 
     /// Accepts "host", "host:port" or a full URL. A bare host gets http and, without a port,
@@ -490,7 +495,7 @@ public struct JellyfinClient: Sendable {
     /// The request without the token, so the same question maps to the same saved answer.
     func cacheKey(path: String, query: [String: String]) -> String {
         let params = query.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: "&")
-        return "\(host.absoluteString)|\(session.userId)|\(path)?\(params)"
+        return "\(cacheIdentity ?? host.absoluteString)|\(session.userId)|\(path)?\(params)"
     }
 
     /// GETs are saved for offline use unless `cached` is false (search, random picks: an old

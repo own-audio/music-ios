@@ -54,7 +54,8 @@ Their histories are merged here; their plans and changelogs are in `docs/history
 - [ ] **M4: Data and quality.** "On mobile data: Original / Saver / Downloaded only"; iOS Low
   Data Mode; Subsonic `maxBitRate`/`format` where the server transcodes; changes made offline
   (favorites, ratings, playlist edits) queued and sent later.
-- [ ] **M5: Several addresses per server.** Learn a server's addresses (Jellyfin's
+- [x] **M5: Several addresses per server.** Done 2026-10-10 (needs own.audio server 1.0.0-beta.3
+  for own.audio's list). Learn a server's addresses (Jellyfin's
   `LocalAddress`; own.audio once its server lists them; by hand for Subsonic), race them on
   every network change, accept only the same server id, remember per network.
 - [ ] **M6: Catalogue on the phone.** Background sync of the whole catalogue so browsing is

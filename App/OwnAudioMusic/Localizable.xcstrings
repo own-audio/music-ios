@@ -210,6 +210,16 @@
         }
       }
     },
+    "Add Address" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat adresu"
+          }
+        }
+      }
+    },
     "Add a server on your iPhone" : {
       "localizations" : {
         "cs" : {
@@ -240,6 +250,16 @@
         }
       }
     },
+    "Add the server's address on your home network, a VPN such as Tailscale, or a second public name. On each network the app uses the fastest one that answers as this server." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidejte adresu serveru v domácí síti, ve VPN (třeba Tailscale) nebo druhé veřejné jméno. V každé síti aplikace použije nejrychlejší adresu, která odpoví jako tento server."
+          }
+        }
+      }
+    },
     "Add to Playlist" : {
       "localizations" : {
         "cs" : {
@@ -266,6 +286,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adresa"
+          }
+        }
+      }
+    },
+    "Addresses" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresy"
           }
         }
       }
@@ -370,6 +400,16 @@
         }
       }
     },
+    "Automatic" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automaticky"
+          }
+        }
+      }
+    },
     "Bass Boost" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -417,6 +457,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ověřit připojení"
+          }
+        }
+      }
+    },
+    "Check Now" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkontrolovat"
           }
         }
       }
@@ -482,6 +532,26 @@
         }
       }
     },
+    "Connected · %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojeno · %@"
+          }
+        }
+      }
+    },
+    "Connection" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojení"
+          }
+        }
+      }
+    },
     "Could not load this track." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -500,6 +570,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skladbu se nepodařilo přehrát."
+          }
+        }
+      }
+    },
+    "Couldn't Add the Address" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresu se nepodařilo přidat"
           }
         }
       }
@@ -897,6 +977,16 @@
         }
       }
     },
+    "Home network" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domácí síť"
+          }
+        }
+      }
+    },
     "Hz. Applies to everything played." : {
       "localizations" : {
         "cs" : {
@@ -913,6 +1003,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Okamžitý mix"
+          }
+        }
+      }
+    },
+    "Internet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internet"
           }
         }
       }
@@ -1024,6 +1124,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hudební knihovna…"
+          }
+        }
+      }
+    },
+    "No address answers right now" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teď neodpovídá žádná adresa"
           }
         }
       }
@@ -1188,6 +1298,16 @@
         }
       }
     },
+    "Subsonic servers don't say which addresses they have, so add them here; the app checks each one with your sign-in." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Servery Subsonic neříkají, jaké mají adresy, proto je přidejte sem; aplikace každou ověří vaším přihlášením."
+          }
+        }
+      }
+    },
     "Tells the server what's playing and counts plays: on Subsonic servers once you've heard half a song or four minutes, on Jellyfin by its own rules. Plays made offline are sent later. The server can pass them on to Last.fm or ListenBrainz." : {
       "localizations" : {
         "cs" : {
@@ -1214,6 +1334,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Server k této skladbě nemá text. Servery ho čtou z tagů souboru nebo ze souboru .lrc vedle něj."
+          }
+        }
+      }
+    },
+    "The server tells the app its addresses and an identity, so an address that answers as a different server is never used." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server aplikaci sdělí své adresy a identitu, takže adresa, která odpoví jako jiný server, se nikdy nepoužije."
           }
         }
       }
@@ -1268,6 +1398,26 @@
         }
       }
     },
+    "Use" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použít"
+          }
+        }
+      }
+    },
+    "VPN" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VPN"
+          }
+        }
+      }
+    },
     "Waiting for approval…" : {
       "localizations" : {
         "cs" : {
@@ -1314,6 +1464,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přihlášení zůstává v klíčence iPhonu. Servery Subsonic dostávají jednorázový token vytvořený z hesla; Jellyfin vydá token a heslo se neukládá."
+          }
+        }
+      }
+    },
+    "added by you" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "přidáno vámi"
+          }
+        }
+      }
+    },
+    "added with" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "při přidání"
+          }
+        }
+      }
+    },
+    "from the server" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "od serveru"
           }
         }
       }

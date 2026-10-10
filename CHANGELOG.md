@@ -40,4 +40,21 @@ package, merged into this repository — is in `docs/history/`.
 - `scripts/test-servers.sh` runs the live client tests and the UI tests against Navidrome,
   own.audio and Jellyfin; the UI tests read `TEST_RUNNER_SERVER_*`. New UI test: a 128 kbps
   stream on (simulated) mobile data plays.
+- **Several addresses per server, chosen automatically.** A server can be known by its home
+  address, a VPN address and its public name; after every network change (Wi-Fi to mobile
+  data, a VPN coming up) and whenever the server stops answering, the app tries them all at
+  once and keeps the fastest that answers as the same server — Jellyfin and own.audio servers
+  give an identity, so an address that answers as another server is never used. Jellyfin and
+  own.audio servers name their own addresses (Jellyfin its home address, own.audio its whole
+  list); for Subsonic servers they are added by hand. Plain http only to home-network
+  addresses or ones you entered. What worked is remembered per network, so the next start is
+  instant. Settings → Servers → ⓘ shows the address in use and lets you add addresses or fix
+  one. No location permission needed.
+- own.audio servers are recognised as such when added (they answer own.audio's discovery
+  request): their identity and addresses come with them.
+- iOS Low Data Mode caps streams at 128 kbps where the server makes smaller streams.
+- Saved server answers are filed under the server, not the address, so switching addresses
+  keeps them.
+- UI test: the server's connection screen ends up connected (on Jellyfin from the home
+  network: the home address the server named).
 
