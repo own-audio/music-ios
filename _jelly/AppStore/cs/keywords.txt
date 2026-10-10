@@ -1,1 +1,0 @@
-jellyfin,hudba,vlastní server,flac,bez mezer,offline,texty,mix,hudební server,přehrávač

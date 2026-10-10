@@ -10,7 +10,7 @@ Store details that live in App Store Connect:
 - **Price:** free, no in-app purchases.
 - **App privacy:** Data Not Collected. The app sends nothing to anyone but the servers the
   user adds.
-- **Support URL:** https://github.com/own-audio/subsonic-ios/issues
+- **Support URL:** https://github.com/own-audio/music-ios/issues
 - **Marketing URL:** https://www.own.audio
 - **Review notes:** a server and an account for review (the own.audio demo server works:
   its guest account and Subsonic key), and that CarPlay needs the CarPlay audio entitlement.

@@ -1,17 +1,22 @@
-# own.audio for Subsonic
+# own.audio Music
 
-A native iPhone and iPad player for Subsonic and OpenSubsonic servers: Navidrome, Gonic,
-Airsonic, LMS, Ampache, own.audio and others. Swift and SwiftUI, no web views.
+A native iPhone and iPad music player for your own server: **own.audio, Subsonic and
+OpenSubsonic servers (Navidrome, Gonic, Airsonic, LMS, Ampache…) and Jellyfin**, side by side
+in one app. Swift and SwiftUI, no web views, no third-party dependencies — a few megabytes.
+
+In development: today the app speaks Subsonic; Jellyfin and own.audio are being brought in from
+the two apps this one replaces (own.audio for Subsonic and own.audio for Jellyfin). The plan is
+in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 - Gapless playback and crossfade, on AVAudioEngine
 - Streams while it downloads, with its own Core Audio decoder
 - Downloads and an offline mode: with no network it shows and plays what is on the phone
-- Synced lyrics, volume leveling (ReplayGain), equalizer
-- Favorites, ratings, playlists, scrobbling
+- Synced lyrics, volume leveling, equalizer
+- Favorites, ratings, playlists, play reporting
 - Several servers at once, iPad; CarPlay is built but not yet tried in a car
 - English and Czech
 
-Made by [own.audio](https://www.own.audio). Free, no account, no tracking.
+Made by [own.audio](https://www.own.audio). Free, no account needed, no tracking.
 
 ## Build
 
@@ -21,27 +26,20 @@ and later.
 ```bash
 brew install xcodegen
 xcodegen generate
-open OwnAudioSubsonic.xcodeproj
+open OwnAudioMusic.xcodeproj
 ```
 
-The Subsonic client tests on its own:
-
-```bash
-cd Packages/SubsonicKit && swift test
-```
-
-The player is [player-engine](https://github.com/own-audio/player-engine), a separate package
-shared with own.audio for Jellyfin; Xcode fetches it.
-
-Tests against a real server, and the UI tests, are described in [CLAUDE.md](CLAUDE.md).
+The packages test on their own (`swift test` in each). Tests against real servers and the UI
+tests are described in [CLAUDE.md](CLAUDE.md).
 
 ## Layout
 
-- `Packages/SubsonicKit` — the Subsonic client, server store, scrobble rules
-- [player-engine](https://github.com/own-audio/player-engine) (`MusicEngine`) — the player;
-  knows nothing about servers
 - `App/` — the app
-- `UITests/` — end-to-end tests against a real server
+- `Packages/SubsonicKit` — Subsonic/OpenSubsonic client
+- `Packages/JellyfinKit` — Jellyfin client
+- `Packages/PlayerEngine` — the player (`MusicEngine`, `PlayerCore`); knows nothing about servers
+- `UITests/` — end-to-end tests against real servers
+- `docs/history/` — plans and changelogs of the projects merged into this one
 
 ## License
 

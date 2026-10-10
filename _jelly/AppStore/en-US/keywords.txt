@@ -1,1 +1,0 @@
-jellyfin,music,self-hosted,flac,gapless,offline,lyrics,instant mix,music server,player

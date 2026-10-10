@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 source ./release.local.env
 
 BUILD=$(git rev-list --count HEAD)
-OUT="${RELEASE_OUTPUT:-/tmp/subsonic-ios-release}"
+OUT="${RELEASE_OUTPUT:-/tmp/music-ios-release}"
 mkdir -p "$OUT"
 cat > "$OUT/upload.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -28,12 +28,12 @@ PLIST
 
 xcodegen generate >/dev/null
 echo "== archiving build $BUILD"
-xcodebuild -project OwnAudioSubsonic.xcodeproj -scheme OwnAudioSubsonic -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath "$OUT/OwnAudioSubsonic.xcarchive" \
+xcodebuild -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath "$OUT/OwnAudioMusic.xcarchive" \
   -derivedDataPath "$OUT/DerivedData" -allowProvisioningUpdates \
   DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION="$BUILD" \
   archive > "$OUT/archive.log" 2>&1 || { tail -30 "$OUT/archive.log"; exit 1; }
 echo "== uploading"
-xcodebuild -exportArchive -archivePath "$OUT/OwnAudioSubsonic.xcarchive" -exportOptionsPlist "$OUT/upload.plist" \
+xcodebuild -exportArchive -archivePath "$OUT/OwnAudioMusic.xcarchive" -exportOptionsPlist "$OUT/upload.plist" \
   -exportPath "$OUT/upload" -allowProvisioningUpdates > "$OUT/upload.log" 2>&1 || { tail -30 "$OUT/upload.log"; exit 1; }
 grep -E "Upload succeeded|EXPORT SUCCEEDED" "$OUT/upload.log"

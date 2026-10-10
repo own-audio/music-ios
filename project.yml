@@ -1,4 +1,4 @@
-name: OwnAudioSubsonic
+name: OwnAudioMusic
 options:
   bundleIdPrefix: audio.own
   developmentLanguage: en
@@ -8,21 +8,20 @@ options:
 packages:
   SubsonicKit:
     path: Packages/SubsonicKit
-  # Shared with own.audio for Jellyfin. To work on it alongside the app, point this at a local
-  # checkout instead: `path: ../player-engine`.
+  JellyfinKit:
+    path: Packages/JellyfinKit
   PlayerEngine:
-    url: https://github.com/own-audio/player-engine
-    from: 0.1.0
+    path: Packages/PlayerEngine
 targets:
-  OwnAudioSubsonic:
+  OwnAudioMusic:
     type: application
     platform: iOS
     sources:
-      - path: App/OwnAudioSubsonic
+      - path: App/OwnAudioMusic
     info:
-      path: App/OwnAudioSubsonic/Info.plist
+      path: App/OwnAudioMusic/Info.plist
       properties:
-        CFBundleDisplayName: own.subsonic
+        CFBundleDisplayName: own.music
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
@@ -49,7 +48,7 @@ targets:
         NSLocalNetworkUsageDescription: Connects to the music server on your local network.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: audio.own.subsonic
+        PRODUCT_BUNDLE_IDENTIFIER: audio.own.musicplayer
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_EMIT_LOC_STRINGS: YES
@@ -61,9 +60,10 @@ targets:
         # device, pick your team in Xcode (it is not saved into project.yml).
     dependencies:
       - package: SubsonicKit
+      - package: JellyfinKit
       - package: PlayerEngine
         product: MusicEngine
-  OwnAudioSubsonicUITests:
+  OwnAudioMusicUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
@@ -72,21 +72,21 @@ targets:
       base:
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: OwnAudioSubsonic
+        TEST_TARGET_NAME: OwnAudioMusic
         CODE_SIGN_STYLE: Automatic
     dependencies:
-      - target: OwnAudioSubsonic
+      - target: OwnAudioMusic
 schemes:
-  OwnAudioSubsonic:
+  OwnAudioMusic:
     build:
       targets:
-        OwnAudioSubsonic: all
-        OwnAudioSubsonicUITests: [test]
+        OwnAudioMusic: all
+        OwnAudioMusicUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - OwnAudioSubsonicUITests
+        - OwnAudioMusicUITests
     archive:
       config: Release

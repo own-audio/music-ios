@@ -1,4 +1,4 @@
-# player-engine
+# PlayerEngine
 
 The audio engine behind own.audio's open-source players, as a Swift package. iOS 18+,
 Swift 6, no dependencies.
@@ -14,12 +14,7 @@ Swift 6, no dependencies.
 The engine knows tracks only by an opaque id. The app turns an id into a URL (and, if it keeps
 downloads, a local file), so the same engine plays from any server.
 
-Used by [own.audio for Subsonic](https://github.com/own-audio/subsonic-ios) and own.audio for
-Jellyfin.
-
-```swift
-.package(url: "https://github.com/own-audio/player-engine", from: "0.1.0")
-```
+Part of own.audio Music; it lives in this repository as a local package.
 
 ```swift
 import MusicEngine
@@ -35,4 +30,4 @@ await engine.play(tracks: [Track(id: "42", title: "Song", artist: nil, album: ni
 
 `swift test` runs the tests on a Mac, including a real `AVAudioEngine` playing fixture audio.
 
-Licensed under the [Mozilla Public License 2.0](LICENSE).
+Licensed under the Mozilla Public License 2.0, like the rest of the repository.
