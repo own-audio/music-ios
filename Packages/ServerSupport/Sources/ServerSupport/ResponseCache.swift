@@ -16,7 +16,7 @@ public final class DiskResponseCache: ResponseCache, @unchecked Sendable {
 
     public init(directory: URL? = nil) {
         self.directory = directory ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("subsonic-responses", isDirectory: true)
+            .appendingPathComponent("server-responses", isDirectory: true)
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
     }
 

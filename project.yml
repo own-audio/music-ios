@@ -6,10 +6,8 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
 packages:
-  SubsonicKit:
-    path: Packages/SubsonicKit
-  JellyfinKit:
-    path: Packages/JellyfinKit
+  MusicLibrary:
+    path: Packages/MusicLibrary
   PlayerEngine:
     path: Packages/PlayerEngine
 targets:
@@ -59,8 +57,7 @@ targets:
         # No DEVELOPMENT_TEAM here: this repo is public. Simulator builds don't need one; for a
         # device, pick your team in Xcode (it is not saved into project.yml).
     dependencies:
-      - package: SubsonicKit
-      - package: JellyfinKit
+      - package: MusicLibrary
       - package: PlayerEngine
         product: MusicEngine
   OwnAudioMusicUITests:

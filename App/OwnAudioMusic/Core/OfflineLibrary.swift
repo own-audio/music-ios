@@ -1,5 +1,5 @@
 import Foundation
-import SubsonicKit
+import MusicLibrary
 
 /// The library as the downloads describe it, for screens with no server to ask. Only the active
 /// server's songs, the same scope as the online screens.
@@ -47,7 +47,7 @@ extension AppModel {
         let grouped = Dictionary(grouping: albums) { $0.artistId ?? $0.artist ?? "" }
         return grouped.compactMap { id, albums -> Artist? in
             guard !id.isEmpty, let name = albums.first?.artist else { return nil }
-            return Artist(id: id, name: name, albumCount: albums.count, artistImageUrl: nil)
+            return Artist(id: id, name: name, albumCount: albums.count)
         }
         .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
@@ -57,9 +57,9 @@ extension AppModel {
         let grouped = Dictionary(grouping: songs) { $0.genre ?? "" }
         return grouped.compactMap { name, songs -> Genre? in
             guard !name.isEmpty else { return nil }
-            return Genre(value: name, albumCount: Set(songs.compactMap(\.albumId)).count, songCount: songs.count)
+            return Genre(id: name, name: name, albumCount: Set(songs.compactMap(\.albumId)).count, songCount: songs.count)
         }
-        .sorted { $0.value.localizedStandardCompare($1.value) == .orderedAscending }
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     func offlineAlbums(artist: Artist) -> [Album] {

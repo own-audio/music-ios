@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import JellyfinKit
+@testable import ServerSupport
 
 @Suite("ScrobbleTracker")
 @MainActor

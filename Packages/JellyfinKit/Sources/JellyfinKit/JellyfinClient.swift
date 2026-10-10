@@ -178,9 +178,9 @@ public struct JellyfinClient: Sendable {
 
     // MARK: - Browsing
 
-    public func musicLibraries() async throws -> [MusicLibrary] {
+    public func musicLibraries() async throws -> [JellyfinLibrary] {
         let response: ItemsResponse = try await get("UserViews", query: ["userId": session.userId])
-        return response.items.filter { $0.collectionType == "music" }.map { MusicLibrary(id: $0.id, name: $0.name ?? "") }
+        return response.items.filter { $0.collectionType == "music" }.map { JellyfinLibrary(id: $0.id, name: $0.name ?? "") }
     }
 
     /// Album artists, the way music apps list artists: one entry per artist with albums.

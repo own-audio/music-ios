@@ -1,5 +1,5 @@
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Lyrics for the playing track. Synced lyrics follow the music, the current line bright and
@@ -20,7 +20,7 @@ struct LyricsView: View {
                     if all.isEmpty {
                         ContentUnavailableView(
                             "No Lyrics", systemImage: "quote.bubble",
-                            description: Text("The server has no lyrics for this song. Navidrome reads them from the file's tags or an .lrc file next to it.")
+                            description: Text("The server has no lyrics for this song. Servers read them from the file's tags or an .lrc file next to it.")
                         )
                         .foregroundStyle(.white)
                     } else {

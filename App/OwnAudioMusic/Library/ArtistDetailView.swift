@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 struct ArtistDetailView: View {
@@ -36,10 +36,10 @@ struct ArtistDetailView: View {
         .toolbar {
             if let id = model.compositeId(artist.id) {
                 ToolbarItem(placement: .topBarTrailing) {
-                    let starred = model.isStarred(id)
+                    let starred = model.isFavorite(id)
                     Button {
                         Haptics.selection()
-                        model.perform { try await model.toggleStar(id, kind: .artist) }
+                        model.perform { try await model.toggleFavorite(id, kind: .artist) }
                     } label: {
                         Image(systemName: starred ? "star.fill" : "star")
                     }
@@ -48,8 +48,8 @@ struct ArtistDetailView: View {
             }
         }
         .onAppear {
-            // The artist list says whether it is starred; remember that for the button.
-            if artist.starred != nil, let id = model.compositeId(artist.id) { model.noteStarred(id) }
+            // The artist list says whether it is a favorite; remember that for the button.
+            model.learn(artists: [artist])
         }
         .task(id: model.isOffline) { await load() }
     }
@@ -63,9 +63,9 @@ struct ArtistDetailView: View {
             state = .loaded(model.offlineAlbums(artist: artist))
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
-            state = .loaded(try await client.artist(id: artist.id).albums)
+            state = .loaded(try await client.albums(artistId: artist.id))
         } catch {
             state = .failed(error.userMessage)
         }
@@ -73,7 +73,7 @@ struct ArtistDetailView: View {
 
     /// Fetches every album's songs, so this costs one request per album.
     private func playAll(shuffled: Bool) {
-        guard let albums, let client = model.activeClient else { return }
+        guard let albums, let client = model.activeSource else { return }
         if model.isOffline {
             let ids = Set(albums.map(\.id))
             model.play(model.offlineSongs.filter { $0.albumId.map(ids.contains) ?? false }, shuffled: shuffled, containerId: "artist:\(artist.id)")

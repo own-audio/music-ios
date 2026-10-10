@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 struct ArtistsView: View {
@@ -18,7 +18,7 @@ struct ArtistsView: View {
                             ArtistImage(artist: artist, size: 44)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(artist.name).lineLimit(1)
-                                Text(albumCountText(artist.albumCount))
+                                Text(albumCountText(artist.albumCount ?? 0))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -39,7 +39,7 @@ struct ArtistsView: View {
             state = .loaded(model.offlineArtists)
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
             state = .loaded(try await client.artists())
         } catch {
@@ -48,17 +48,18 @@ struct ArtistsView: View {
     }
 }
 
-/// An artist's picture where the server offers one (Navidrome does), a circle with an icon
-/// otherwise.
+/// An artist's picture where the server has one, a circle with an icon otherwise.
 struct ArtistImage: View {
+    @Environment(AppModel.self) private var model
     @Environment(\.displayScale) private var displayScale
     let artist: Artist
     let size: CGFloat
 
     var body: some View {
         Group {
-            if let raw = Artist.displaySizedImageURL(artist.artistImageUrl, size: Int(size * displayScale)),
-               let url = URL(string: raw) {
+            if let coverArt = artist.coverArt {
+                CoverArtView(artworkId: model.artworkId(coverArt), pointSize: size)
+            } else if let url = artist.imageURL(size: Int(size * displayScale)) {
                 // These URLs are signed per artist and stable, so `AsyncImage`'s URL cache works.
                 AsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fill)

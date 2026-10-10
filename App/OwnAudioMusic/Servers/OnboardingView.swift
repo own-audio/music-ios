@@ -9,12 +9,14 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var isConnecting = false
     @State private var errorMessage: String?
+    @State private var isQuickConnecting = false
     @FocusState private var focus: Field?
 
     private enum Field { case address, username, password, name }
 
+    /// Jellyfin allows accounts with no password, so an empty one is fine.
     private var canConnect: Bool {
-        !address.trimmingCharacters(in: .whitespaces).isEmpty && !username.isEmpty && !password.isEmpty && !isConnecting
+        !address.trimmingCharacters(in: .whitespaces).isEmpty && !username.isEmpty && !isConnecting
     }
 
     var body: some View {
@@ -30,6 +32,10 @@ struct OnboardingView: View {
                         .accessibilityIdentifier("addServer.error")
                 }
                 connectButton
+                Button("Sign In with Quick Connect (Jellyfin)") { isQuickConnecting = true }
+                    .font(.subheadline)
+                    .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
+                    .accessibilityIdentifier("addServer.quickConnect")
                 notes
                 Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
                     Text("Free and open source · MPL-2.0")
@@ -43,6 +49,9 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $isQuickConnecting) {
+            QuickConnectView(address: address, name: name)
+        }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
@@ -60,7 +69,7 @@ struct OnboardingView: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Text(verbatim: "Navidrome · Gonic · Airsonic · LMS · Ampache · own.audio")
+            Text(verbatim: "own.audio · Navidrome · Jellyfin · Gonic · Airsonic · LMS · Ampache")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -144,9 +153,9 @@ struct OnboardingView: View {
 
     private var notes: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            note("checkmark.shield", "Your password stays in this iPhone's Keychain. Only a one-time token made from it is sent.")
+            note("checkmark.shield", "Your sign-in stays in this iPhone's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept.")
             note("info.circle", "own.audio: sign in with your email and the Subsonic key from the web app's settings.")
-            note("network", "Without http:// or https://, http is used, which suits a server at home.")
+            note("network", "Without http:// or https://, the app tries https and then http, so a server at home works as typed.")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

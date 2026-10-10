@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// The tab the app opens on: Shuffle All, then what was played lately, what's new, and the
@@ -37,7 +37,7 @@ struct HomeView: View {
                 LoadStateView(state: state, retry: load) { _ in
                     VStack(alignment: .leading, spacing: Theme.Spacing.xl) {
                         if !recent.isEmpty {
-                            albumShelf("Recently Played", albums: recent, route: .albums(.recent))
+                            albumShelf("Recently Played", albums: recent, route: .albums(.recentlyPlayed))
                         }
                         if !newest.isEmpty {
                             albumShelf(model.isOffline ? "Downloaded Albums" : "Recently Added", albums: newest, route: .albums(.newest))
@@ -167,7 +167,7 @@ struct HomeView: View {
     }
 
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         if model.isOffline {
             recent = []
             newest = Array(model.offlineAlbumsByDownloadDate.prefix(20))
@@ -176,8 +176,8 @@ struct HomeView: View {
             return
         }
         do {
-            async let recentAlbums = client.albumList(.recent, size: 20)
-            async let newestAlbums = client.albumList(.newest, size: 20)
+            async let recentAlbums = client.albums(.recentlyPlayed, limit: 20)
+            async let newestAlbums = client.albums(.newest, limit: 20)
             async let allPlaylists = client.playlists()
             newest = try await newestAlbums
             recent = (try? await recentAlbums) ?? []
@@ -190,7 +190,7 @@ struct HomeView: View {
 
     /// A random hundred from the whole library: the server picks, so it works for any size.
     private func shuffleAll() {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         Haptics.impact(.medium)
         if model.isOffline {
             model.play(model.offlineSongs, shuffled: true, containerId: "shuffle-all")
@@ -200,7 +200,7 @@ struct HomeView: View {
         Task {
             defer { isShuffling = false }
             do {
-                let songs = try await client.randomSongs(size: 100)
+                let songs = try await client.randomSongs(limit: 100, genre: nil)
                 model.play(songs, containerId: "shuffle-all")
             } catch {
                 model.actionError = error.userMessage

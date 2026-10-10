@@ -1,5 +1,5 @@
 import Foundation
-import SubsonicKit
+import MusicLibrary
 import UIKit
 
 /// Cover art, cached in memory and on disk.
@@ -53,8 +53,8 @@ actor CoverArtLoader {
         }
         guard offline?.isOn != true,
               let (serverId, coverId) = TrackID.parse(artworkId),
-              let client = await registry.client(for: serverId),
-              let (data, response) = try? await URLSession.shared.data(from: client.coverURL(id: coverId, size: size)),
+              let source = await registry.source(for: serverId),
+              let (data, response) = try? await URLSession.shared.data(from: source.coverURL(id: coverId, size: size)),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let image = UIImage(data: data)
         else {

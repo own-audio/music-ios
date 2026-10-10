@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// What is on the phone. Works with no network: everything here comes from the download index.

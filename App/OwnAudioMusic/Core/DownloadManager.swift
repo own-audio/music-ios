@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 
 /// Songs kept on the phone for offline listening, and the albums and playlists they were
 /// downloaded as.
@@ -207,7 +207,7 @@ final class DownloadManager {
             pump()
         }
         do {
-            let url = try await registry.streamURL(trackId: item.trackId)
+            let url = try await registry.downloadURL(trackId: item.trackId)
             let (temp, response) = try await session.download(from: url)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 try? FileManager.default.removeItem(at: temp)

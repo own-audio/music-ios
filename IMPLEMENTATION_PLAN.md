@@ -37,11 +37,12 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   engine back as a local package; JellyfinKit beside SubsonicKit; the Subsonic app renamed
   `OwnAudioMusic` (bundle `audio.own.musicplayer`, home screen "own.music"). Builds; nothing
   user-visible changed yet.
-- [ ] **M1: A library layer over the servers.** One set of models (artist, album, song,
+- [x] **M1: A library layer over the servers.** One set of models (artist, album, song,
   playlist, genre, lyrics) and a `MusicSource` interface with what a server can do
   (capabilities: ratings, instant mix, podcasts, lower bitrate, …). A Subsonic source on
   SubsonicKit; every screen moves onto the layer. All of the Subsonic app's UI tests pass.
-- [ ] **M2: Jellyfin.** A Jellyfin source on JellyfinKit, with what the Jellyfin app had:
+- [x] **M2: Jellyfin.** All UI tests pass against Navidrome, own.audio and Jellyfin
+  (2026-10-10); archiving the old repositories is still to do. A Jellyfin source on JellyfinKit, with what the Jellyfin app had:
   Quick Connect, the music-library picker, favorites as hearts, instant mix, playback
   reporting, smaller streams on mobile data. Adding a server finds out what it is (Jellyfin's
   public info, else a Subsonic ping). All of the Jellyfin app's UI tests pass against

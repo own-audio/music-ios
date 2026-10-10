@@ -1,6 +1,6 @@
 import Foundation
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 
 /// The engine knows tracks only by an opaque id. Ours carries the server too, so a queue can
 /// mix servers and the resolver knows where to fetch each track from.
@@ -24,11 +24,10 @@ extension Song {
         Track(
             id: TrackID.make(serverId: serverId, itemId: id), title: title, artist: artist, album: album,
             durationSecs: duration,
-            // Some servers give songs no cover id of their own; the album's is the right fallback.
-            artworkId: (coverArt ?? albumId).map { TrackID.make(serverId: serverId, itemId: $0) },
-            replayGain: replayGain.flatMap { gain in
+            artworkId: coverArt.map { TrackID.make(serverId: serverId, itemId: $0) },
+            replayGain: gain.flatMap { gain in
                 gain.isEmpty ? nil : TrackGain(
-                    trackGainDb: gain.trackGain, albumGainDb: gain.albumGain,
+                    trackGainDb: gain.track, albumGainDb: gain.album,
                     trackPeak: gain.trackPeak, albumPeak: gain.albumPeak
                 )
             }

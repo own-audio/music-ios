@@ -148,10 +148,10 @@ struct PlayerView: View {
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("player.title")
                 if let track = engine.currentTrack {
-                    let starred = model.isStarred(track.id)
+                    let starred = model.isFavorite(track.id)
                     Button {
                         Haptics.impact(.light)
-                        model.perform { try await model.toggleStar(track.id, kind: .song) }
+                        model.perform { try await model.toggleFavorite(track.id, kind: .song) }
                     } label: {
                         // A fixed size: it sits in a fixed-width slot beside the title.
                         Image(systemName: starred ? "star.fill" : "star")

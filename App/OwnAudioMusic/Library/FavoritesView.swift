@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Everything starred on the server, split into songs, albums and artists.
@@ -6,7 +6,7 @@ struct FavoritesView: View {
     private enum Kind: Hashable { case songs, albums, artists }
 
     @Environment(AppModel.self) private var model
-    @State private var state: LoadState<StarredResult> = .loading
+    @State private var state: LoadState<FavoritesResult> = .loading
     @State private var kind: Kind = .songs
 
     var body: some View {
@@ -69,7 +69,7 @@ struct FavoritesView: View {
                             .frame(width: 56, height: 56)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(album.name).lineLimit(1)
+                            Text(album.displayName).lineLimit(1)
                             Text(album.artist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }
@@ -100,9 +100,9 @@ struct FavoritesView: View {
     }
 
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
-            let starred = try await client.starred()
+            let starred = try await client.favorites()
             model.learn(songs: starred.songs)
             model.learn(albums: starred.albums)
             state = .loaded(starred)

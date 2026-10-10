@@ -1,22 +1,45 @@
 import Foundation
+import JellyfinKit
 import Security
+import SubsonicKit
 import os
 
-/// One signed-in server. Only the access token is kept, never the password; the token is
-/// what Jellyfin hands out for exactly this, and signing out on the server revokes it.
+public enum ServerKind: String, Codable, Sendable, CaseIterable {
+    case subsonic, jellyfin
+}
+
+/// How the app signs in to a server; kept in the Keychain only.
+public enum ServerAuth: Codable, Sendable, Equatable {
+    /// Subsonic's token+salt scheme needs the password for every request, so it is kept.
+    case subsonic(username: String, password: String)
+    /// Jellyfin hands out a token; the password is never kept.
+    case jellyfin(session: Session)
+
+    public var username: String {
+        switch self {
+        case .subsonic(let username, _): username
+        case .jellyfin(let session): session.userName
+        }
+    }
+}
+
+/// One configured server. `displayName` defaults to the server's name or host and can be
+/// renamed later.
 public struct ServerRecord: Codable, Sendable, Equatable, Identifiable {
     public let id: UUID
     public var displayName: String
-    public let host: URL
-    public var session: Session
-    /// The music library to show; nil shows all of them.
+    public let kind: ServerKind
+    public var host: URL
+    public var auth: ServerAuth
+    /// The music library to show where a server has several; nil shows all of them.
     public var libraryId: String?
 
-    public init(id: UUID = UUID(), displayName: String, host: URL, session: Session, libraryId: String? = nil) {
+    public init(id: UUID = UUID(), displayName: String, kind: ServerKind, host: URL, auth: ServerAuth, libraryId: String? = nil) {
         self.id = id
         self.displayName = displayName
+        self.kind = kind
         self.host = host
-        self.session = session
+        self.auth = auth
         self.libraryId = libraryId
     }
 }
@@ -26,9 +49,9 @@ public struct ServerRecord: Codable, Sendable, Equatable, Identifiable {
 public actor ServerStore {
     private let service: String
     private let account = "servers"
-    private let logger = Logger(subsystem: "audio.own.jelly", category: "ServerStore")
+    private let logger = Logger(subsystem: "audio.own.musicplayer", category: "ServerStore")
 
-    public init(service: String = "audio.own.jelly.servers") {
+    public init(service: String = "audio.own.musicplayer.servers") {
         self.service = service
     }
 
@@ -90,7 +113,7 @@ public actor ServerStore {
         if updateStatus == errSecItemNotFound {
             var addQuery = baseQuery()
             addQuery[kSecValueData as String] = data
-            // Playback continues with the screen locked, and requests need the token then.
+            // Playback continues with the screen locked, and requests need the sign-in then.
             addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             guard addStatus == errSecSuccess else { throw ServerStoreError.keychain(addStatus) }
@@ -110,4 +133,38 @@ public actor ServerStore {
 
 public enum ServerStoreError: Error, Sendable {
     case keychain(OSStatus)
+}
+
+/// What every source shares: the session to make requests with, the saved answers, the offline
+/// switch, and how a Jellyfin server sees this device.
+public struct SourceEnvironment: Sendable {
+    public let urlSession: URLSession
+    public let cache: ResponseCache?
+    public let offline: OfflineSwitch?
+    public let clientInfo: ClientInfo
+
+    public init(urlSession: URLSession, cache: ResponseCache?, offline: OfflineSwitch?, clientInfo: ClientInfo) {
+        self.urlSession = urlSession
+        self.cache = cache
+        self.offline = offline
+        self.clientInfo = clientInfo
+    }
+}
+
+extension ServerRecord {
+    /// The source for this server.
+    public func makeSource(_ environment: SourceEnvironment) -> any MusicSource {
+        switch auth {
+        case .subsonic(let username, let password):
+            SubsonicSource(client: SubsonicClient(
+                host: host, username: username, password: password,
+                session: environment.urlSession, cache: environment.cache, offline: environment.offline
+            ))
+        case .jellyfin(let session):
+            JellyfinSource(client: JellyfinClient(
+                host: host, session: session, libraryId: libraryId, clientInfo: environment.clientInfo,
+                urlSession: environment.urlSession, cache: environment.cache, offline: environment.offline
+            ))
+        }
+    }
 }

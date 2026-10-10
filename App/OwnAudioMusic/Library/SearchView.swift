@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Artists, albums and songs matching what is typed, from the server's `search3`.
@@ -39,7 +39,7 @@ struct SearchView: View {
                                         .frame(width: 44, height: 44)
                                         .clipShape(RoundedRectangle(cornerRadius: 4))
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(album.name).lineLimit(1)
+                                        Text(album.displayName).lineLimit(1)
                                         Text(album.artist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                                     }
                                 }
@@ -94,7 +94,7 @@ struct SearchView: View {
         }
         // Typing cancels this task; only a pause in typing reaches the server.
         try? await Task.sleep(for: .milliseconds(300))
-        guard !Task.isCancelled, let client = model.activeClient else { return }
+        guard !Task.isCancelled, let client = model.activeSource else { return }
         isSearching = true
         defer { isSearching = false }
         do {

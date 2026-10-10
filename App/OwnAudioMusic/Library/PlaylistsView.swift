@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 struct PlaylistsView: View {
@@ -57,12 +57,12 @@ struct PlaylistsView: View {
 
     private func subtitle(_ playlist: Playlist) -> String {
         let songs = songCountText(playlist.songCount)
-        guard let owner = playlist.owner, owner != model.activeServer?.credentials.username else { return songs }
+        guard let owner = playlist.owner, owner != model.activeServer?.auth.username else { return songs }
         return String(localized: "\(songs) · by \(owner)")
     }
 
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
             state = .loaded(try await client.playlists())
         } catch {
@@ -73,9 +73,9 @@ struct PlaylistsView: View {
 
     private func create() {
         let name = newName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty, let client = model.activeClient else { return }
+        guard !name.isEmpty, let client = model.activeSource else { return }
         model.perform {
-            try await client.createPlaylist(name: name)
+            try await client.createPlaylist(name: name, songIds: [])
             await load()
         }
     }
@@ -97,7 +97,7 @@ struct PlaylistDetailView: View {
     /// Edit actions only on the listener's own playlists. A server that leaves out `owner` gets
     /// them too; it refuses what it doesn't allow, and that error is shown.
     private var isOwn: Bool {
-        playlist.owner == nil || playlist.owner == model.activeServer?.credentials.username
+        playlist.owner == nil || playlist.owner == model.activeServer?.auth.username
     }
 
     var body: some View {
@@ -200,7 +200,7 @@ struct PlaylistDetailView: View {
     }
 
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
             let loaded = try await client.playlist(id: playlist.id)
             playlist = loaded.playlist
@@ -215,29 +215,31 @@ struct PlaylistDetailView: View {
         }
     }
 
-    /// Removes by position, then reloads: positions shift, and the server is the authority.
+    /// Removes one entry (by position on Subsonic, by the entry's own id on Jellyfin), then
+    /// reloads: positions shift, and the server is the authority.
     private func remove(at index: Int) {
-        guard let client = model.activeClient, var songs else { return }
+        guard let client = model.activeSource, var songs else { return }
         guard songs.indices.contains(index) else { return }
+        let entry = PlaylistEntry(index: index, entryId: songs[index].playlistEntryId)
         songs.remove(at: index)
         state = .loaded(songs)
         model.perform {
             defer { Task { await load() } }
-            try await client.updatePlaylist(id: playlist.id, songIndicesToRemove: [index])
+            try await client.removeFromPlaylist(id: playlist.id, entries: [entry])
         }
     }
 
     private func rename() {
         let name = newName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty, let client = model.activeClient else { return }
+        guard !name.isEmpty, let client = model.activeSource else { return }
         model.perform {
-            try await client.updatePlaylist(id: playlist.id, name: name)
+            try await client.renamePlaylist(id: playlist.id, to: name)
             await load()
         }
     }
 
     private func delete() {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         model.perform {
             try await client.deletePlaylist(id: playlist.id)
             dismiss()

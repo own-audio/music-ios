@@ -43,6 +43,22 @@ struct SettingsView: View {
                 Text("Shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.")
             }
 
+            Section {
+                Picker("On Mobile Data", selection: Binding(
+                    get: { model.mobileBitrate },
+                    set: { model.mobileBitrate = $0 }
+                )) {
+                    ForEach(AppModel.mobileBitrateChoices, id: \.self) { bitrate in
+                        Text(bitrate.map { String(localized: "\($0 / 1000) kbps") } ?? String(localized: "Original")).tag(bitrate)
+                    }
+                }
+                .accessibilityIdentifier("settings.mobileBitrate")
+            } header: {
+                Text("Streaming")
+            } footer: {
+                Text("On mobile data, a server that can (Jellyfin today) makes a smaller MP3 of each song as it plays. On Wi-Fi, and for downloads, it's always the original file.")
+            }
+
             CrossfadeSettings(settings: model.playbackSettings)
 
             ReplayGainSettings(settings: model.playbackSettings)
@@ -62,7 +78,7 @@ struct SettingsView: View {
                 ))
                 .accessibilityIdentifier("settings.scrobble")
             } footer: {
-                Text("Shows what's playing and counts a song once you've heard half of it, or four minutes. The server can pass this on to Last.fm or ListenBrainz if you've set that up there.")
+                Text("Tells the server what's playing and counts plays: on Subsonic servers once you've heard half a song or four minutes, on Jellyfin by its own rules. Plays made offline are sent later. The server can pass them on to Last.fm or ListenBrainz.")
             }
 
             Section("About") {

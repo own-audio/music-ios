@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 struct AlbumDetailView: View {
@@ -33,7 +33,7 @@ struct AlbumDetailView: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle(album.name)
+        .navigationTitle(album.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -46,10 +46,10 @@ struct AlbumDetailView: View {
             }
             if let id = model.compositeId(album.id) {
                 ToolbarItem(placement: .topBarTrailing) {
-                    let starred = model.isStarred(id)
+                    let starred = model.isFavorite(id)
                     Button {
                         Haptics.selection()
-                        model.perform { try await model.toggleStar(id, kind: .album) }
+                        model.perform { try await model.toggleFavorite(id, kind: .album) }
                     } label: {
                         Image(systemName: starred ? "star.fill" : "star")
                     }
@@ -58,8 +58,17 @@ struct AlbumDetailView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        RatingMenu(rating: model.ratings[id]) { rating in
-                            model.perform { try await model.setRating(id, rating: rating) }
+                        if model.capabilities.contains(.ratings) {
+                            RatingMenu(rating: model.ratings[id]) { rating in
+                                model.perform { try await model.setRating(id, rating: rating) }
+                            }
+                        }
+                        if model.capabilities.contains(.instantMix), !model.isOffline {
+                            Button {
+                                model.playInstantMix(itemId: album.id)
+                            } label: {
+                                Label("Instant Mix", systemImage: "wand.and.stars")
+                            }
                         }
                         Button {
                             isAddingToPlaylist = true
@@ -87,7 +96,7 @@ struct AlbumDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.cover))
                 .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
             VStack(spacing: Theme.Spacing.xs) {
-                Text(album.name)
+                Text(album.displayName)
                     .font(.title2.bold())
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -99,7 +108,7 @@ struct AlbumDetailView: View {
                             .font(.title3)
                             .foregroundStyle(.tint)
                             .background {
-                                NavigationLink(value: Route.artist(Artist(id: artistId, name: artist, albumCount: 0, artistImageUrl: nil))) {
+                                NavigationLink(value: Route.artist(Artist(id: artistId, name: artist))) {
                                     EmptyView()
                                 }
                                 .opacity(0)
@@ -142,7 +151,7 @@ struct AlbumDetailView: View {
     }
 
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
             let loaded = try await client.album(id: album.id)
             model.learn(songs: loaded.songs)

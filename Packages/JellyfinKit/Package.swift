@@ -8,8 +8,12 @@ let package = Package(
     products: [
         .library(name: "JellyfinKit", targets: ["JellyfinKit"])
     ],
+    dependencies: [
+        .package(path: "../ServerSupport")
+    ],
     targets: [
-        .target(name: "JellyfinKit"),
+        // Re-exports ServerSupport's cache and offline switch, which its client takes.
+        .target(name: "JellyfinKit", dependencies: ["ServerSupport"]),
         .testTarget(name: "JellyfinKitTests", dependencies: ["JellyfinKit"]),
     ]
 )

@@ -12,12 +12,14 @@ struct AddServerView: View {
     @State private var name = ""
     @State private var isConnecting = false
     @State private var errorMessage: String?
+    @State private var isQuickConnecting = false
     @FocusState private var focus: Field?
 
     private enum Field { case address, username, password, name }
 
+    /// Jellyfin allows accounts with no password, so an empty one is fine.
     private var canConnect: Bool {
-        !address.trimmingCharacters(in: .whitespaces).isEmpty && !username.isEmpty && !password.isEmpty && !isConnecting
+        !address.trimmingCharacters(in: .whitespaces).isEmpty && !username.isEmpty && !isConnecting
     }
 
     var body: some View {
@@ -47,7 +49,7 @@ struct AddServerView: View {
                     .onSubmit { if canConnect { connect() } }
                     .accessibilityIdentifier("addServer.password")
             } footer: {
-                Text("Without http:// or https://, http is used. The password stays in this phone's Keychain and is never sent to the server, only a one-time token made from it.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password.")
+                Text("Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password.")
             }
 
             Section {
@@ -80,6 +82,19 @@ struct AddServerView: View {
                 }
                 .disabled(!canConnect)
                 .accessibilityIdentifier("addServer.connect")
+                Button {
+                    isQuickConnecting = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Sign In with Quick Connect (Jellyfin)")
+                        Spacer()
+                    }
+                }
+                .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
+                .accessibilityIdentifier("addServer.quickConnect")
+            } footer: {
+                Text("Quick Connect signs in to Jellyfin with a code you approve in a Jellyfin app where you're already signed in; no password typed here.")
             }
         }
         .navigationTitle("Add Server")
@@ -90,6 +105,9 @@ struct AddServerView: View {
             }
         }
         .onAppear { if address.isEmpty { focus = .address } }
+        .sheet(isPresented: $isQuickConnecting) {
+            QuickConnectView(address: address, name: name) { dismiss() }
+        }
     }
 
     private func connect() {

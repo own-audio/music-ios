@@ -5,8 +5,8 @@ import XCTest
 /// Needs a real server with at least one album of two or more tracks:
 ///
 /// ```
-/// TEST_RUNNER_SUBSONIC_HOST=localhost:4533 TEST_RUNNER_SUBSONIC_USER=… TEST_RUNNER_SUBSONIC_PASSWORD=… \
-/// xcodebuild test …   # optionally TEST_RUNNER_SUBSONIC_ALBUM="<name>"
+/// TEST_RUNNER_SERVER_HOST=localhost:4533 TEST_RUNNER_SERVER_USER=… TEST_RUNNER_SERVER_PASSWORD=… \
+/// xcodebuild test …   # optionally TEST_RUNNER_SERVER_ALBUM="<name>"
 /// ```
 ///
 /// `TEST_RUNNER_SCREENSHOT_DIR` saves a screenshot of each step there as well as in the result.
@@ -19,8 +19,8 @@ final class PlaybackSmokeTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        guard env["SUBSONIC_HOST"] != nil else {
-            throw XCTSkip("SUBSONIC_HOST is not set")
+        guard env["SERVER_HOST"] != nil else {
+            throw XCTSkip("SERVER_HOST is not set")
         }
     }
 
@@ -30,7 +30,7 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launch()
 
         addServer(app)
-        openAlbum(app, named: env["SUBSONIC_ALBUM"])
+        openAlbum(app, named: env["SERVER_ALBUM"])
 
         let play = app.buttons["detail.play"]
         XCTAssertTrue(play.waitForExistence(timeout: 20))
@@ -75,15 +75,41 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 5) { playPause.exists && playPause.label == "Play" }, "pause should pause")
     }
 
+    /// On mobile data with 128 kbps chosen, a server that transcodes (Jellyfin) makes an MP3 on the
+    /// fly; one that doesn't sends the original. Either way it has to play.
+    func testSmallerStreamOnMobileDataPlays() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset", "-simulateMobileData", "-mobileBitrate", "128000"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        let miniPlayPause = app.buttons["miniPlayer.playPause"]
+        XCTAssertTrue(
+            waitUntil(timeout: 30) { miniPlayPause.exists && miniPlayPause.label == "Pause" },
+            "the transcoded stream should start"
+        )
+        app.buttons["miniPlayer"].tap()
+        let scrubber = app.descendants(matching: .any)["player.scrubber"].firstMatch
+        XCTAssertTrue(scrubber.waitForExistence(timeout: 10))
+        let first = scrubber.value as? String ?? ""
+        sleep(4)
+        XCTAssertNotEqual(scrubber.value as? String ?? "", first, "the transcoded stream should keep playing")
+        screenshot(app, "16-mobile-data-player")
+    }
+
     /// Download an album, then start the app with every server unreachable and play it from
-    /// Downloads. `TEST_RUNNER_SUBSONIC_DOWNLOAD_ALBUM` picks a small album; without it, the
+    /// Downloads. `TEST_RUNNER_SERVER_DOWNLOAD_ALBUM` picks a small album; without it, the
     /// first one.
     func testDownloadAlbumAndPlayOffline() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
         app.launch()
         addServer(app, screenshots: false)
-        openAlbum(app, named: env["SUBSONIC_DOWNLOAD_ALBUM"].flatMap { $0.isEmpty ? nil : $0 }, screenshots: false)
+        openAlbum(app, named: env["SERVER_DOWNLOAD_ALBUM"].flatMap { $0.isEmpty ? nil : $0 }, screenshots: false)
 
         let download = app.buttons["download.start"]
         XCTAssertTrue(download.waitForExistence(timeout: 20))
@@ -188,11 +214,11 @@ final class PlaybackSmokeTests: XCTestCase {
     }
 
     /// Needs an album whose first song has ReplayGain tags (track gain -6.5 dB) and synced
-    /// lyrics: `TEST_RUNNER_SUBSONIC_LYRICS_ALBUM`. Skipped without it; the real servers used for
+    /// lyrics: `TEST_RUNNER_SERVER_LYRICS_ALBUM`. Skipped without it; the real servers used for
     /// testing have neither, so this runs against a local Navidrome with a generated album.
     func testLyricsReplayGainAndEqualizer() throws {
-        guard let albumName = env["SUBSONIC_LYRICS_ALBUM"], !albumName.isEmpty else {
-            throw XCTSkip("SUBSONIC_LYRICS_ALBUM is not set")
+        guard let albumName = env["SERVER_LYRICS_ALBUM"], !albumName.isEmpty else {
+            throw XCTSkip("SERVER_LYRICS_ALBUM is not set")
         }
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
@@ -259,11 +285,11 @@ final class PlaybackSmokeTests: XCTestCase {
         for _ in 0..<4 where !address.exists { app.swipeUp() }
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         address.tap()
-        address.typeText(env["SUBSONIC_HOST"]!)
+        address.typeText(env["SERVER_HOST"]!)
         app.textFields["addServer.username"].tap()
-        app.textFields["addServer.username"].typeText(env["SUBSONIC_USER"] ?? "")
+        app.textFields["addServer.username"].typeText(env["SERVER_USER"] ?? "")
         app.secureTextFields["addServer.password"].tap()
-        app.secureTextFields["addServer.password"].typeText(env["SUBSONIC_PASSWORD"] ?? "")
+        app.secureTextFields["addServer.password"].typeText(env["SERVER_PASSWORD"] ?? "")
         let connect = app.buttons["addServer.connect"]
         for _ in 0..<4 where !connect.isHittable { app.swipeUp() }
         connect.tap()
@@ -306,11 +332,11 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         if screenshots { screenshot(app, "01-onboarding") }
         address.tap()
-        address.typeText(env["SUBSONIC_HOST"]!)
+        address.typeText(env["SERVER_HOST"]!)
         app.textFields["addServer.username"].tap()
-        app.textFields["addServer.username"].typeText(env["SUBSONIC_USER"] ?? "")
+        app.textFields["addServer.username"].typeText(env["SERVER_USER"] ?? "")
         app.secureTextFields["addServer.password"].tap()
-        app.secureTextFields["addServer.password"].typeText(env["SUBSONIC_PASSWORD"] ?? "")
+        app.secureTextFields["addServer.password"].typeText(env["SERVER_PASSWORD"] ?? "")
         app.buttons["addServer.connect"].tap()
 
         dismissSavePasswordPrompt(app)

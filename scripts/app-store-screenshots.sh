@@ -26,7 +26,7 @@ for device in "${DEVICES[@]}"; do
     out="AppStore/screenshots/$language/$device"
     mkdir -p "$out"
     echo "== $device, $language"
-    TEST_RUNNER_SUBSONIC_HOST="$OWNAUDIO_HOST" TEST_RUNNER_SUBSONIC_USER="$OWNAUDIO_EMAIL" TEST_RUNNER_SUBSONIC_PASSWORD="$key" \
+    TEST_RUNNER_SERVER_HOST="$OWNAUDIO_HOST" TEST_RUNNER_SERVER_USER="$OWNAUDIO_EMAIL" TEST_RUNNER_SERVER_PASSWORD="$key" \
     TEST_RUNNER_SCREENSHOT_DIR="$PWD/$out" TEST_RUNNER_SCREENSHOT_LANGUAGE="$language" TEST_RUNNER_SCREENSHOT_ALBUM="$ALBUM" \
       xcodebuild test -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic -destination "id=$id" \
         -derivedDataPath "$DERIVED" -only-testing:OwnAudioMusicUITests/AppStoreScreenshots \

@@ -144,7 +144,7 @@ public struct Genre: Codable, Sendable, Hashable, Identifiable {
 }
 
 /// A music library on the server. A server can have several.
-public struct MusicLibrary: Codable, Sendable, Hashable, Identifiable {
+public struct JellyfinLibrary: Codable, Sendable, Hashable, Identifiable {
     public let id: String
     public let name: String
 }
@@ -213,6 +213,13 @@ public struct Session: Codable, Sendable, Equatable {
     public let userName: String
     public let accessToken: String
     public let serverId: String
+
+    public init(userId: String, userName: String, accessToken: String, serverId: String) {
+        self.userId = userId
+        self.userName = userName
+        self.accessToken = accessToken
+        self.serverId = serverId
+    }
 }
 
 /// Album orders the server can list in.

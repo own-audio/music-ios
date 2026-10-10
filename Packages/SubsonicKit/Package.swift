@@ -8,8 +8,12 @@ let package = Package(
     products: [
         .library(name: "SubsonicKit", targets: ["SubsonicKit"])
     ],
+    dependencies: [
+        .package(path: "../ServerSupport")
+    ],
     targets: [
-        .target(name: "SubsonicKit"),
+        // Re-exports ServerSupport's cache and offline switch, which its client takes.
+        .target(name: "SubsonicKit", dependencies: ["ServerSupport"]),
         .testTarget(name: "SubsonicKitTests", dependencies: ["SubsonicKit"]),
     ]
 )

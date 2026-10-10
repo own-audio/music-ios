@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Every configured server: pick the one to browse, check, rename or remove.
@@ -10,6 +10,7 @@ struct ServersView: View {
     @State private var statuses: [UUID: ConnectionStatus] = [:]
     @State private var checking: Set<UUID> = []
     @State private var errorMessage: String?
+    @State private var pickingLibrary: ServerRecord?
 
     var body: some View {
         List {
@@ -33,6 +34,9 @@ struct ServersView: View {
         .navigationTitle("Servers")
         .sheet(isPresented: $isAdding) {
             NavigationStack { AddServerView() }
+        }
+        .sheet(item: $pickingLibrary) { server in
+            LibraryPickerView(server: server)
         }
         .alert("Rename Server", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $newName)
@@ -60,7 +64,7 @@ struct ServersView: View {
             HStack(spacing: Theme.Spacing.md) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(server.displayName).foregroundStyle(.primary)
-                    Text("\(server.credentials.username) · \(server.credentials.host.absoluteString)")
+                    Text("\(server.kind.title) · \(server.auth.username) · \(server.host.absoluteString)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -87,6 +91,13 @@ struct ServersView: View {
                 check(server)
             } label: {
                 Label("Check Connection", systemImage: "antenna.radiowaves.left.and.right")
+            }
+            if server.kind == .jellyfin {
+                Button {
+                    pickingLibrary = server
+                } label: {
+                    Label("Music Library…", systemImage: "music.note.house")
+                }
             }
             Button {
                 newName = server.displayName
@@ -130,6 +141,15 @@ struct ServersView: View {
             } catch {
                 errorMessage = error.localizedDescription
             }
+        }
+    }
+}
+
+extension ServerKind {
+    var title: String {
+        switch self {
+        case .subsonic: "Subsonic"
+        case .jellyfin: "Jellyfin"
         }
     }
 }

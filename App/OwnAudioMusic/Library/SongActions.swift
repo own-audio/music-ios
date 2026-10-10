@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 extension View {
@@ -19,14 +19,23 @@ private struct SongActions: ViewModifier {
         content
             .contextMenu {
                 if let id {
-                    let starred = model.isStarred(id)
+                    let starred = model.isFavorite(id)
                     Button {
-                        model.perform { try await model.toggleStar(id, kind: .song) }
+                        model.perform { try await model.toggleFavorite(id, kind: .song) }
                     } label: {
                         Label(starred ? "Unfavorite" : "Favorite", systemImage: starred ? "star.slash" : "star")
                     }
-                    RatingMenu(rating: model.ratings[id]) { rating in
-                        model.perform { try await model.setRating(id, rating: rating) }
+                    if model.capabilities.contains(.ratings) {
+                        RatingMenu(rating: model.ratings[id]) { rating in
+                            model.perform { try await model.setRating(id, rating: rating) }
+                        }
+                    }
+                }
+                if model.capabilities.contains(.instantMix), !model.isOffline {
+                    Button {
+                        model.playInstantMix(itemId: song.id)
+                    } label: {
+                        Label("Instant Mix", systemImage: "wand.and.stars")
                     }
                 }
                 Button {
@@ -139,9 +148,9 @@ struct AddToPlaylistSheet: View {
 
     /// Only the listener's own playlists can be added to.
     private func load() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
-            let username = model.activeServer?.credentials.username
+            let username = model.activeServer?.auth.username
             let all = try await client.playlists()
             // A server that doesn't send `owner` per the spec gets every playlist offered; it
             // will refuse a write it doesn't allow, and that error is shown.
@@ -152,15 +161,15 @@ struct AddToPlaylistSheet: View {
     }
 
     private func add(to playlist: Playlist) {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         Haptics.impact(.light)
-        model.perform { try await client.updatePlaylist(id: playlist.id, songIdsToAdd: songIds) }
+        model.perform { try await client.addToPlaylist(id: playlist.id, songIds: songIds) }
         dismiss()
     }
 
     private func create() {
         let name = newName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty, let client = model.activeClient else { return }
+        guard !name.isEmpty, let client = model.activeSource else { return }
         Haptics.impact(.light)
         model.perform { try await client.createPlaylist(name: name, songIds: songIds) }
         dismiss()

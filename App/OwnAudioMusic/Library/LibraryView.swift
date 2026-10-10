@@ -1,4 +1,4 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// The Library tab's sections.
@@ -30,7 +30,7 @@ enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
     var route: Route {
         switch self {
         case .artists: .artists
-        case .albums: .albums(.alphabeticalByName)
+        case .albums: .albums(.name)
         case .songs: .songs
         case .genres: .genres
         case .favorites: .favorites
@@ -134,9 +134,9 @@ struct SongsView: View {
             state = .loaded(())
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
-            let page = try await client.songs(size: Self.pageSize)
+            let page = try await client.songs(limit: Self.pageSize)
             songs = page
             reachedEnd = page.count < Self.pageSize
             model.learn(songs: page)
@@ -149,11 +149,11 @@ struct SongsView: View {
     /// Stops when a page brings nothing new, as well as on a short page: a server that ignores
     /// the offset would otherwise hand back the first page for ever.
     private func loadMore() {
-        guard !isLoadingMore, !reachedEnd, let client = model.activeClient else { return }
+        guard !isLoadingMore, !reachedEnd, let client = model.activeSource else { return }
         isLoadingMore = true
         Task {
             defer { isLoadingMore = false }
-            guard let page = try? await client.songs(size: Self.pageSize, offset: songs.count) else { return }
+            guard let page = try? await client.songs(limit: Self.pageSize, offset: songs.count) else { return }
             let known = Set(songs.map(\.id))
             let fresh = page.filter { !known.contains($0.id) }
             reachedEnd = page.count < Self.pageSize || fresh.isEmpty
@@ -175,7 +175,7 @@ struct GenresView: View {
                 List(genres) { genre in
                     NavigationLink(value: Route.genre(genre)) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(genre.value)
+                            Text(genre.name)
                             if let albums = genre.albumCount, let songs = genre.songCount {
                                 Text("\(albumCountText(albums)) · \(songCountText(songs))")
                                     .font(.caption)
@@ -197,7 +197,7 @@ struct GenresView: View {
             state = .loaded(model.offlineGenres)
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
             state = .loaded(try await client.genres())
         } catch {
@@ -232,34 +232,34 @@ struct GenreView: View {
             }
             .padding(.vertical, Theme.Spacing.md)
         }
-        .navigationTitle(genre.value)
+        .navigationTitle(genre.name)
         .task(id: model.isOffline) { await load() }
     }
 
     private func load() async {
         if model.isOffline {
-            state = .loaded(model.offlineAlbums(genre: genre.value))
+            state = .loaded(model.offlineAlbums(genre: genre.name))
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         do {
-            state = .loaded(try await client.albums(genre: genre.value, size: 200))
+            state = .loaded(try await client.albums(genre: genre, limit: 200))
         } catch {
             state = .failed(error.userMessage)
         }
     }
 
     private func shuffle() {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         if model.isOffline {
-            model.play(model.offlineSongs(genre: genre.value), shuffled: true, containerId: "genre:\(genre.value)")
+            model.play(model.offlineSongs(genre: genre.name), shuffled: true, containerId: "genre:\(genre.name)")
             return
         }
         isShuffling = true
         Task {
             defer { isShuffling = false }
             do {
-                model.play(try await client.randomSongs(size: 100, genre: genre.value), containerId: "genre:\(genre.value)")
+                model.play(try await client.randomSongs(limit: 100, genre: genre), containerId: "genre:\(genre.name)")
             } catch {
                 model.actionError = error.userMessage
             }

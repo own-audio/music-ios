@@ -1,5 +1,5 @@
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Where a library screen can lead. One `navigationDestination` per tab resolves these.
@@ -7,7 +7,7 @@ enum Route: Hashable {
     case artist(Artist)
     case album(Album)
     case playlist(Playlist)
-    case albums(AlbumListType)
+    case albums(AlbumSort)
     case artists
     case playlists
     case favorites
@@ -45,17 +45,25 @@ extension AppModel {
     }
 }
 
-extension AlbumListType {
+extension Album {
+    /// Some libraries have albums with no name in their tags (or only spaces).
+    var displayName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? String(localized: "Unknown Album") : trimmed
+    }
+}
+
+extension AlbumSort {
     var title: LocalizedStringKey {
         switch self {
         case .newest: "Recently Added"
-        case .recent: "Recently Played"
-        case .frequent: "Most Played"
+        case .recentlyPlayed: "Recently Played"
+        case .mostPlayed: "Most Played"
         case .random: "Random"
-        case .alphabeticalByName: "By Title"
-        case .alphabeticalByArtist: "By Artist"
-        case .starred: "Favorites"
-        case .highest: "Top Rated"
+        case .name: "By Title"
+        case .artist: "By Artist"
+        case .favorites: "Favorites"
+        case .highestRated: "Top Rated"
         }
     }
 }
@@ -101,7 +109,7 @@ struct AlbumTile: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             CoverArtView(artworkId: model.artworkId(album.coverArt ?? album.id), pointSize: size)
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.cover))
-            Text(album.name)
+            Text(album.displayName)
                 .font(.subheadline.weight(.medium))
                 .lineLimit(1)
                 .foregroundStyle(.primary)
@@ -181,7 +189,7 @@ struct SongRow: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("Downloaded")
             }
-            if let id = model.compositeId(song.id), model.isStarred(id) {
+            if let id = model.compositeId(song.id), model.isFavorite(id) {
                 Image(systemName: "star.fill")
                     .font(.caption2)
                     .foregroundStyle(.yellow)

@@ -61,6 +61,16 @@
         }
       }
     },
+    "%lld kbps" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld kb/s"
+          }
+        }
+      }
+    },
     "%lld of %lld downloaded" : {
       "localizations" : {
         "cs" : {
@@ -300,6 +310,16 @@
         }
       }
     },
+    "All Music Libraries" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Všechny hudební knihovny"
+          }
+        }
+      }
+    },
     "Artists" : {
       "localizations" : {
         "cs" : {
@@ -490,6 +510,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Načtení se nezdařilo"
+          }
+        }
+      }
+    },
+    "Couldn't load the server's libraries." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovny serveru se nepodařilo načíst."
           }
         }
       }
@@ -704,6 +734,16 @@
         }
       }
     },
+    "Enter this code in a Jellyfin app where you're signed in, under Quick Connect in your user settings." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadejte tento kód v aplikaci Jellyfin, kde jste přihlášeni, v uživatelském nastavení pod Quick Connect."
+          }
+        }
+      }
+    },
     "Equalizer" : {
       "localizations" : {
         "cs" : {
@@ -867,6 +907,16 @@
         }
       }
     },
+    "Instant Mix" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Okamžitý mix"
+          }
+        }
+      }
+    },
     "Library" : {
       "localizations" : {
         "cs" : {
@@ -958,6 +1008,26 @@
         }
       }
     },
+    "Music Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hudební knihovna"
+          }
+        }
+      }
+    },
+    "Music Library…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hudební knihovna…"
+          }
+        }
+      }
+    },
     "No network · downloaded music only" : {
       "localizations" : {
         "cs" : {
@@ -1008,12 +1078,172 @@
         }
       }
     },
+    "On Mobile Data" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na mobilních datech"
+          }
+        }
+      }
+    },
+    "On mobile data, a server that can (Jellyfin today) makes a smaller MP3 of each song as it plays. On Wi-Fi, and for downloads, it's always the original file." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na mobilních datech může server, který to umí (dnes Jellyfin), při přehrávání vytvářet z každé skladby menší MP3. Na Wi-Fi a při stahování je to vždy původní soubor."
+          }
+        }
+      }
+    },
+    "Original" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Původní"
+          }
+        }
+      }
+    },
+    "Quick Connect" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect"
+          }
+        }
+      }
+    },
+    "Quick Connect Didn't Work" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect se nepovedl"
+          }
+        }
+      }
+    },
+    "Quick Connect is a Jellyfin feature, and there is no Jellyfin server at that address." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect je funkce Jellyfinu a na této adrese žádný server Jellyfin není."
+          }
+        }
+      }
+    },
+    "Quick Connect is turned off on this server. An administrator can turn it on in the dashboard, or sign in with your password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect je na tomto serveru vypnutý. Správce ho může zapnout v ovládacím panelu, nebo se přihlaste heslem."
+          }
+        }
+      }
+    },
+    "Quick Connect signs in to Jellyfin with a code you approve in a Jellyfin app where you're already signed in; no password typed here." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect přihlásí k Jellyfinu pomocí kódu, který schválíte v aplikaci Jellyfin, kde už jste přihlášeni; heslo se tu nezadává."
+          }
+        }
+      }
+    },
     "Shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako to aplikace dělá sama bez sítě. Šetří mobilní data."
+          }
+        }
+      }
+    },
+    "Sign In with Quick Connect (Jellyfin)" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlásit přes Quick Connect (Jellyfin)"
+          }
+        }
+      }
+    },
+    "Streaming" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamování"
+          }
+        }
+      }
+    },
+    "Tells the server what's playing and counts plays: on Subsonic servers once you've heard half a song or four minutes, on Jellyfin by its own rules. Plays made offline are sent later. The server can pass them on to Last.fm or ListenBrainz." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Říká serveru, co hraje, a počítá přehrání: u serverů Subsonic po poslechu poloviny skladby nebo čtyř minut, u Jellyfinu podle jeho pravidel. Přehrání bez sítě se odešlou později. Server je může předávat na Last.fm nebo ListenBrainz."
+          }
+        }
+      }
+    },
+    "The server doesn't have that any more." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server už to nemá."
+          }
+        }
+      }
+    },
+    "The server has no lyrics for this song. Servers read them from the file's tags or an .lrc file next to it." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server k této skladbě nemá text. Servery ho čtou z tagů souboru nebo ze souboru .lrc vedle něj."
+          }
+        }
+      }
+    },
+    "The server's answer couldn't be read." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odpověď serveru se nepodařilo přečíst."
+          }
+        }
+      }
+    },
+    "This account isn't allowed to do that." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento účet to nemá povolené."
+          }
+        }
+      }
+    },
+    "This server doesn't support that." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento server to nepodporuje."
           }
         }
       }
@@ -1028,12 +1258,62 @@
         }
       }
     },
+    "Unknown Album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neznámé album"
+          }
+        }
+      }
+    },
+    "Waiting for approval…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Čeká se na schválení…"
+          }
+        }
+      }
+    },
+    "Without http:// or https://, the app tries https and then http, so a server at home works as typed." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bez http:// nebo https:// aplikace zkusí https a pak http, takže server doma funguje tak, jak ho napíšete."
+          }
+        }
+      }
+    },
+    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your email and the Subsonic key from the web app's settings, not your account password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic a s Jellyfinem; aplikace sama pozná který. Bez http:// nebo https:// zkusí https a pak http. Přihlášení zůstává v klíčence telefonu.\n\nown.audio: přihlaste se e-mailem a klíčem Subsonic z nastavení webové aplikace, ne heslem k účtu."
+          }
+        }
+      }
+    },
     "You're offline, and none of these songs are downloaded." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jste offline a žádná z těchto skladeb není stažená."
+          }
+        }
+      }
+    },
+    "Your sign-in stays in this iPhone's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlášení zůstává v klíčence iPhonu. Servery Subsonic dostávají jednorázový token vytvořený z hesla; Jellyfin vydá token a heslo se neukládá."
           }
         }
       }

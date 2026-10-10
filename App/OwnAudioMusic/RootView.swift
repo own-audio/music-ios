@@ -107,7 +107,7 @@ private struct LibraryTab: View {
     private var detail: some View {
         switch selection {
         case .section(.artists): ArtistsView()
-        case .section(.albums): AlbumsView(initialType: .alphabeticalByName)
+        case .section(.albums): AlbumsView(initialType: .name)
         case .section(.songs): SongsView()
         case .section(.genres): GenresView()
         case .section(.favorites): FavoritesView()

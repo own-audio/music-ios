@@ -1,7 +1,8 @@
 import Foundation
 import Observation
+import UIKit
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 
 /// The app's single source of truth: configured servers, which one is being browsed, and the
 /// one shared player. Built once, in the `App`.
@@ -24,13 +25,13 @@ final class AppModel {
     let resumeStore: ResumeStore
     let downloads: DownloadManager
 
-    /// Starred songs, albums and artists, as composite ids (`TrackID`), learned from whatever
-    /// the screens have loaded and kept current when the listener stars or unstars.
-    private(set) var starredIds: Set<String> = []
-    /// Ratings 1–5 by composite id, learned the same way.
+    /// Favorite songs, albums and artists, as composite ids (`TrackID`), learned from whatever
+    /// the screens have loaded and kept current when the listener changes one.
+    private(set) var favoriteIds: Set<String> = []
+    /// Ratings 1–5 by composite id, learned the same way, where the server has ratings.
     private(set) var ratings: [String: Int] = [:]
 
-    /// A failed action (star, rate, playlist edit), shown once as an alert by `RootView`.
+    /// A failed action (favorite, rating, playlist edit), shown once as an alert by `RootView`.
     var actionError: String?
 
     /// Runs a user action and reports a failure in the shared alert.
@@ -68,7 +69,24 @@ final class AppModel {
         engine.requiresLocalFiles = isOffline
     }
 
-    /// Report "now playing" and counted plays to the server.
+    /// Bits per second to stream at on mobile data; nil streams the original file. Downloads are
+    /// always the original.
+    var mobileBitrate: Int? {
+        didSet {
+            UserDefaults.standard.set(mobileBitrate ?? 0, forKey: Self.mobileBitrateKey)
+            applyStreamQuality()
+        }
+    }
+
+    static let mobileBitrateChoices: [Int?] = [nil, 320_000, 192_000, 128_000]
+
+    private func applyStreamQuality() {
+        let bitrate = network.isExpensive || Self.isSimulatingMobileData ? mobileBitrate : nil
+        let registry = registry
+        Task { await registry.setMaxBitrate(bitrate) }
+    }
+
+    /// Report playback to the server: what is playing (shown on its dashboard), and plays.
     var scrobblingEnabled: Bool {
         didSet { UserDefaults.standard.set(scrobblingEnabled, forKey: Self.scrobblingKey) }
     }
@@ -76,18 +94,39 @@ final class AppModel {
     private let store: ServerStore
     private let registry: ClientRegistry
     private let fileCache: TrackFileCache
-    private var clients: [UUID: SubsonicClient] = [:]
-    /// OpenSubsonic extensions per server, asked for once.
-    private var extensions: [UUID: Set<String>] = [:]
+    private var sources: [UUID: any MusicSource] = [:]
 
     private static let activeServerKey = "activeServerId"
     private static let scrobblingKey = "scrobblingEnabled"
     private static let downloadedOnlyKey = "downloadedOnly"
+    private static let deviceIdKey = "deviceId"
+    private static let mobileBitrateKey = "mobileBitrate"
+
+    /// How this app shows up in the server's list of devices. The id is made once and kept, so
+    /// a reinstall is one device, not a new one each launch.
+    static let clientInfo: ClientInfo = {
+        let defaults = UserDefaults.standard
+        let deviceId = defaults.string(forKey: deviceIdKey) ?? {
+            let id = UUID().uuidString
+            defaults.set(id, forKey: deviceIdKey)
+            return id
+        }()
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        return ClientInfo(client: "own.audio Music", device: UIDevice.current.model, deviceId: deviceId, version: version)
+    }()
 
     /// UI tests check offline behaviour by starting the app as if there were no network.
     private static var isSimulatingOffline: Bool {
         #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-simulateOffline")
+        #else
+        false
+        #endif
+    }
+    /// UI tests check the smaller stream by starting the app as if on mobile data.
+    private static var isSimulatingMobileData: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-simulateMobileData")
         #else
         false
         #endif
@@ -129,10 +168,14 @@ final class AppModel {
         }
         scrobblingEnabled = UserDefaults.standard.object(forKey: Self.scrobblingKey) as? Bool ?? true
         downloadedOnly = UserDefaults.standard.bool(forKey: Self.downloadedOnlyKey)
+        let savedBitrate = UserDefaults.standard.integer(forKey: Self.mobileBitrateKey)
+        mobileBitrate = savedBitrate > 0 ? savedBitrate : nil
         applyOfflineState()
+        applyStreamQuality()
         network.onChange = { [weak self] connected in
             guard let self else { return }
             self.applyOfflineState()
+            self.applyStreamQuality()
             if connected { Task { await self.flushPendingScrobbles() } }
         }
         wireScrobbling()
@@ -146,9 +189,12 @@ final class AppModel {
         servers.first { $0.id == activeServerId }
     }
 
-    var activeClient: SubsonicClient? {
-        activeServerId.flatMap { clients[$0] }
+    var activeSource: (any MusicSource)? {
+        activeServerId.flatMap { sources[$0] }
     }
+
+    /// What the active server can do; screens hide what it can't.
+    var capabilities: Capabilities { activeSource?.capabilities ?? [] }
 
     private var loadTask: Task<Void, Never>?
 
@@ -179,21 +225,72 @@ final class AppModel {
         await flushPendingScrobbles()
     }
 
-    /// Checks the credentials against the server before saving anything, so a typo is caught
-    /// here rather than on the first screen that fails.
+    /// Finds out what kind of server is at `address` and signs in before saving anything, so a
+    /// typo is caught here rather than on the first screen that fails. Jellyfin is asked first
+    /// (it answers a public info request); otherwise the address is tried as a Subsonic server.
+    /// For Jellyfin only the session token is saved, never the password.
     func addServer(address: String, username: String, password: String, name: String) async throws {
-        guard let host = SubsonicClient.normalizeHost(address) else { throw AddServerError.invalidAddress }
-        let client = SubsonicClient(host: host, username: username, password: password)
-        switch await client.checkConnection() {
+        if let (host, info) = try await findJellyfin(address) {
+            let session: JellyfinSession
+            do {
+                session = try await ServerSetup.jellyfinSignIn(
+                    host: host, username: username, password: password, clientInfo: Self.clientInfo, urlSession: Self.session
+                )
+            } catch SourceError.signInRejected {
+                throw AddServerError.rejected
+            } catch SourceError.network {
+                throw AddServerError.unreachable
+            }
+            try await saveJellyfin(host: host, info: info, session: session, name: name)
+            return
+        }
+        guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
+        switch await ServerSetup.subsonicCheck(host: host, username: username, password: password, urlSession: Self.session) {
         case .ok: break
         case .rejected: throw AddServerError.rejected
         case .unreachable: throw AddServerError.unreachable
         }
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let record = ServerRecord(
-            displayName: trimmedName.isEmpty ? (host.host ?? address) : trimmedName,
-            credentials: ServerCredentials(host: host, username: username, password: password)
-        )
+        try await save(ServerRecord(
+            displayName: displayName(name, fallback: host.host ?? address), kind: .subsonic, host: host,
+            auth: .subsonic(username: username, password: password)
+        ))
+    }
+
+    /// The Jellyfin server at `address`, if there is one. Without a scheme, each likely address
+    /// is tried in turn. Nil when nothing there answers like Jellyfin; throws only for an
+    /// address that can't be one.
+    func findJellyfin(_ address: String) async throws -> (URL, JellyfinServerInfo)? {
+        let candidates = ServerSetup.jellyfinCandidates(address)
+        guard !candidates.isEmpty else { throw AddServerError.invalidAddress }
+        for host in candidates {
+            if let info = try? await ServerSetup.jellyfinInfo(host: host, urlSession: Self.quickSession) {
+                return (host, info)
+            }
+        }
+        return nil
+    }
+
+    /// For trying addresses: a wrong guess shouldn't hold the next one up for long.
+    private static let quickSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 6
+        return URLSession(configuration: configuration)
+    }()
+
+    /// Saves a signed-in Jellyfin server (password or Quick Connect) and makes it the one shown.
+    func saveJellyfin(host: URL, info: JellyfinServerInfo, session: JellyfinSession, name: String) async throws {
+        try await save(ServerRecord(
+            displayName: displayName(name, fallback: info.serverName.isEmpty ? (host.host ?? "") : info.serverName),
+            kind: .jellyfin, host: host, auth: .jellyfin(session: session)
+        ))
+    }
+
+    private func displayName(_ name: String, fallback: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? fallback : trimmed
+    }
+
+    private func save(_ record: ServerRecord) async throws {
         try await store.add(record)
         servers.append(record)
         await rebuildClients()
@@ -201,6 +298,8 @@ final class AppModel {
     }
 
     func removeServer(id: UUID) async throws {
+        // Ends the session on the server too, so the device leaves its dashboard.
+        if let source = sources[id] { Task.detached { await source.signOut() } }
         try await store.remove(id: id)
         servers.removeAll { $0.id == id }
         downloads.removeAll(serverId: id)
@@ -217,14 +316,31 @@ final class AppModel {
         if let index = servers.firstIndex(where: { $0.id == id }) { servers[index].displayName = name }
     }
 
+    /// Shows one music library of a server, or all of them with nil.
+    func setLibrary(serverId: UUID, libraryId: String?) async throws {
+        guard var record = servers.first(where: { $0.id == serverId }) else { return }
+        record.libraryId = libraryId
+        try await store.update(record)
+        if let index = servers.firstIndex(where: { $0.id == serverId }) { servers[index] = record }
+        responseCache.removeAll()
+        await rebuildClients()
+    }
+
+    /// A server's music libraries, listed without the current choice applied.
+    func musicLibraries(serverId: UUID) async -> [MusicLibraryInfo] {
+        guard var record = servers.first(where: { $0.id == serverId }) else { return [] }
+        record.libraryId = nil
+        return (try? await record.makeSource(sourceEnvironment).musicLibraries()) ?? []
+    }
+
     func selectServer(id: UUID) {
         guard servers.contains(where: { $0.id == id }) else { return }
         activeServerId = id
     }
 
     func checkConnection(id: UUID) async -> ConnectionStatus {
-        guard let client = clients[id] else { return .unreachable }
-        return await client.checkConnection()
+        guard let source = sources[id] else { return .unreachable }
+        return await source.checkConnection()
     }
 
     /// Plays `songs` from the active server, starting at `startSongId` or the first song.
@@ -259,28 +375,23 @@ final class AppModel {
 
     /// Debug builds only: `-debugServerHost <url> -debugServerUser <name> -debugServerPassword <secret>`
     /// adds that server at launch if it isn't there yet, so a simulator can be handed to someone
-    /// already connected.
+    /// already connected. A Subsonic server whose password changed (a demo server that issues a
+    /// new key each day) gets the new one.
     private func addServerFromLaunchArguments() async {
         #if DEBUG
         let defaults = UserDefaults.standard
         guard let address = defaults.string(forKey: "debugServerHost"),
               let username = defaults.string(forKey: "debugServerUser"),
-              let password = defaults.string(forKey: "debugServerPassword"),
-              let host = SubsonicClient.normalizeHost(address)
+              let password = defaults.string(forKey: "debugServerPassword")
         else { return }
-        if let existing = servers.first(where: { $0.credentials.host == host && $0.credentials.username == username }) {
-            // The demo server issues a new key each day; keep the saved one current.
-            guard existing.credentials.password != password else { return }
-            try? await store.remove(id: existing.id)
-            servers.removeAll { $0.id == existing.id }
+        let hosts = Set(ServerSetup.jellyfinCandidates(address) + [ServerSetup.subsonicHost(address)].compactMap { $0 })
+        if let index = servers.firstIndex(where: { hosts.contains($0.host) && $0.auth.username == username }) {
+            guard case .subsonic(_, let saved) = servers[index].auth, saved != password else { return }
+            servers[index].auth = .subsonic(username: username, password: password)
+            try? await store.update(servers[index])
+            return
         }
-        let record = ServerRecord(
-            displayName: defaults.string(forKey: "debugServerName") ?? host.host ?? address,
-            credentials: ServerCredentials(host: host, username: username, password: password)
-        )
-        try? await store.add(record)
-        servers.append(record)
-        UserDefaults.standard.set(record.id.uuidString, forKey: Self.activeServerKey)
+        try? await addServer(address: address, username: username, password: password, name: defaults.string(forKey: "debugServerName") ?? "")
         #endif
     }
 
@@ -289,19 +400,45 @@ final class AppModel {
     private func wireScrobbling() {
         let scrobbler = ScrobbleTracker { [weak self] event in self?.report(event) }
         self.scrobbler = scrobbler
-        engine.onPlaybackStarted = { [weak self] track, _ in
+        engine.onPlaybackStarted = { [weak self] track, position in
             guard let self, self.scrobblingEnabled else { return }
             scrobbler.started(key: track.id, durationSecs: track.durationSecs)
             self.startScrobbleTicks()
+            Task { await self.reportSession(.start, trackId: track.id, position: position) }
         }
-        engine.onPlaybackStopped = { [weak self] track, _, reason in
+        engine.onPlaybackStopped = { [weak self] track, position, reason in
             guard let self, self.scrobblingEnabled else { return }
             let isEnd: Bool = switch reason {
             case .completed, .skipped, .replaced: true
             case .stopped, .seeked: false
             }
             scrobbler.stopped(key: track.id, isEnd: isEnd)
+            // A seek is a jump inside the same playback, not its end.
+            if reason != .seeked {
+                Task { await self.reportSession(.stopped, trackId: track.id, position: position) }
+            }
         }
+    }
+
+    private enum SessionEvent { case start, progress, stopped }
+
+    /// Tracks whose start the server heard. Jellyfin counts those plays itself from the
+    /// reports; only plays it never heard about (offline) are sent afterwards.
+    private var reportedLive: Set<String> = []
+
+    private func reportSession(_ event: SessionEvent, trackId: String, position: Double) async {
+        guard scrobblingEnabled, let (source, songId) = await resolve(trackId) else { return }
+        do {
+            switch event {
+            case .start:
+                try await source.reportNowPlaying(songId: songId, positionSecs: position)
+                if source.capabilities.contains(.countsPlaysFromReports) { reportedLive.insert(trackId) }
+            case .progress:
+                try await source.reportProgress(songId: songId, positionSecs: position, isPaused: !engine.isPlaying)
+            case .stopped:
+                try await source.reportStopped(songId: songId, positionSecs: position)
+            }
+        } catch {}
     }
 
     /// Counts a play while it is still playing, so it isn't lost if the app is killed.
@@ -312,6 +449,10 @@ final class AppModel {
                 try? await Task.sleep(for: .seconds(15))
                 guard let self else { return }
                 if self.engine.isPlaying { self.scrobbler?.tick() }
+                // Without a report now and then the server takes the session for ended.
+                if let track = self.engine.currentTrack {
+                    await self.reportSession(.progress, trackId: track.id, position: self.engine.currentTime)
+                }
             }
         }
     }
@@ -319,10 +460,11 @@ final class AppModel {
     private func report(_ event: ScrobbleTracker.Event) {
         Task {
             switch event {
-            case .nowPlaying(let trackId):
-                guard let (client, songId) = await resolve(trackId) else { return }
-                try? await client.scrobble(songId: songId, submission: false)
+            case .nowPlaying:
+                // Covered by the session report sent when playback started.
+                break
             case .played(let trackId, let startedAt):
+                guard !reportedLive.contains(trackId) else { return }
                 let entry = PendingScrobbles.Entry(trackId: trackId, startedAt: startedAt)
                 if await submit(entry) {
                     await flushPendingScrobbles()
@@ -334,12 +476,12 @@ final class AppModel {
     }
 
     private func submit(_ entry: PendingScrobbles.Entry) async -> Bool {
-        guard let (client, songId) = await resolve(entry.trackId) else {
+        guard let (source, songId) = await resolve(entry.trackId) else {
             // The server was removed; there's nowhere to report it.
             return true
         }
         do {
-            try await client.scrobble(songId: songId, submission: true, time: entry.startedAt)
+            try await source.reportPlayed(songId: songId, at: entry.startedAt)
             return true
         } catch {
             return false
@@ -357,20 +499,20 @@ final class AppModel {
         pendingScrobbles.remove(sent)
     }
 
-    private func resolve(_ trackId: String) async -> (SubsonicClient, String)? {
-        guard let (serverId, songId) = TrackID.parse(trackId), let client = clients[serverId] else { return nil }
-        return (client, songId)
+    private func resolve(_ trackId: String) async -> ((any MusicSource), String)? {
+        guard let (serverId, songId) = TrackID.parse(trackId), let source = sources[serverId] else { return nil }
+        return (source, songId)
     }
 
     // MARK: - Favorites and ratings
 
-    /// Remembers star and rating state from loaded songs, so every screen shows it.
+    /// Remembers favorites and ratings from loaded songs, so every screen shows them.
     func learn(songs: [Song]) {
         guard let serverId = activeServerId else { return }
         for song in songs {
             let id = TrackID.make(serverId: serverId, itemId: song.id)
-            if song.starred != nil { starredIds.insert(id) } else { starredIds.remove(id) }
-            ratings[id] = song.userRating
+            note(id, isFavorite: song.isFavorite)
+            ratings[id] = song.rating
         }
     }
 
@@ -378,64 +520,59 @@ final class AppModel {
         guard let serverId = activeServerId else { return }
         for album in albums {
             let id = TrackID.make(serverId: serverId, itemId: album.id)
-            if album.starred != nil { starredIds.insert(id) } else { starredIds.remove(id) }
-            ratings[id] = album.userRating
+            note(id, isFavorite: album.isFavorite)
+            ratings[id] = album.rating
         }
     }
 
-    func noteStarred(_ compositeId: String) {
-        starredIds.insert(compositeId)
+    func learn(artists: [Artist]) {
+        guard let serverId = activeServerId else { return }
+        for artist in artists { note(TrackID.make(serverId: serverId, itemId: artist.id), isFavorite: artist.isFavorite) }
     }
 
-    func isStarred(_ compositeId: String) -> Bool {
-        starredIds.contains(compositeId)
+    private func note(_ compositeId: String, isFavorite: Bool) {
+        if isFavorite { favoriteIds.insert(compositeId) } else { favoriteIds.remove(compositeId) }
     }
 
-    enum StarTarget { case song, album, artist }
+    func isFavorite(_ compositeId: String) -> Bool {
+        favoriteIds.contains(compositeId)
+    }
 
-    /// Flips the star at once and puts it back if the server refuses.
-    func toggleStar(_ compositeId: String, kind: StarTarget) async throws {
-        guard let (client, itemId) = await resolve(compositeId) else { return }
-        let starring = !starredIds.contains(compositeId)
-        if starring { starredIds.insert(compositeId) } else { starredIds.remove(compositeId) }
+    /// Flips the favorite at once and puts it back if the server refuses.
+    func toggleFavorite(_ compositeId: String, kind: FavoriteKind) async throws {
+        guard let (source, itemId) = await resolve(compositeId) else { return }
+        let adding = !favoriteIds.contains(compositeId)
+        note(compositeId, isFavorite: adding)
         do {
-            let ids = [itemId]
-            switch (kind, starring) {
-            case (.song, true): try await client.star(songIds: ids)
-            case (.song, false): try await client.unstar(songIds: ids)
-            case (.album, true): try await client.star(albumIds: ids)
-            case (.album, false): try await client.unstar(albumIds: ids)
-            case (.artist, true): try await client.star(artistIds: ids)
-            case (.artist, false): try await client.unstar(artistIds: ids)
-            }
+            try await source.setFavorite(kind, id: itemId, adding)
         } catch {
-            if starring { starredIds.remove(compositeId) } else { starredIds.insert(compositeId) }
+            note(compositeId, isFavorite: !adding)
             throw error
         }
     }
 
     /// `rating` 1–5, or 0 to clear it.
     func setRating(_ compositeId: String, rating: Int) async throws {
-        guard let (client, itemId) = await resolve(compositeId) else { return }
+        guard let (source, itemId) = await resolve(compositeId) else { return }
         let previous = ratings[compositeId]
         ratings[compositeId] = rating == 0 ? nil : rating
         do {
-            try await client.setRating(id: itemId, rating: rating)
+            try await source.setRating(id: itemId, rating: rating)
         } catch {
             ratings[compositeId] = previous
             throw error
         }
     }
 
-    /// The playing track may have come from a screen that didn't know its star state.
+    /// The playing track may have come from a screen that didn't know its state.
     func refreshState(trackId: String) async {
-        guard let (client, songId) = await resolve(trackId),
-              let song = try? await client.song(id: songId),
+        guard let (source, songId) = await resolve(trackId),
+              let song = try? await source.song(id: songId),
               let serverId = TrackID.parse(trackId)?.serverId
         else { return }
         let id = TrackID.make(serverId: serverId, itemId: song.id)
-        if song.starred != nil { starredIds.insert(id) } else { starredIds.remove(id) }
-        ratings[id] = song.userRating
+        note(id, isFavorite: song.isFavorite)
+        ratings[id] = song.rating
     }
 
     func compositeId(_ itemId: String) -> String? {
@@ -445,10 +582,20 @@ final class AppModel {
     // MARK: - Lyrics
 
     func lyrics(for track: Track) async throws -> [Lyrics] {
-        guard let (client, songId) = await resolve(track.id), let serverId = TrackID.parse(track.id)?.serverId else { return [] }
-        if extensions[serverId] == nil { extensions[serverId] = await client.openSubsonicExtensions() }
-        let song = Song(id: songId, title: track.title, album: track.album, artist: track.artist)
-        return try await client.lyrics(for: song, useSongLyricsExtension: extensions[serverId]?.contains("songLyrics") == true)
+        guard let (source, songId) = await resolve(track.id) else { return [] }
+        return try await source.lyrics(for: Song(id: songId, title: track.title, album: track.album, artist: track.artist))
+    }
+
+    // MARK: - Instant mix
+
+    /// Plays songs like the given song, album or artist, picked by the server.
+    func playInstantMix(itemId: String) {
+        guard let source = activeSource else { return }
+        perform {
+            let songs = try await source.instantMix(itemId: itemId)
+            self.learn(songs: songs)
+            self.play(songs, containerId: "mix:\(itemId)")
+        }
     }
 
     // MARK: - Downloads
@@ -493,16 +640,14 @@ final class AppModel {
         Task { await engine.play(tracks: tracks, startTrackId: startTrackId, containerId: containerId) }
     }
 
+    private var sourceEnvironment: SourceEnvironment {
+        SourceEnvironment(urlSession: Self.session, cache: responseCache, offline: offlineSwitch, clientInfo: Self.clientInfo)
+    }
+
     private func rebuildClients() async {
-        clients = Dictionary(uniqueKeysWithValues: servers.map { record in
-            (record.id, SubsonicClient(
-                host: record.credentials.host,
-                username: record.credentials.username, password: record.credentials.password,
-                session: Self.session, cache: responseCache, offline: offlineSwitch
-            ))
-        })
-        await registry.set(clients)
-        extensions = [:]
+        let environment = sourceEnvironment
+        sources = Dictionary(uniqueKeysWithValues: servers.map { ($0.id, $0.makeSource(environment)) })
+        await registry.set(sources)
     }
 }
 
@@ -521,22 +666,28 @@ enum AddServerError: LocalizedError {
 extension Error {
     /// A short sentence for a failed request.
     var userMessage: String {
-        guard let error = self as? SubsonicClient.SubsonicError else {
+        guard let error = self as? SourceError else {
             return String(localized: "Something went wrong.")
         }
         switch error {
-        case .wrongCredentials, .notAuthorized:
+        case .signInRejected:
             return String(localized: "The server no longer accepts this sign-in. Check it in Settings.")
+        case .notAllowed:
+            return String(localized: "This account isn't allowed to do that.")
+        case .notFound:
+            return String(localized: "The server doesn't have that any more.")
         case .http(let code):
             return String(localized: "The server returned an error (\(code)).")
-        case .server(_, let message):
-            return message.isEmpty ? String(localized: "The server returned an error.") : message
-        case .decoding:
-            return String(localized: "The server's answer couldn't be read. Is this a Subsonic server?")
+        case .server(let message):
+            return message
+        case .unreadable:
+            return String(localized: "The server's answer couldn't be read.")
         case .network:
             return String(localized: "Couldn't reach the server.")
         case .offline:
             return String(localized: "Not available offline.")
+        case .unsupported:
+            return String(localized: "This server doesn't support that.")
         }
     }
 }

@@ -1,6 +1,6 @@
 import CarPlay
 import MusicEngine
-import SubsonicKit
+import MusicLibrary
 import UIKit
 
 /// The car's screen. It runs in the same process as the phone UI and drives the same model and
@@ -42,7 +42,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     // MARK: - Root
 
     private func showRoot() {
-        guard model.activeClient != nil else {
+        guard model.activeSource != nil else {
             let item = CPListItem(text: String(localized: "Add a server on your iPhone"), detailText: nil)
             item.isEnabled = false
             interfaceController?.setRootTemplate(
@@ -51,7 +51,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             return
         }
         let entries: [(String, String, () async -> Void)] = [
-            (String(localized: "Recently Played"), "clock", { [weak self] in await self?.pushAlbums(.recent, title: String(localized: "Recently Played")) }),
+            (String(localized: "Recently Played"), "clock", { [weak self] in await self?.pushAlbums(.recentlyPlayed, title: String(localized: "Recently Played")) }),
             (String(localized: "Recently Added"), "sparkles", { [weak self] in await self?.pushAlbums(.newest, title: String(localized: "Recently Added")) }),
             (String(localized: "Downloads"), "arrow.down.circle", { [weak self] in self?.pushDownloads() }),
             (String(localized: "Playlists"), "music.note.list", { [weak self] in await self?.pushPlaylists() }),
@@ -75,18 +75,18 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     // MARK: - Lists
 
-    private func pushAlbums(_ type: AlbumListType, title: String) async {
-        guard let client = model.activeClient else { return }
-        let albums = (try? await client.albumList(type, size: Self.maxItems)) ?? []
+    private func pushAlbums(_ type: AlbumSort, title: String) async {
+        guard let client = model.activeSource else { return }
+        let albums = (try? await client.albums(type, limit: Self.maxItems)) ?? []
         push(title: title, items: albums.map { album in
-            listItem(album.name, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
+            listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
             }
         }, emptyText: String(localized: "Nothing here yet"))
     }
 
     private func pushPlaylists() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         let playlists = (try? await client.playlists()) ?? []
         push(title: String(localized: "Playlists"), items: playlists.prefix(Self.maxItems).map { playlist in
             listItem(playlist.name, detail: songCountText(playlist.songCount), artwork: playlist.coverArt) { [weak self] in
@@ -97,7 +97,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushArtists() async {
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         let artists = (try? await client.artists()) ?? []
         push(title: String(localized: "Artists"), items: artists.prefix(Self.maxItems).map { artist in
             let item = CPListItem(text: artist.name, detailText: nil)
@@ -113,17 +113,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushArtist(_ artist: Artist) async {
-        guard let client = model.activeClient else { return }
-        let albums = (try? await client.artist(id: artist.id).albums) ?? []
+        guard let client = model.activeSource else { return }
+        let albums = (try? await client.albums(artistId: artist.id)) ?? []
         push(title: artist.name, items: albums.map { album in
-            listItem(album.name, detail: album.year.map(String.init), artwork: album.coverArt ?? album.id) { [weak self] in
+            listItem(album.displayName, detail: album.year.map(String.init), artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
             }
         }, emptyText: String(localized: "No albums"))
     }
 
     private func pushFavorites() async {
-        guard let client = model.activeClient, let starred = try? await client.starred() else { return }
+        guard let client = model.activeSource, let starred = try? await client.favorites() else { return }
         let songs = starred.songs
         var items: [CPListItem] = []
         if !songs.isEmpty {
@@ -132,7 +132,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             })
         }
         items += starred.albums.map { album in
-            listItem(album.name, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
+            listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
             }
         }
@@ -170,7 +170,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     // MARK: - Helpers
 
     private func playAlbum(_ album: Album) async {
-        guard let client = model.activeClient, let songs = try? await client.album(id: album.id).songs else { return }
+        guard let client = model.activeSource, let songs = try? await client.album(id: album.id).songs else { return }
         play(songs, containerId: "album:\(album.id)")
     }
 

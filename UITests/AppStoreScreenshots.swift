@@ -11,8 +11,8 @@ final class AppStoreScreenshots: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        guard env["SUBSONIC_HOST"] != nil, env["SCREENSHOT_DIR"] != nil, env["SCREENSHOT_LANGUAGE"] != nil else {
-            throw XCTSkip("Set SUBSONIC_HOST, SCREENSHOT_DIR and SCREENSHOT_LANGUAGE to take store screenshots")
+        guard env["SERVER_HOST"] != nil, env["SCREENSHOT_DIR"] != nil, env["SCREENSHOT_LANGUAGE"] != nil else {
+            throw XCTSkip("Set SERVER_HOST, SCREENSHOT_DIR and SCREENSHOT_LANGUAGE to take store screenshots")
         }
     }
 
@@ -28,11 +28,11 @@ final class AppStoreScreenshots: XCTestCase {
         let address = app.textFields["addServer.address"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         address.tap()
-        address.typeText(env["SUBSONIC_HOST"]!)
+        address.typeText(env["SERVER_HOST"]!)
         app.textFields["addServer.username"].tap()
-        app.textFields["addServer.username"].typeText(env["SUBSONIC_USER"] ?? "")
+        app.textFields["addServer.username"].typeText(env["SERVER_USER"] ?? "")
         app.secureTextFields["addServer.password"].tap()
-        app.secureTextFields["addServer.password"].typeText(env["SUBSONIC_PASSWORD"] ?? "")
+        app.secureTextFields["addServer.password"].typeText(env["SERVER_PASSWORD"] ?? "")
         // The library's title is the server's name; a plain one reads better than an address.
         let name = app.textFields["addServer.name"]
         name.tap()

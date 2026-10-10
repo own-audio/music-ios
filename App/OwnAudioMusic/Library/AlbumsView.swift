@@ -1,20 +1,19 @@
-import SubsonicKit
+import MusicLibrary
 import SwiftUI
 
 /// Every album, in one of the server's list orders, loaded a page at a time.
 struct AlbumsView: View {
     @Environment(AppModel.self) private var model
-    @State private var type: AlbumListType
+    @State private var type: AlbumSort
     @State private var state: LoadState<[Album]> = .loading
     @State private var isLoadingMore = false
     @State private var reachedEnd = false
 
     private static let pageSize = 60
-    private static let choices: [AlbumListType] = [
-        .alphabeticalByName, .alphabeticalByArtist, .newest, .recent, .frequent, .random, .starred,
-    ]
+    /// The orders the server can list in.
+    private var choices: [AlbumSort] { model.activeSource?.albumSorts ?? [.name] }
 
-    init(initialType: AlbumListType) {
+    init(initialType: AlbumSort) {
         _type = State(initialValue: initialType)
     }
 
@@ -22,8 +21,8 @@ struct AlbumsView: View {
         LoadStateView(state: state, retry: reload) { albums in
             if albums.isEmpty {
                 ContentUnavailableView(
-                    type == .starred ? "No Favorites" : "No Albums",
-                    systemImage: type == .starred ? "star" : "square.stack"
+                    type == .favorites ? "No Favorites" : "No Albums",
+                    systemImage: type == .favorites ? "star" : "square.stack"
                 )
             } else {
                 ScrollView {
@@ -33,12 +32,12 @@ struct AlbumsView: View {
                 }
             }
         }
-        .navigationTitle(type == .starred ? "Favorites" : "Albums")
+        .navigationTitle(type == .favorites ? "Favorites" : "Albums")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker("Sort", selection: $type) {
-                        ForEach(Self.choices, id: \.self) { choice in
+                        ForEach(choices, id: \.self) { choice in
                             Text(choice.title).tag(choice)
                         }
                     }
@@ -58,10 +57,10 @@ struct AlbumsView: View {
             state = .loaded(offlineAlbums)
             return
         }
-        guard let client = model.activeClient else { return }
+        guard let client = model.activeSource else { return }
         reachedEnd = false
         do {
-            let page = try await client.albumList(type, size: Self.pageSize)
+            let page = try await client.albums(type, limit: Self.pageSize)
             reachedEnd = page.count < Self.pageSize || type == .random
             state = .loaded(page)
         } catch {
@@ -72,29 +71,32 @@ struct AlbumsView: View {
     /// The downloaded albums, in the closest order to the chosen one.
     private var offlineAlbums: [Album] {
         switch type {
-        case .alphabeticalByArtist:
+        case .artist:
             model.offlineAlbums.sorted { ($0.artist ?? "").localizedStandardCompare($1.artist ?? "") == .orderedAscending }
-        case .newest, .recent:
+        case .newest, .recentlyPlayed:
             model.offlineAlbumsByDownloadDate
         case .random:
             model.offlineAlbums.shuffled()
-        case .starred:
-            model.offlineAlbums.filter { model.compositeId($0.id).map(model.isStarred) ?? false }
+        case .favorites:
+            model.offlineAlbums.filter { model.compositeId($0.id).map(model.isFavorite) ?? false }
         default:
             model.offlineAlbums
         }
     }
 
     private func loadMore() {
-        guard !isLoadingMore, !reachedEnd, case .loaded(let albums) = state, let client = model.activeClient else { return }
+        guard !isLoadingMore, !reachedEnd, case .loaded(let albums) = state, let client = model.activeSource else { return }
         isLoadingMore = true
         Task {
             defer { isLoadingMore = false }
-            guard let page = try? await client.albumList(type, size: Self.pageSize, offset: albums.count) else { return }
-            reachedEnd = page.count < Self.pageSize
-            // A server can repeat an album across pages if the library changed in between.
+            guard let page = try? await client.albums(type, limit: Self.pageSize, offset: albums.count) else { return }
+            // A server can repeat an album across pages if the library changed in between, and
+            // some lists come in one piece whatever the offset (Jellyfin's recently played):
+            // a page with nothing new is the end.
             let known = Set(albums.map(\.id))
-            state = .loaded(albums + page.filter { !known.contains($0.id) })
+            let fresh = page.filter { !known.contains($0.id) }
+            reachedEnd = page.count < Self.pageSize || fresh.isEmpty
+            state = .loaded(albums + fresh)
         }
     }
 }
