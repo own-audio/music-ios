@@ -53,6 +53,10 @@ struct AddServerView: View {
             }
 
             Section {
+                CanaryServerButton(address: $address)
+            }
+
+            Section {
                 TextField("Name (optional)", text: $name)
                     .focused($focus, equals: .name)
                     .accessibilityIdentifier("addServer.name")
@@ -98,6 +102,17 @@ struct AddServerView: View {
             }
         }
         .navigationTitle("Add Server")
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: Theme.Spacing.xs) {
+                AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $errorMessage) { dismiss() }
+                Text("For own.audio servers that offer it: enter the address above.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .padding(.vertical, Theme.Spacing.sm)
+            .background(.bar)
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

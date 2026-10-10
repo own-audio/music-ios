@@ -2910,6 +2910,46 @@
           }
         }
       }
+    },
+    "For own.audio servers that offer it: enter the address above." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro servery own.audio, které to nabízejí: zadejte adresu výše."
+          }
+        }
+      }
+    },
+    "Apple didn't return a sign-in. Try again." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple nevrátil přihlášení. Zkuste to znovu."
+          }
+        }
+      }
+    },
+    "Sign in with Apple works with own.audio servers that offer it. This server doesn't; use its username and password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlášení přes Apple funguje se servery own.audio, které ho nabízejí. Tento server ho nenabízí; použijte jeho uživatelské jméno a heslo."
+          }
+        }
+      }
+    },
+    "own.audio canary (testing)" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio canary (testovací)"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

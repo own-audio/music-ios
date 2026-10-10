@@ -54,6 +54,11 @@ package, merged into this repository — is in `docs/history/`.
   request): their identity and addresses come with them.
 - **own.audio accounts**: sign in with the account's email and password; the app fetches the
   account's Subsonic key itself (the key still works too).
+- **Sign in with Apple** for own.audio servers that offer it (the server lists the app's bundle
+  id in `AUTH__APPLE__CLIENT_IDS`): Apple's identity token becomes a session on the server, and
+  the app fetches the account's Subsonic key with it; only the key is kept.
+- TestFlight and development builds offer **own.audio canary** as a one-tap address, for testing
+  against the server version that runs there first. The App Store build doesn't list it.
 - **Try the Demo Library** on the first screen: signs in to the public own.audio demo with the
   account it offers, for anyone without a server yet. The first screen says own.audio Music.
 - **On mobile data: Original, Saver or Downloaded Only** (Settings → Streaming), with the

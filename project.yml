@@ -56,6 +56,11 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # No DEVELOPMENT_TEAM here: this repo is public. Simulator builds don't need one; for a
         # device, pick your team in Xcode (it is not saved into project.yml).
+    entitlements:
+      path: App/OwnAudioMusic/OwnAudioMusic.entitlements
+      properties:
+        # Sign in with Apple for own.audio servers (AUTH__APPLE__CLIENT_IDS must list this app).
+        com.apple.developer.applesignin: [Default]
     dependencies:
       - package: MusicLibrary
       - package: PlayerEngine

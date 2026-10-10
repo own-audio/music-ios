@@ -354,6 +354,34 @@ final class AppModel {
         try await save(record)
     }
 
+    /// An own.audio server added with Sign in with Apple: the server exchanges Apple's identity
+    /// token for a session, and the app fetches the account's Subsonic key with it, as it does
+    /// after an email-and-password sign-in. Only the key is kept.
+    func addOwnAudioServer(address: String, appleIdentityToken: String, fullName: String?, name: String) async throws {
+        guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
+        let info: ServerSetup.OwnAudioInfo
+        do {
+            info = try await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+        } catch {
+            throw AddServerError.noAppleSignIn
+        }
+        guard info.signInWithApple else { throw AddServerError.noAppleSignIn }
+        let token = try await ServerSetup.ownAudioAppleSignIn(
+            host: host, identityToken: appleIdentityToken, fullName: fullName,
+            deviceName: UIDevice.current.name, urlSession: Self.session
+        )
+        let (username, key) = try await ServerSetup.ownAudioSubsonicKey(host: host, token: token, urlSession: Self.session)
+        guard await ServerSetup.subsonicCheck(host: host, username: username, password: key, urlSession: Self.session) == .ok else {
+            throw AddServerError.rejected
+        }
+        var record = ServerRecord(
+            displayName: displayName(name, fallback: "own.audio"), kind: .ownAudio, host: host,
+            auth: .subsonic(username: username, password: key), serverId: info.id
+        )
+        record.learn(info.addresses)
+        try await save(record)
+    }
+
     /// The public own.audio demo, signed in with the account it offers to anyone.
     static let demoServer = URL(string: "https://demopi.own.audio")!
 
@@ -961,13 +989,14 @@ extension AppModel {
 }
 
 enum AddServerError: LocalizedError {
-    case invalidAddress, rejected, unreachable
+    case invalidAddress, rejected, unreachable, noAppleSignIn
 
     var errorDescription: String? {
         switch self {
         case .invalidAddress: String(localized: "That doesn't look like a server address.")
         case .rejected: String(localized: "The server didn't accept that username and password.")
         case .unreachable: String(localized: "Couldn't reach the server. Check the address, and that this phone can reach it.")
+        case .noAppleSignIn: String(localized: "Sign in with Apple works with own.audio servers that offer it. This server doesn't; use its username and password.")
         }
     }
 }

@@ -110,6 +110,9 @@ extension ServerSetup {
     public struct OwnAudioInfo: Sendable {
         public let id: String?
         public let addresses: [ServerAddress]
+        /// Sign-in providers the server has switched on (`features.auth`).
+        public var signInWithApple = false
+        public var signInWithGoogle = false
     }
 
     /// Throws when there is no own.audio server at `url`.
@@ -119,9 +122,17 @@ extension ServerSetup {
                 let url: String
                 let scope: String?
             }
+            struct Features: Decodable {
+                struct Auth: Decodable {
+                    let apple: Bool?
+                    let google: Bool?
+                }
+                let auth: Auth?
+            }
             let name: String?
             let id: String?
             let addresses: [Address]?
+            let features: Features?
         }
         let (data, response) = try await urlSession.data(from: url.appending(path: "api/v1/server"))
         guard (response as? HTTPURLResponse)?.statusCode == 200,
@@ -131,7 +142,10 @@ extension ServerSetup {
             guard let url = URL(string: address.url) else { return nil }
             return ServerAddress(url: url, scope: address.scope.flatMap(AddressScope.init(rawValue:)), origin: .server)
         }
-        return OwnAudioInfo(id: body.id, addresses: addresses)
+        var info = OwnAudioInfo(id: body.id, addresses: addresses)
+        info.signInWithApple = body.features?.auth?.apple ?? false
+        info.signInWithGoogle = body.features?.auth?.google ?? false
+        return info
     }
 
     /// Tries every candidate at once and returns the fastest that answers as the same server
@@ -185,7 +199,6 @@ extension ServerSetup {
     /// have to copy it out of the web app. Throws `.signInRejected` for a wrong password.
     public static func ownAudioSubsonicKey(host: URL, email: String, password: String, urlSession: URLSession) async throws -> (username: String, key: String) {
         struct Login: Decodable { let token: String }
-        struct Key: Decodable { let username: String; let api_key: String }
 
         var login = URLRequest(url: host.appending(path: "api/v1/auth/login"))
         login.httpMethod = "POST"
@@ -199,7 +212,12 @@ extension ServerSetup {
         default: throw SourceError.network
         }
         guard let token = try? JSONDecoder().decode(Login.self, from: loginData).token else { throw SourceError.unreadable }
+        return try await ownAudioSubsonicKey(host: host, token: token, urlSession: urlSession)
+    }
 
+    /// The Subsonic key of the account a session `token` belongs to, however it signed in.
+    public static func ownAudioSubsonicKey(host: URL, token: String, urlSession: URLSession) async throws -> (username: String, key: String) {
+        struct Key: Decodable { let username: String; let api_key: String }
         var keyRequest = URLRequest(url: host.appending(path: "api/v1/users/me/subsonic-key"))
         keyRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         let (keyData, keyResponse) = try await data(for: keyRequest, urlSession)
@@ -208,6 +226,37 @@ extension ServerSetup {
         else { throw SourceError.unreadable }
         // The account's email as the server stores it, which may differ in case from what was typed.
         return (key.username, key.api_key)
+    }
+
+    /// Signs in with an identity token from Sign in with Apple and returns the server's session
+    /// token. The server verifies the token against Apple's keys and accepts it only if this
+    /// app's bundle id is in its `AUTH__APPLE__CLIENT_IDS`. `fullName` exists only on the
+    /// first authorization; Apple never sends it again.
+    public static func ownAudioAppleSignIn(
+        host: URL, identityToken: String, fullName: String?, deviceName: String, urlSession: URLSession
+    ) async throws -> String {
+        struct Login: Decodable { let token: String }
+        var request = URLRequest(url: host.appending(path: "api/v1/auth/apple"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var body = ["identity_token": identityToken, "device_name": deviceName, "device_kind": "ios"]
+        if let fullName, !fullName.isEmpty { body["full_name"] = fullName }
+        request.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await data(for: request, urlSession)
+        switch (response as? HTTPURLResponse)?.statusCode {
+        case 200: break
+        case 400, 401, 403: throw SourceError.server(serverMessage(data) ?? "")
+        case let code?: throw SourceError.http(code)
+        default: throw SourceError.network
+        }
+        guard let token = try? JSONDecoder().decode(Login.self, from: data).token else { throw SourceError.unreadable }
+        return token
+    }
+
+    /// The server's `{"error": "…"}`: why it refused, in its words (registration closed, …).
+    private static func serverMessage(_ data: Data) -> String? {
+        struct Body: Decodable { let error: String }
+        return try? JSONDecoder().decode(Body.self, from: data).error
     }
 
     /// The account a public demo server offers to strangers (`demo` in its discovery answer).

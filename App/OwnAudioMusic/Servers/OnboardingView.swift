@@ -25,6 +25,7 @@ struct OnboardingView: View {
             VStack(spacing: Theme.Spacing.xl) {
                 header
                 form
+                CanaryServerButton(address: $address)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
@@ -37,6 +38,13 @@ struct OnboardingView: View {
                     .font(.subheadline)
                     .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
                     .accessibilityIdentifier("addServer.quickConnect")
+                VStack(spacing: Theme.Spacing.xs) {
+                    AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $errorMessage)
+                    Text("For own.audio servers that offer it: enter the address above.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 demo
                 notes
                 Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
