@@ -39,8 +39,8 @@ final class Catalogue: Sendable {
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    /// By id; where no song carries the album's id (own.audio before 1.0.0-beta.4 gave songs on
-    /// a sampler another album's id), by name.
+    /// By id; where no song carries the album's id, by name (own.audio up to 1.0.0-beta.3 gave
+    /// songs shared from another family member's library an album id the listener can't use).
     func songs(album: Album) -> [Song] {
         if let songs = songsByAlbum[album.id] { return songs }
         return songsByAlbumName[album.name.lowercased()] ?? []
