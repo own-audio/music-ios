@@ -58,7 +58,7 @@ struct AppleSignInButton: View {
                 }
                 // Apple gives the name only the first time someone signs in to this app.
                 let fullName = credential.fullName.map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
-                try await model.addOwnAudioServer(address: address, appleIdentityToken: token, fullName: fullName, name: name)
+                try await model.addOwnAudioServer(address: address, signIn: .apple(identityToken: token, fullName: fullName), name: name)
                 Haptics.impact(.medium)
                 onSignedIn()
             } catch let error as ASAuthorizationError where error.code == .canceled {

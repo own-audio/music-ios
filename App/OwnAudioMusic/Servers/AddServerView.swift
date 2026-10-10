@@ -106,6 +106,7 @@ struct AddServerView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: Theme.Spacing.xs) {
                 AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() }
+                GoogleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() }
                 Text("For own.audio servers that offer it: enter the address above.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

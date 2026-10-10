@@ -2931,22 +2931,52 @@
         }
       }
     },
-    "Sign in with Apple works with own.audio servers that offer it. This server doesn't; use its username and password." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přihlášení přes Apple funguje se servery own.audio, které ho nabízejí. Tento server ho nenabízí; použijte jeho uživatelské jméno a heslo."
-          }
-        }
-      }
-    },
     "own.audio canary (testing)" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "own.audio canary (testovací)"
+          }
+        }
+      }
+    },
+    "Continue with Google" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovat pomocí Googlu"
+          }
+        }
+      }
+    },
+    "Google didn't return a sign-in. Try again." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google nevrátil přihlášení. Zkuste to znovu."
+          }
+        }
+      }
+    },
+    "This isn't an own.audio server. Sign in with Apple or Google works only there; use the server's username and password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tohle není server own.audio. Přihlášení přes Apple nebo Google funguje jen tam; použijte uživatelské jméno a heslo serveru."
+          }
+        }
+      }
+    },
+    "This own.audio server doesn't offer that sign-in. Use your email and password, or the other button." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento server own.audio takové přihlášení nenabízí. Použijte e-mail a heslo, nebo druhé tlačítko."
           }
         }
       }

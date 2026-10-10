@@ -355,23 +355,42 @@ final class AppModel {
         try await save(record)
     }
 
-    /// An own.audio server added with Sign in with Apple: the server exchanges Apple's identity
-    /// token for a session, and the app fetches the account's Subsonic key with it, as it does
-    /// after an email-and-password sign-in. Only the key is kept.
-    func addOwnAudioServer(address: String, appleIdentityToken: String, fullName: String?, name: String) async throws {
+    /// How someone signs in to an own.audio server without a password.
+    enum OwnAudioSignIn {
+        /// Sign in with Apple: the identity token, and the name Apple gives only the first time.
+        case apple(identityToken: String, fullName: String?)
+        /// Google: the ID token for this app's iOS client.
+        case google(idToken: String)
+    }
+
+    /// An own.audio server added with Apple or Google: the server exchanges the provider's token
+    /// for a session, and the app fetches the account's Subsonic key with it, as it does after
+    /// an email-and-password sign-in. Only the key is kept.
+    func addOwnAudioServer(address: String, signIn: OwnAudioSignIn, name: String) async throws {
         let address = ServerSetup.ownAudioAPIAddress(address)
         guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
         let info: ServerSetup.OwnAudioInfo
         do {
             info = try await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+        } catch SourceError.unreadable {
+            throw AddServerError.notOwnAudio
         } catch {
-            throw AddServerError.noAppleSignIn
+            throw AddServerError.unreachable
         }
-        guard info.signInWithApple else { throw AddServerError.noAppleSignIn }
-        let token = try await ServerSetup.ownAudioAppleSignIn(
-            host: host, identityToken: appleIdentityToken, fullName: fullName,
-            deviceName: UIDevice.current.name, urlSession: Self.session
-        )
+        let token: String
+        switch signIn {
+        case .apple(let identityToken, let fullName):
+            guard info.signInWithApple else { throw AddServerError.providerOff }
+            token = try await ServerSetup.ownAudioAppleSignIn(
+                host: host, identityToken: identityToken, fullName: fullName,
+                deviceName: UIDevice.current.name, urlSession: Self.session
+            )
+        case .google(let idToken):
+            guard info.signInWithGoogle else { throw AddServerError.providerOff }
+            token = try await ServerSetup.ownAudioGoogleSignIn(
+                host: host, idToken: idToken, deviceName: UIDevice.current.name, urlSession: Self.session
+            )
+        }
         let (username, key) = try await ServerSetup.ownAudioSubsonicKey(host: host, token: token, urlSession: Self.session)
         guard await ServerSetup.subsonicCheck(host: host, username: username, password: key, urlSession: Self.session) == .ok else {
             throw AddServerError.rejected
@@ -991,14 +1010,15 @@ extension AppModel {
 }
 
 enum AddServerError: LocalizedError {
-    case invalidAddress, rejected, unreachable, noAppleSignIn
+    case invalidAddress, rejected, unreachable, notOwnAudio, providerOff
 
     var errorDescription: String? {
         switch self {
         case .invalidAddress: String(localized: "That doesn't look like a server address.")
         case .rejected: String(localized: "The server didn't accept that username and password.")
         case .unreachable: String(localized: "Couldn't reach the server. Check the address, and that this phone can reach it.")
-        case .noAppleSignIn: String(localized: "Sign in with Apple works with own.audio servers that offer it. This server doesn't; use its username and password.")
+        case .notOwnAudio: String(localized: "This isn't an own.audio server. Sign in with Apple or Google works only there; use the server's username and password.")
+        case .providerOff: String(localized: "This own.audio server doesn't offer that sign-in. Use your email and password, or the other button.")
         }
     }
 }

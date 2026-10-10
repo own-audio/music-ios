@@ -268,6 +268,28 @@ extension ServerSetup {
         return token
     }
 
+    /// Signs in with a Google ID token and returns the server's session token. The server
+    /// accepts it only if the token's audience (this app's iOS client) is in its
+    /// `AUTH__GOOGLE__CLIENT_IDS`.
+    public static func ownAudioGoogleSignIn(
+        host: URL, idToken: String, deviceName: String, urlSession: URLSession
+    ) async throws -> String {
+        struct Login: Decodable { let token: String }
+        var request = URLRequest(url: host.appending(path: "api/v1/auth/google"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["id_token": idToken, "device_name": deviceName, "device_kind": "ios"])
+        let (data, response) = try await data(for: request, urlSession)
+        switch (response as? HTTPURLResponse)?.statusCode {
+        case 200: break
+        case 400, 401, 403: throw SourceError.server(serverMessage(data) ?? "")
+        case let code?: throw SourceError.http(code)
+        default: throw SourceError.network
+        }
+        guard let token = try? JSONDecoder().decode(Login.self, from: data).token else { throw SourceError.unreadable }
+        return token
+    }
+
     /// The server's `{"error": "…"}`: why it refused, in its words (registration closed, …).
     private static func serverMessage(_ data: Data) -> String? {
         struct Body: Decodable { let error: String }
