@@ -63,7 +63,7 @@ final class GoogleSignIn: NSObject, ASWebAuthenticationPresentationContextProvid
     /// own.audio Music's iOS OAuth client (Google Cloud). Public by design: it identifies the
     /// app, it grants nothing. A server accepts sign-ins from it only if it lists it in
     /// `AUTH__GOOGLE__CLIENT_IDS`. Empty: no Google button.
-    static let clientID = ""
+    static let clientID = "456111077348-2sr1qbemell0eoju7o8n0nt10gb34a85.apps.googleusercontent.com"
 
     static var isConfigured: Bool { !clientID.isEmpty }
 
