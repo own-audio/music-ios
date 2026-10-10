@@ -60,6 +60,15 @@ package, merged into this repository — is in `docs/history/`.
   Saver quality (320, 192 or 128 kbps). Saver asks Subsonic servers for a smaller MP3
   (`maxBitRate`, `format=mp3`) as Jellyfin already did; Downloaded Only plays just what is on
   the phone and says so in the banner, with a button to stream anyway.
+- **The library on the phone.** Each server's catalogue — artists, albums, songs, playlists,
+  without the music — is synced in the background (on adding a server, at launch and when the
+  network comes back; refreshed after six hours on Wi-Fi, never in Low Data Mode). Offline, an
+  album never opened before still opens with all its songs, the ones not downloaded greyed
+  out. Settings → Whole Library When Offline lists everything on the server offline, not only
+  the downloads. Settings → Servers → ⓘ shows the count, when it was updated, and Update Now.
+- A server reinstalled from scratch (or a demo that resets nightly) is still found at the
+  public https address it was added with, and its new identity is taken over; home and VPN
+  addresses must still answer as the same server.
 - iOS Low Data Mode caps streams at 128 kbps where the server makes smaller streams.
 - Favorites, ratings and songs added to a playlist while offline are kept and sent when the
   server can be reached again, in order; the screens show them at once.

@@ -1,9 +1,15 @@
 import Foundation
 import MusicLibrary
 
-/// The library as the downloads describe it, for screens with no server to ask. Only the active
-/// server's songs, the same scope as the online screens.
+/// The library for screens with no server to ask: the downloads, or with "whole library" chosen
+/// the server's catalogue kept on the phone. Only the active server's, the same scope as the
+/// online screens.
 extension AppModel {
+    /// The catalogue, when the listener wants the whole library offline and it has been synced.
+    private var wholeLibrary: Catalogue? {
+        offlineShowsWholeLibrary ? activeCatalogue : nil
+    }
+
     private var downloadedOnActiveServer: [DownloadManager.DownloadedTrack] {
         guard let serverId = activeServerId else { return [] }
         return downloads.tracks.values.filter { TrackID.parse($0.trackId)?.serverId == serverId }
@@ -11,14 +17,8 @@ extension AppModel {
 
     /// In album order: artist, album, disc, track.
     var offlineSongs: [Song] {
-        downloadedOnActiveServer.map(\.song).sorted { a, b in
-            let keyA = (a.artist ?? "", a.album ?? "", a.discNumber ?? 1, a.track ?? 0)
-            let keyB = (b.artist ?? "", b.album ?? "", b.discNumber ?? 1, b.track ?? 0)
-            if keyA.0 != keyB.0 { return keyA.0.localizedStandardCompare(keyB.0) == .orderedAscending }
-            if keyA.1 != keyB.1 { return keyA.1.localizedStandardCompare(keyB.1) == .orderedAscending }
-            if keyA.2 != keyB.2 { return keyA.2 < keyB.2 }
-            return keyA.3 < keyB.3
-        }
+        if let wholeLibrary { return wholeLibrary.songs }
+        return downloadedOnActiveServer.map(\.song).sorted(by: Catalogue.albumOrder)
     }
 
     /// One album per album id among the downloads, newest download first.
@@ -39,10 +39,12 @@ extension AppModel {
     }
 
     var offlineAlbums: [Album] {
-        offlineAlbumsByDownloadDate.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        if let wholeLibrary { return wholeLibrary.albums }
+        return offlineAlbumsByDownloadDate.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     var offlineArtists: [Artist] {
+        if let wholeLibrary { return wholeLibrary.artists }
         let albums = offlineAlbums
         let grouped = Dictionary(grouping: albums) { $0.artistId ?? $0.artist ?? "" }
         return grouped.compactMap { id, albums -> Artist? in
@@ -53,6 +55,7 @@ extension AppModel {
     }
 
     var offlineGenres: [Genre] {
+        if let wholeLibrary { return wholeLibrary.genres }
         let songs = downloadedOnActiveServer.map(\.song)
         let grouped = Dictionary(grouping: songs) { $0.genre ?? "" }
         return grouped.compactMap { name, songs -> Genre? in
@@ -63,11 +66,15 @@ extension AppModel {
     }
 
     func offlineAlbums(artist: Artist) -> [Album] {
-        offlineAlbums.filter { $0.artistId == artist.id || ($0.artistId == nil && $0.artist == artist.name) }
+        if let wholeLibrary { return wholeLibrary.albums(artist: artist) }
+        return offlineAlbums.filter { $0.artistId == artist.id || ($0.artistId == nil && $0.artist == artist.name) }
     }
 
-    func offlineSongs(albumId: String) -> [Song] {
-        offlineSongs.filter { $0.albumId == albumId }
+    /// The whole album from the catalogue whichever library is shown, so an album never opened
+    /// before still lists all its songs (the ones not downloaded greyed out).
+    func offlineSongs(album: Album) -> [Song] {
+        if let songs = activeCatalogue?.songs(album: album), !songs.isEmpty { return songs }
+        return offlineSongs.filter { $0.albumId == album.id }
     }
 
     func offlineSongs(genre: String) -> [Song] {

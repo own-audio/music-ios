@@ -39,8 +39,13 @@ struct SettingsView: View {
                     set: { model.downloadedOnly = $0 }
                 ))
                 .accessibilityIdentifier("settings.downloadedOnly")
+                Toggle("Whole Library When Offline", isOn: Binding(
+                    get: { model.offlineShowsWholeLibrary },
+                    set: { model.offlineShowsWholeLibrary = $0 }
+                ))
+                .accessibilityIdentifier("settings.offlineWholeLibrary")
             } footer: {
-                Text("Shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.")
+                Text("Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.")
             }
 
             Section {

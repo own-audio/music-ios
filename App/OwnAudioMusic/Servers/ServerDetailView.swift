@@ -65,6 +65,19 @@ struct ServerDetailView: View {
                 } footer: {
                     Text("Add the server's address on your home network, a VPN such as Tailscale, or a second public name. On each network the app uses the fastest one that answers as this server.")
                 }
+
+                Section {
+                    catalogueRow(server)
+                    Button("Update Now") {
+                        Task { await model.syncCatalogues(force: true) }
+                    }
+                    .disabled(model.syncingCatalogues.contains(server.id) || model.isOffline)
+                    .accessibilityIdentifier("serverDetail.syncCatalogue")
+                } header: {
+                    Text("Library on This iPhone")
+                } footer: {
+                    Text("A list of everything on the server, without the music itself, so albums open and the library can be browsed offline. Updated in the background, on Wi-Fi.")
+                }
             }
             .navigationTitle(server.displayName)
             .navigationBarTitleDisplayMode(.inline)
@@ -82,6 +95,32 @@ struct ServerDetailView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+        }
+    }
+
+    @ViewBuilder
+    private func catalogueRow(_ server: ServerRecord) -> some View {
+        if model.syncingCatalogues.contains(server.id) {
+            HStack {
+                Text("Updating…")
+                Spacer()
+                ProgressView()
+            }
+        } else if let catalogue = model.catalogues[server.id] {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Songs: \(catalogue.snapshot.songs.count) · Albums: \(catalogue.snapshot.albums.count)")
+                Text("Updated \(catalogue.snapshot.syncedAt.formatted(.relative(presentation: .named)))")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("serverDetail.catalogue")
+        } else if let error = model.catalogueErrors[server.id] {
+            Label(error, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.secondary)
+        } else {
+            Text("Not yet updated")
+                .foregroundStyle(.secondary)
         }
     }
 

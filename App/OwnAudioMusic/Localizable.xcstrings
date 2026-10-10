@@ -1268,16 +1268,6 @@
         }
       }
     },
-    "Shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako to aplikace dělá sama bez sítě. Šetří mobilní data."
-          }
-        }
-      }
-    },
     "Sign In with Quick Connect (Jellyfin)" : {
       "localizations" : {
         "cs" : {
@@ -2827,6 +2817,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic i s Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto telefonu.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
+          }
+        }
+      }
+    },
+    "Whole Library When Offline" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celá knihovna offline"
+          }
+        }
+      }
+    },
+    "Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako bez sítě. Šetří mobilní data.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto iPhonu; co není stažené, je zašedlé. Alba se offline otevřou v obou případech."
+          }
+        }
+      }
+    },
+    "Library on This iPhone" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovna v tomto iPhonu"
+          }
+        }
+      }
+    },
+    "Update Now" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizovat"
+          }
+        }
+      }
+    },
+    "Updating…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizuje se…"
+          }
+        }
+      }
+    },
+    "Songs: %lld · Albums: %lld" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skladby: %lld · Alba: %lld"
+          }
+        }
+      }
+    },
+    "Updated %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizováno %@"
+          }
+        }
+      }
+    },
+    "Not yet updated" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatím neaktualizováno"
+          }
+        }
+      }
+    },
+    "A list of everything on the server, without the music itself, so albums open and the library can be browsed offline. Updated in the background, on Wi-Fi." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seznam všeho na serveru, bez samotné hudby, aby se alba otevřela a knihovnu šlo procházet i offline. Aktualizuje se na pozadí, na Wi-Fi."
           }
         }
       }

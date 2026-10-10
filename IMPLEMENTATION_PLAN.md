@@ -60,7 +60,8 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   for own.audio's list). Learn a server's addresses (Jellyfin's
   `LocalAddress`; own.audio once its server lists them; by hand for Subsonic), race them on
   every network change, accept only the same server id, remember per network.
-- [ ] **M6: Catalogue on the phone.** Background sync of the whole catalogue so browsing is
+- [x] **M6: Catalogue on the phone.** First pass done 2026-10-10: full sync by paging (no
+  change feed yet — the server needs one), whole library offline as a setting. Background sync of the whole catalogue so browsing is
   instant and complete offline; uses a server change feed where there is one.
 - [ ] **M7: Release.** Icon, App Store text, screenshots, privacy policy section, TestFlight
   under the new bundle id; Jellyfin's and Navidrome's client pages.

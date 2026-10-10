@@ -25,6 +25,21 @@ final class AppModel {
     let resumeStore: ResumeStore
     let downloads: DownloadManager
 
+    /// Each server's whole library on the phone, once synced.
+    private(set) var catalogues: [UUID: Catalogue] = [:]
+    private(set) var syncingCatalogues: Set<UUID> = []
+    private(set) var catalogueErrors: [UUID: String] = [:]
+    private let catalogueStore = CatalogueStore()
+    /// An older catalogue is refreshed; a library rarely changes faster than that, and the
+    /// screens online always ask the server anyway.
+    private static let catalogueMaxAge: TimeInterval = 6 * 3600
+
+    /// Offline, show the whole library (what isn't downloaded greyed out) rather than only the
+    /// downloads.
+    var offlineShowsWholeLibrary: Bool {
+        didSet { UserDefaults.standard.set(offlineShowsWholeLibrary, forKey: Self.offlineWholeLibraryKey) }
+    }
+
     /// Favorite songs, albums and artists, as composite ids (`TrackID`), learned from whatever
     /// the screens have loaded and kept current when the listener changes one.
     private(set) var favoriteIds: Set<String> = []
@@ -136,6 +151,7 @@ final class AppModel {
     private static let deviceIdKey = "deviceId"
     private static let mobileDataKey = "mobileData"
     private static let saverBitrateKey = "saverBitrate"
+    private static let offlineWholeLibraryKey = "offlineShowsWholeLibrary"
 
     /// How this app shows up in the server's list of devices. The id is made once and kept, so
     /// a reinstall is one device, not a new one each launch.
@@ -204,6 +220,7 @@ final class AppModel {
         }
         scrobblingEnabled = UserDefaults.standard.object(forKey: Self.scrobblingKey) as? Bool ?? true
         downloadedOnly = UserDefaults.standard.bool(forKey: Self.downloadedOnlyKey)
+        offlineShowsWholeLibrary = UserDefaults.standard.bool(forKey: Self.offlineWholeLibraryKey)
         let defaults = UserDefaults.standard
         mobileData = defaults.string(forKey: Self.mobileDataKey).flatMap(MobileData.init(rawValue:)) ?? .saver
         saverBitrate = defaults.integer(forKey: Self.saverBitrateKey).nonZero ?? 192_000
@@ -225,6 +242,7 @@ final class AppModel {
                     await self.chooseAddresses()
                     await self.flushPendingScrobbles()
                     await self.flushPendingChanges()
+                    await self.syncCatalogues()
                 }
             }
         }
@@ -264,15 +282,20 @@ final class AppModel {
             await covers.clear()
             downloads.removeAll()
             responseCache.removeAll()
+            catalogueStore.removeAll()
         }
         servers = await store.loadAll()
         await addServerFromLaunchArguments()
         await rebuildClients()
         let saved = UserDefaults.standard.string(forKey: Self.activeServerKey).flatMap(UUID.init)
         activeServerId = servers.contains { $0.id == saved } ? saved : servers.first?.id
+        await loadCatalogues()
         hasLoaded = true
         downloads.resume()
-        Task { await chooseAddresses() }
+        Task {
+            await chooseAddresses()
+            await syncCatalogues()
+        }
         await flushPendingScrobbles()
         await flushPendingChanges()
     }
@@ -386,7 +409,10 @@ final class AppModel {
         await rebuildClients()
         activeServerId = record.id
         // A server that named a home address is worth switching to at once.
-        Task { await chooseAddresses() }
+        Task {
+            await chooseAddresses()
+            await syncCatalogues()
+        }
     }
 
     func removeServer(id: UUID) async throws {
@@ -395,6 +421,8 @@ final class AppModel {
         try await store.remove(id: id)
         servers.removeAll { $0.id == id }
         downloads.removeAll(serverId: id)
+        catalogueStore.remove(serverId: id)
+        catalogues[id] = nil
         // Saved answers are keyed by server; this server's are of no further use, and it is
         // simpler to let the others be fetched again than to pick them apart.
         responseCache.removeAll()
@@ -883,6 +911,53 @@ final class AppModel {
         }
         await rebuildClients()
     }
+}
+
+// MARK: - Catalogue
+
+extension AppModel {
+    private func loadCatalogues() async {
+        let store = catalogueStore
+        for record in servers {
+            let id = record.id
+            if let catalogue = await Task.detached(operation: { store.load(serverId: id).map(Catalogue.init) }).value {
+                catalogues[id] = catalogue
+            }
+        }
+    }
+
+    /// Fetches each server's library where it is missing or old: the active server first. A
+    /// refresh waits for a network that isn't mobile data; a first sync doesn't. Never in Low
+    /// Data Mode, unless the listener asks (`force`).
+    func syncCatalogues(force: Bool = false) async {
+        guard hasLoaded, !isOffline, force || !network.isConstrained else { return }
+        let ordered = servers.sorted { a, _ in a.id == activeServerId }
+        for record in ordered {
+            let id = record.id
+            guard !syncingCatalogues.contains(id), let source = sources[id] else { continue }
+            if !force, let existing = catalogues[id] {
+                if Date().timeIntervalSince(existing.snapshot.syncedAt) < Self.catalogueMaxAge { continue }
+                if network.isExpensive { continue }
+            }
+            syncingCatalogues.insert(id)
+            catalogueErrors[id] = nil
+            do {
+                let snapshot = try await Catalogue.fetch(from: source)
+                let store = catalogueStore
+                let catalogue = try await Task.detached {
+                    try store.save(snapshot, serverId: id)
+                    return Catalogue(snapshot)
+                }.value
+                // The server may have been removed while its library was on the way.
+                if servers.contains(where: { $0.id == id }) { catalogues[id] = catalogue }
+            } catch {
+                catalogueErrors[id] = error.userMessage
+            }
+            syncingCatalogues.remove(id)
+        }
+    }
+
+    var activeCatalogue: Catalogue? { activeServerId.flatMap { catalogues[$0] } }
 }
 
 enum AddServerError: LocalizedError {

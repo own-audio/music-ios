@@ -237,6 +237,47 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["miniPlayer"].label.contains(secondTitle), "playback should start at the downloaded song")
     }
 
+    /// The catalogue reaches the phone after adding a server; offline, with Whole Library on,
+    /// the albums list shows albums that were never opened or downloaded, and one opens with
+    /// its songs.
+    func testWholeLibraryOffline() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        app.buttons["home.settings"].tap()
+        let servers = app.buttons["settings.servers"]
+        XCTAssertTrue(servers.waitForExistence(timeout: 10))
+        servers.tap()
+        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
+        XCTAssertTrue(info.waitForExistence(timeout: 10))
+        info.tap()
+        let catalogue = app.descendants(matching: .any)["serverDetail.catalogue"].firstMatch
+        XCTAssertTrue(
+            waitUntil(timeout: 180) {
+                if !catalogue.exists { app.swipeUp() }
+                return catalogue.exists
+            },
+            "the catalogue should be synced after adding the server"
+        )
+        screenshot(app, "18-catalogue")
+
+        app.terminate()
+        app.launchArguments = ["-simulateOffline", "-offlineShowsWholeLibrary", "YES"] + Self.english
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["offline.banner"].waitForExistence(timeout: 15))
+        openTab(app, Self.libraryTab)
+        let albums = app.buttons["library.albums"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        albums.tap()
+        let tile = app.scrollViews.buttons.element(boundBy: 1)
+        XCTAssertTrue(tile.waitForExistence(timeout: 20), "offline, the whole library's albums should be listed")
+        tile.tap()
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'album.song.'"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 20), "an album never opened should open offline from the catalogue")
+        screenshot(app, "19-offline-catalogue-album")
+    }
+
     /// Needs an album whose first song has ReplayGain tags (track gain -6.5 dB) and synced
     /// lyrics: `TEST_RUNNER_SERVER_LYRICS_ALBUM`. Skipped without it; the real servers used for
     /// testing have neither, so this runs against a local Navidrome with a generated album.
