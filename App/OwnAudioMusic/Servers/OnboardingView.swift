@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var isConnecting = false
     @State private var errorMessage: String?
+    @State private var appleError: String?
     @State private var isQuickConnecting = false
     @State private var isTryingDemo = false
     @FocusState private var focus: Field?
@@ -39,7 +40,7 @@ struct OnboardingView: View {
                     .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
                     .accessibilityIdentifier("addServer.quickConnect")
                 VStack(spacing: Theme.Spacing.xs) {
-                    AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $errorMessage)
+                    AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError)
                     Text("For own.audio servers that offer it: enter the address above.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)

@@ -12,6 +12,7 @@ struct AddServerView: View {
     @State private var name = ""
     @State private var isConnecting = false
     @State private var errorMessage: String?
+    @State private var appleError: String?
     @State private var isQuickConnecting = false
     @FocusState private var focus: Field?
 
@@ -104,7 +105,7 @@ struct AddServerView: View {
         .navigationTitle("Add Server")
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: Theme.Spacing.xs) {
-                AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $errorMessage) { dismiss() }
+                AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() }
                 Text("For own.audio servers that offer it: enter the address above.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
