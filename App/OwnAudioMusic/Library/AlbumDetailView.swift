@@ -60,7 +60,7 @@ struct AlbumDetailView: View {
                     Menu {
                         if model.capabilities.contains(.ratings) {
                             RatingMenu(rating: model.ratings[id]) { rating in
-                                model.perform { try await model.setRating(id, rating: rating) }
+                                model.perform { try await model.setRating(id, kind: .album, rating: rating) }
                             }
                         }
                         if model.capabilities.contains(.instantMix), !model.isOffline {

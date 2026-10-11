@@ -37,6 +37,14 @@ package, merged into this repository — is in `docs/history/`.
 - **The library on the phone from own.audio's change feed**: the whole library once, then only
   what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
   feed sync that fails falls back to paging.
+- **Live updates from own.audio** (servers from 1.0.0-beta.7, signed in through the new API):
+  while the app is on screen, the server says when the library or the listener's favorites and
+  ratings change, and the library on the phone catches up within seconds — a favorite set on
+  another device shows without waiting for the next sync.
+- Changes made offline reach own.audio in **one request** (`/sync/push`), each with the time it
+  was made: favorites, ratings, and plays with how long they were heard. A play sent twice —
+  the answer lost on the way — counts once. Playlist edits, and other servers, go one at a time
+  as before. Ratings made offline now remember whether they were for a song or an album.
 - `Packages/OwnAudioKit`: a client for own.audio's own API (`/api/v2`, servers from
   1.0.0-beta.7), Foundation only like the other two. Discovery, sign-in through the OAuth token
   endpoint (password, two-factor, a provider's id token), refresh tokens that rotate — one

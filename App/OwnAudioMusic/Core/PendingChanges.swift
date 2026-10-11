@@ -7,7 +7,9 @@ import MusicLibrary
 struct PendingChanges {
     enum Change: Codable, Equatable {
         case favorite(kind: String, isFavorite: Bool)
+        /// From before ratings knew their kind; sent the old way.
         case rating(Int)
+        case rated(kind: String, rating: Int)
         case addToPlaylist(playlistId: String, songIds: [String])
     }
 
@@ -40,7 +42,7 @@ struct PendingChanges {
         switch entry.change {
         case .favorite:
             entries.removeAll { $0.serverId == entry.serverId && $0.itemId == entry.itemId && $0.isFavorite }
-        case .rating:
+        case .rating, .rated:
             entries.removeAll { $0.serverId == entry.serverId && $0.itemId == entry.itemId && $0.isRating }
         case .addToPlaylist:
             break
@@ -59,7 +61,28 @@ struct PendingChanges {
 
 private extension PendingChanges.Entry {
     var isFavorite: Bool { if case .favorite = change { true } else { false } }
-    var isRating: Bool { if case .rating = change { true } else { false } }
+    var isRating: Bool {
+        switch change {
+        case .rating, .rated: true
+        default: false
+        }
+    }
+}
+
+extension PendingChanges.Entry {
+    /// What a server that takes them in one request is sent; nil for what goes one call at a
+    /// time (playlist edits, and ratings kept before they knew their kind).
+    var edit: OfflineEdit? {
+        let clientId = "\(serverId.uuidString)/\(itemId)/\(madeAt.timeIntervalSince1970)"
+        switch change {
+        case .favorite(let kind, let isFavorite):
+            return OfflineEdit(clientId: clientId, itemId: itemId, change: .favorite(FavoriteKind(storedName: kind), isFavorite), madeAt: madeAt)
+        case .rated(let kind, let rating):
+            return OfflineEdit(clientId: clientId, itemId: itemId, change: .rating(FavoriteKind(storedName: kind), rating), madeAt: madeAt)
+        case .rating, .addToPlaylist:
+            return nil
+        }
+    }
 }
 
 extension FavoriteKind {

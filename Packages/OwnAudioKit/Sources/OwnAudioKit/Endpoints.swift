@@ -140,6 +140,66 @@ extension OwnAudioClient {
         if !ended { throw OwnAudioError.network }
     }
 
+    /// What the device changed while offline, in the order it happened; up to 500 at a time.
+    /// Each is answered on its own, in order: `ok`, `stale` or `duplicate` are done, anything
+    /// else is an error code.
+    public func push(_ changes: [OfflineChange]) async throws -> [ItemResult] {
+        struct Body: Encodable { let changes: [OfflineChange] }
+        return try await call("POST", "sync/push", body: Body(changes: changes))
+    }
+
+    /// Live updates: a `library` event whenever the account's library or its own state
+    /// changed, which says to read `changes(since:)`. Runs until the connection ends; resume
+    /// with the last event's id.
+    public func events(lastEventId: String? = nil) -> AsyncThrowingStream<LiveEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let refresher: @Sendable (String) async throws -> Tokens = { [host, session] refresh in
+                        try await OwnAudioClient.refresh(host: host, refreshToken: refresh, session: session)
+                    }
+                    var token = try await tokens.accessToken(using: refresher)
+                    var retried = false
+                    while true {
+                        var request = URLRequest(url: try url("events", query: [:]))
+                        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                        if let lastEventId { request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID") }
+                        // The server sends a comment every 30 seconds; silence for longer means
+                        // the connection is gone.
+                        request.timeoutInterval = 75
+                        let (bytes, response): (URLSession.AsyncBytes, URLResponse)
+                        do {
+                            (bytes, response) = try await session.bytes(for: request)
+                        } catch {
+                            throw OwnAudioError.network
+                        }
+                        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                        if status == 401, !retried {
+                            retried = true
+                            token = try await tokens.refresh(using: refresher).accessToken
+                            continue
+                        }
+                        guard status == 200 else { throw OwnAudioError.http(status) }
+                        var parser = EventStreamParser()
+                        do {
+                            for try await byte in bytes {
+                                if let event = parser.feed(byte) { continuation.yield(event) }
+                            }
+                        } catch {
+                            throw OwnAudioError.network
+                        }
+                        break
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     static func snapshotLine(_ line: String) throws -> SnapshotLine? {
         let value = try JSONDecoder().decode(JSONValue.self, from: Data(line.utf8))
         switch value["type"]?.string {

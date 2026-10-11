@@ -15,7 +15,10 @@ final class AppModel {
     private(set) var servers: [ServerRecord] = []
     private(set) var hasLoaded = false
     private(set) var activeServerId: UUID? {
-        didSet { UserDefaults.standard.set(activeServerId?.uuidString, forKey: Self.activeServerKey) }
+        didSet {
+            UserDefaults.standard.set(activeServerId?.uuidString, forKey: Self.activeServerKey)
+            if activeServerId != oldValue { followLibraryChanges() }
+        }
     }
 
     let engine: PlaybackEngine
@@ -28,6 +31,10 @@ final class AppModel {
     /// Each server's whole library on the phone, once synced.
     private(set) var catalogues: [UUID: Catalogue] = [:]
     private(set) var syncingCatalogues: Set<UUID> = []
+    private var resyncRequested: Set<UUID> = []
+    /// Following the active server's library changes (`followLibraryChanges`).
+    private var liveUpdates: Task<Void, Never>?
+    private var isInForeground = true
     private(set) var catalogueErrors: [UUID: String] = [:]
     private let catalogueStore = CatalogueStore()
     /// An older catalogue is refreshed; a library rarely changes faster than that, and the
@@ -92,6 +99,7 @@ final class AppModel {
         let wasOffline = offlineSwitch.isOn
         offlineSwitch.isOn = isOffline
         engine.requiresLocalFiles = isOffline
+        if wasOffline != isOffline { followLibraryChanges() }
         // Back online by choice (Offline Mode off, or Wi-Fi again): send what waited.
         if wasOffline, !isOffline, hasLoaded {
             Task { await flushPendingChanges() }
@@ -296,6 +304,7 @@ final class AppModel {
         activeServerId = servers.contains { $0.id == saved } ? saved : servers.first?.id
         await loadCatalogues()
         hasLoaded = true
+        followLibraryChanges()
         downloads.resume()
         Task {
             await chooseAddresses()
@@ -717,9 +726,9 @@ final class AppModel {
             case .nowPlaying:
                 // Covered by the session report sent when playback started.
                 break
-            case .played(let trackId, let startedAt):
+            case .played(let trackId, let startedAt, let heardSecs):
                 guard !reportedLive.contains(trackId) else { return }
-                let entry = PendingScrobbles.Entry(trackId: trackId, startedAt: startedAt)
+                let entry = PendingScrobbles.Entry(trackId: trackId, startedAt: startedAt, heardSecs: heardSecs, countedAt: Date())
                 if await submit(entry) {
                     await flushPendingScrobbles()
                 } else {
@@ -734,6 +743,16 @@ final class AppModel {
             // The server was removed; there's nowhere to report it.
             return true
         }
+        if let batched = source as? any BatchedOfflineEdits, let edit = entry.edit(songId: songId) {
+            do {
+                try await batched.push([edit])
+                return true
+            } catch SourceError.network, SourceError.offline {
+                return false
+            } catch {
+                // Signed in the old way, or refused: reported as below.
+            }
+        }
         do {
             try await source.reportPlayed(songId: songId, at: entry.startedAt)
             return true
@@ -743,10 +762,30 @@ final class AppModel {
     }
 
     /// Sends plays that couldn't be reported earlier. Called after a play goes through, and on
-    /// launch.
+    /// launch. A server that takes them in one request gets them so, the rest one at a time.
     func flushPendingScrobbles() async {
+        let entries = pendingScrobbles.all
         var sent: [PendingScrobbles.Entry] = []
-        for entry in pendingScrobbles.all {
+        var batched: Set<UUID> = []
+        let byServer = Dictionary(grouping: entries) { TrackID.parse($0.trackId)?.serverId }
+        for case let (serverId?, plays) in byServer {
+            guard let source = sources[serverId] as? any BatchedOfflineEdits else { continue }
+            let edits = plays.compactMap { play in
+                TrackID.parse(play.trackId).flatMap { play.edit(songId: $0.itemId) }.map { (play, $0) }
+            }
+            guard !edits.isEmpty else { continue }
+            do {
+                try await source.push(edits.map(\.1))
+                sent += edits.map(\.0)
+                batched.insert(serverId)
+            } catch SourceError.network, SourceError.offline {
+                batched.insert(serverId)
+            } catch {
+                // Signed in the old way, or refused: one at a time below.
+            }
+        }
+        for entry in entries where !sent.contains(entry) {
+            if let serverId = TrackID.parse(entry.trackId)?.serverId, batched.contains(serverId), entry.heardSecs != nil { continue }
             guard await submit(entry) else { break }
             sent.append(entry)
         }
@@ -810,13 +849,13 @@ final class AppModel {
         }
     }
 
-    /// `rating` 1–5, or 0 to clear it.
-    func setRating(_ compositeId: String, rating: Int) async throws {
+    /// `rating` 1–5, or 0 to clear it, for a song or an album.
+    func setRating(_ compositeId: String, kind: FavoriteKind, rating: Int) async throws {
         guard let (source, itemId) = await resolve(compositeId) else { return }
         let previous = ratings[compositeId]
         ratings[compositeId] = rating == 0 ? nil : rating
         if isOffline, let serverId = TrackID.parse(compositeId)?.serverId {
-            pendingChanges.add(.init(serverId: serverId, itemId: itemId, change: .rating(rating), madeAt: Date()))
+            pendingChanges.add(.init(serverId: serverId, itemId: itemId, change: .rated(kind: kind.storedName, rating: rating), madeAt: Date()))
             return
         }
         do {
@@ -858,7 +897,26 @@ final class AppModel {
     func flushPendingChanges() async {
         guard hasLoaded, !isOffline else { return }
         var done: [PendingChanges.Entry] = []
-        for entry in pendingChanges.all {
+        let entries = pendingChanges.all
+        // Servers that take them in one request: what they took, or the network failure that
+        // keeps them for later, either way not sent one by one below.
+        var batched: Set<UUID> = []
+        for serverId in Set(entries.map(\.serverId)) {
+            guard let source = sources[serverId] as? any BatchedOfflineEdits else { continue }
+            let edits = entries.filter { $0.serverId == serverId }.compactMap { entry in entry.edit.map { (entry, $0) } }
+            guard !edits.isEmpty else { continue }
+            do {
+                try await source.push(edits.map(\.1))
+                done += edits.map(\.0)
+                batched.insert(serverId)
+            } catch SourceError.network, SourceError.offline {
+                batched.insert(serverId)
+            } catch {
+                // Signed in the old way, or the request was refused: one at a time instead.
+            }
+        }
+        for entry in entries {
+            if batched.contains(entry.serverId), entry.edit != nil { continue }
             guard let source = sources[entry.serverId] else {
                 // The server was removed; there's nowhere to send it.
                 if !servers.contains(where: { $0.id == entry.serverId }) { done.append(entry) }
@@ -868,7 +926,7 @@ final class AppModel {
                 switch entry.change {
                 case .favorite(let kind, let isFavorite):
                     try await source.setFavorite(FavoriteKind(storedName: kind), id: entry.itemId, isFavorite)
-                case .rating(let value):
+                case .rating(let value), .rated(_, let value):
                     try await source.setRating(id: entry.itemId, rating: value)
                 case .addToPlaylist(let playlistId, let songIds):
                     try await source.addToPlaylist(id: playlistId, songIds: songIds)
@@ -957,6 +1015,7 @@ final class AppModel {
             ($0.id, $0.makeSource(environment, address: activeAddresses[$0.id]))
         })
         await registry.set(sources)
+        followLibraryChanges()
     }
 
     // MARK: - Connections
@@ -1071,7 +1130,6 @@ extension AppModel {
         let ordered = servers.sorted { a, _ in a.id == activeServerId }
         for record in ordered {
             let id = record.id
-            guard !syncingCatalogues.contains(id), let source = sources[id] else { continue }
             if !force, let existing = catalogues[id] {
                 // From a change feed a refresh is only what changed: worth asking for often,
                 // and small enough for mobile data.
@@ -1080,6 +1138,20 @@ extension AppModel {
                 if Date().timeIntervalSince(existing.snapshot.syncedAt) < maxAge { continue }
                 if network.isExpensive, !fed { continue }
             }
+            await syncCatalogue(id)
+        }
+    }
+
+    /// Brings one server's library up to date now. Asked while it is already syncing, it runs
+    /// once more afterwards, so a change that arrived during the sync isn't missed.
+    private func syncCatalogue(_ id: UUID) async {
+        guard !syncingCatalogues.contains(id) else {
+            resyncRequested.insert(id)
+            return
+        }
+        repeat {
+            guard let source = sources[id] else { return }
+            resyncRequested.remove(id)
             syncingCatalogues.insert(id)
             catalogueErrors[id] = nil
             do {
@@ -1095,6 +1167,46 @@ extension AppModel {
                 catalogueErrors[id] = error.userMessage
             }
             syncingCatalogues.remove(id)
+        } while resyncRequested.contains(id) && !isOffline
+    }
+
+    // MARK: - Live updates
+
+    /// While the app is on screen and online, the active server — where it can — says when its
+    /// library changes, and the copy on the phone catches up at once instead of at the next
+    /// scheduled sync. A changed favorite on another device shows here within seconds.
+    func sceneBecame(active: Bool) {
+        guard isInForeground != active else { return }
+        isInForeground = active
+        followLibraryChanges()
+        // Back on screen after a while: what changed meanwhile.
+        if active { Task { await syncCatalogues() } }
+    }
+
+    /// (Re)starts or stops following the active server; called whenever what it depends on
+    /// changes. The stream ends with the connection, so it is reopened, waiting longer after
+    /// each failure.
+    private func followLibraryChanges() {
+        liveUpdates?.cancel()
+        liveUpdates = nil
+        guard hasLoaded, isInForeground, !isOffline, !network.isConstrained,
+              let id = activeServerId, let source = sources[id] as? any LiveLibraryUpdates,
+              case .ownAudio(_, _, .some) = servers.first(where: { $0.id == id })?.auth
+        else { return }
+        liveUpdates = Task { [weak self] in
+            var wait: Duration = .seconds(2)
+            while !Task.isCancelled {
+                do {
+                    for try await _ in source.libraryChanges() {
+                        wait = .seconds(2)
+                        await self?.syncCatalogue(id)
+                    }
+                } catch SourceError.signInRejected {
+                    return
+                } catch {}
+                try? await Task.sleep(for: wait)
+                wait = min(wait * 2, .seconds(120))
+            }
         }
     }
 

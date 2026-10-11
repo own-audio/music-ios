@@ -91,6 +91,60 @@ struct OwnAudioFeedTests {
     }
 }
 
+@Suite("own.audio offline edits and live updates")
+struct OwnAudioPushTests {
+    private let host = URL(string: "https://music.example.com")!
+
+    private func source(_ session: URLSession, signedIn: Bool = true) -> OwnAudioSource {
+        OwnAudioSource(
+            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: session)),
+            client: OwnAudioClient(host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil), session: session)
+        )
+    }
+
+    @Test("edits become the API's changes: kinds mapped, a play with its length")
+    func mapping() {
+        let at = Date(timeIntervalSince1970: 1_791_000_000)
+        let rating = OwnAudioSource.change(.init(clientId: "c1", itemId: "al", change: .rating(.album, 4), madeAt: at))
+        #expect(rating.op == "rate" && rating.kind == .album && rating.rating == 4 && rating.at == at)
+        let artist = OwnAudioSource.change(.init(clientId: "c2", itemId: "ar", change: .favorite(.artist, false), madeAt: at))
+        #expect(artist.op == "unfavourite" && artist.kind == .contributor)
+        let play = OwnAudioSource.change(.init(clientId: "c3", itemId: "t1", change: .played(startedAt: at, heardSecs: 120.5), madeAt: at.addingTimeInterval(121)))
+        #expect(play.op == "play" && play.kind == .track && play.listenedMs == 120_500)
+        #expect(play.startedAt == at && play.endedAt == at.addingTimeInterval(121) && play.clientId == "c3")
+    }
+
+    @Test("more than 500 go in several requests")
+    func batches() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            .init(statusCode: 200, body: Data("[]".utf8), headers: ["Content-Type": "application/json"])
+        }
+        let edits = (0..<1001).map { OfflineEdit(clientId: "c\($0)", itemId: "t\($0)", change: .favorite(.song, true), madeAt: Date()) }
+        try await source(mock.urlSession).push(edits)
+        #expect(await mock.requestLog().count == 3)
+    }
+
+    @Test("an own.audio server signed in the old way sends them one at a time")
+    func notSignedIn() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in .init(statusCode: 500, body: Data()) }
+        await #expect(throws: SourceError.unsupported) {
+            try await source(mock.urlSession, signedIn: false).push([.init(clientId: "c", itemId: "t", change: .favorite(.song, true), madeAt: Date())])
+        }
+        #expect(await mock.requestLog().isEmpty)
+    }
+
+    @Test("only library events are passed on")
+    func liveUpdates() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            .init(statusCode: 200, body: Data("event: library\nid: 1\ndata: {}\n\nevent: other\ndata: x\n\nevent: library\nid: 2\ndata: {}\n\n".utf8),
+                  headers: ["Content-Type": "text/event-stream"])
+        }
+        var count = 0
+        for try await _ in source(mock.urlSession).libraryChanges() { count += 1 }
+        #expect(count == 2)
+    }
+}
+
 @Suite("own.audio sign-in kept in the Keychain")
 struct OwnAudioAuthTests {
     @Test("an own.audio server saved before tokens still loads, and the new kind round-trips")

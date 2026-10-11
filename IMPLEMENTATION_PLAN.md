@@ -76,10 +76,18 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     from the snapshot and the change feed instead of paging. What v2 does not offer yet
     (playlists, search, random songs, instant mix, lyrics, play-count orders) still goes
     through the server's Subsonic API, which uses the same ids.
-  - **M8c**: offline changes through `/sync/push`; live updates from `/events`; the Subsonic
-    path dropped for own.audio once v2 covers the rest.
+  - [x] **M8c — offline changes and live updates** (2026-10-11; live tests against a beta.8
+    server): what was changed offline goes in one `/sync/push` (favorites, ratings with their
+    kind, plays with the time heard; playlist edits stay one call each, v2 has no playlists
+    yet); while on screen the active server's `/events` stream triggers a change-feed sync.
+  - **M8d**: the Subsonic path dropped for own.audio once v2 covers the rest — playlists,
+    search, random songs, instant mix, lyrics, play-count orders (server work first,
+    `docs/api-v2-plan.md` in the server repository).
 - Later: Plex as a fourth server (official API since 2025), podcasts tab where the server has
   podcasts, CarPlay check.
+- Later: Ampache (tried 8.2.2 on 2026-10-11): its Subsonic API refuses token sign-in (`t`+`s`,
+  error 40) and takes only the password (`p=`) or an OpenSubsonic API key
+  (`apiKeyAuthentication`), so the app can't sign in to it yet.
 
 ## Test servers
 

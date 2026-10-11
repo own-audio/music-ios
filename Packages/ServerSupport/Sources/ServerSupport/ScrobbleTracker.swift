@@ -10,8 +10,9 @@ import Foundation
 public final class ScrobbleTracker {
     public enum Event: Equatable, Sendable {
         case nowPlaying(key: String)
-        /// `startedAt` is when listening began, which the server records as the play's time.
-        case played(key: String, startedAt: Date)
+        /// `startedAt` is when listening began, which the server records as the play's time;
+        /// `heardSecs` how much of it had been heard when it counted.
+        case played(key: String, startedAt: Date, heardSecs: Double)
     }
 
     private struct Current {
@@ -82,7 +83,7 @@ public final class ScrobbleTracker {
     private func countIfDue() {
         guard let current, !current.counted, current.heardSecs >= threshold(for: current) else { return }
         self.current?.counted = true
-        send(.played(key: current.key, startedAt: current.startedAt))
+        send(.played(key: current.key, startedAt: current.startedAt, heardSecs: current.heardSecs))
     }
 
     private func threshold(for track: Current) -> Double {

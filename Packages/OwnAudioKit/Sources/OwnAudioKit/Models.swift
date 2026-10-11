@@ -319,6 +319,111 @@ public enum SnapshotLine: Sendable {
     case end(cursor: String)
 }
 
+/// One change made offline, for `POST /sync/push`. `clientId` comes back in its result, and
+/// makes a play sent twice count once.
+public struct OfflineChange: Encodable, Sendable, Equatable {
+    public let clientId: String
+    public let op: String
+    public let kind: ItemKind
+    public let id: String
+    /// When it happened, by the device's clock (the server never lets it be in the future).
+    public let at: Date?
+    public var rating: Int?
+    public var startedAt: Date?
+    public var endedAt: Date?
+    public var listenedMs: Int64?
+    public var deviceKind: String?
+
+    init(clientId: String, op: String, kind: ItemKind, id: String, at: Date?) {
+        self.clientId = clientId
+        self.op = op
+        self.kind = kind
+        self.id = id
+        self.at = at
+    }
+
+    public static func favourite(_ kind: ItemKind, id: String, _ on: Bool, at: Date, clientId: String) -> Self {
+        .init(clientId: clientId, op: on ? "favourite" : "unfavourite", kind: kind, id: id, at: at)
+    }
+
+    /// 1 to 5; 0 takes the rating away.
+    public static func rating(_ kind: ItemKind, id: String, _ rating: Int, at: Date, clientId: String) -> Self {
+        var change = Self(clientId: clientId, op: "rate", kind: kind, id: id, at: at)
+        change.rating = rating
+        return change
+    }
+
+    public static func play(_ play: Play) -> Self {
+        var change = Self(clientId: play.clientId, op: "play", kind: play.kind, id: play.id, at: play.endedAt)
+        change.startedAt = play.startedAt
+        change.endedAt = play.endedAt
+        change.listenedMs = play.listenedMs
+        change.deviceKind = play.deviceKind
+        return change
+    }
+}
+
+/// An event of `GET /events`.
+public struct LiveEvent: Sendable, Equatable {
+    /// `library`: something the account sees changed; read the change feed.
+    public let type: String
+    /// For resuming with `Last-Event-ID`.
+    public let id: String?
+    public let data: String
+}
+
+/// Reads a `text/event-stream` (the HTML standard's rules, without `retry`): fields until a
+/// blank line, then the event. Fed bytes rather than lines, because Foundation's line reader
+/// leaves out the blank lines that end each event.
+struct EventStreamParser {
+    private var line: [UInt8] = []
+    private var lastWasCR = false
+    private var type = ""
+    private var id: String?
+    private var data: [String] = []
+
+    mutating func feed(_ byte: UInt8) -> LiveEvent? {
+        switch byte {
+        case 0x0A where lastWasCR:
+            lastWasCR = false
+            return nil
+        case 0x0A, 0x0D:
+            lastWasCR = byte == 0x0D
+            defer { line.removeAll(keepingCapacity: true) }
+            return feed(line: String(decoding: line, as: UTF8.self))
+        default:
+            lastWasCR = false
+            line.append(byte)
+            return nil
+        }
+    }
+
+    mutating func feed(line: String) -> LiveEvent? {
+        if line.isEmpty {
+            defer { type = ""; data = [] }
+            guard !data.isEmpty else { return nil }
+            return LiveEvent(type: type.isEmpty ? "message" : type, id: id, data: data.joined(separator: "\n"))
+        }
+        if line.hasPrefix(":") { return nil }
+        let field: Substring, value: Substring
+        if let colon = line.firstIndex(of: ":") {
+            field = line[..<colon]
+            let rest = line[line.index(after: colon)...]
+            value = rest.hasPrefix(" ") ? rest.dropFirst() : rest
+        } else {
+            field = Substring(line)
+            value = ""
+        }
+        switch field {
+        case "event": type = String(value)
+        case "data": data.append(String(value))
+        case "id": id = String(value)
+        default: break
+        }
+        return nil
+    }
+}
+
 /// Any JSON, kept as it came, for records decoded later by their kind.
 public enum JSONValue: Codable, Sendable, Equatable {
     case null

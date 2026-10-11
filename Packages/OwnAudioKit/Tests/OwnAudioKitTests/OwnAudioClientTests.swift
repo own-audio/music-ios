@@ -179,6 +179,56 @@ struct OwnAudioClientTests {
         #expect(sent.url?.path == "/api/v2/me/progress/track/t1")
     }
 
+    @Test("offline changes go as one push, each change snake_case, answered in order")
+    func push() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            json(#"[{"client_id":"f1","status":"ok"},{"client_id":"p1","status":"duplicate"}]"#)
+        }
+        let client = OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
+        let at = Date(timeIntervalSince1970: 1_791_000_000)
+        let results = try await client.push([
+            .favourite(.album, id: "al1", false, at: at, clientId: "f1"),
+            .play(Play(clientId: "p1", kind: .track, id: "t1", startedAt: at, endedAt: at.addingTimeInterval(200), listenedMs: 190_000)),
+        ])
+        #expect(results.map(\.status) == ["ok", "duplicate"])
+        let sent = await mock.requestLog().first!
+        #expect(sent.url?.path == "/api/v2/sync/push")
+        let body = try #require(sent.httpBody ?? sent.httpBodyStream.map { stream -> Data in
+            stream.open(); defer { stream.close() }
+            var data = Data(); var buffer = [UInt8](repeating: 0, count: 4096)
+            while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
+            return data
+        })
+        let changes = try #require((try JSONSerialization.jsonObject(with: body) as? [String: Any])?["changes"] as? [[String: Any]])
+        #expect(changes[0]["op"] as? String == "unfavourite" && changes[0]["kind"] as? String == "album")
+        #expect(changes[0]["rating"] == nil, "what a change doesn't have is left out")
+        #expect(changes[1]["listened_ms"] as? Int == 190_000 && changes[1]["client_id"] as? String == "p1")
+    }
+
+    @Test("event stream: fields until a blank line, comments skipped, CRLF too")
+    func eventStream() {
+        var parser = EventStreamParser()
+        let text = ": keep-alive\n\nevent: library\nid: 41\ndata: {\"seq\":41}\n\r\nevent: library\r\nid: 42\r\ndata: a\r\ndata: b\r\n\r\n"
+        let events = Array(text.utf8).compactMap { parser.feed($0) }
+        #expect(events == [
+            LiveEvent(type: "library", id: "41", data: #"{"seq":41}"#),
+            LiveEvent(type: "library", id: "42", data: "a\nb"),
+        ])
+    }
+
+    @Test("events: the stream's library events arrive, with the bearer and Last-Event-ID")
+    func events() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { request in
+            #expect(request.value(forHTTPHeaderField: "Last-Event-ID") == "40")
+            return .init(statusCode: 200, body: Data("event: library\nid: 41\ndata: {\"seq\":41}\n\n".utf8), headers: ["Content-Type": "text/event-stream"])
+        }
+        let client = OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
+        var received: [LiveEvent] = []
+        for try await event in client.events(lastEventId: "40") { received.append(event) }
+        #expect(received.map(\.id) == ["41"])
+        #expect(await mock.requestLog().first?.value(forHTTPHeaderField: "Authorization") == "Bearer a")
+    }
+
     @Test("snapshot lines: begin, record, end")
     func snapshotLines() throws {
         guard case .begin(let c)? = try OwnAudioClient.snapshotLine(#"{"type":"begin","cursor":"c1"}"#) else { Issue.record("begin"); return }

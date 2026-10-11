@@ -33,7 +33,7 @@ struct ScrobbleTrackerTests {
         tracker.started(key: "a", durationSecs: 200)
         clock.advance(100)
         tracker.stopped(key: "a", isEnd: true)
-        #expect(events() == [.nowPlaying(key: "a"), .played(key: "a", startedAt: began)])
+        #expect(events() == [.nowPlaying(key: "a"), .played(key: "a", startedAt: began, heardSecs: 100)])
     }
 
     @Test("skipping before half doesn't count")
@@ -51,7 +51,7 @@ struct ScrobbleTrackerTests {
         tracker.started(key: "long", durationSecs: 1800)
         clock.advance(240)
         tracker.stopped(key: "long", isEnd: true)
-        #expect(events().last == .played(key: "long", startedAt: Date(timeIntervalSince1970: 1_000_000)))
+        #expect(events().last == .played(key: "long", startedAt: Date(timeIntervalSince1970: 1_000_000), heardSecs: 240))
     }
 
     @Test("a track under 30 seconds never counts")
@@ -110,7 +110,7 @@ struct ScrobbleTrackerTests {
         tracker.started(key: "b", durationSecs: 200)
         #expect(events() == [
             .nowPlaying(key: "a"),
-            .played(key: "a", startedAt: Date(timeIntervalSince1970: 1_000_000)),
+            .played(key: "a", startedAt: Date(timeIntervalSince1970: 1_000_000), heardSecs: 120),
             .nowPlaying(key: "b"),
         ])
     }

@@ -42,6 +42,31 @@ struct LiveServerTests {
         }
     }
 
+    @Test("a pushed change comes back as a library event, then is undone")
+    func pushAndEvents() async throws {
+        let client = try await signedIn()
+        let track = try #require(try await client.tracks(limit: 1).items.first)
+        let favourites = try await client.all { try await client.favourites(.track, cursor: $0) }
+        let was = favourites.contains { $0.id == track.id }
+        let first = Task { () -> LiveEvent? in
+            for try await event in client.events() { return event }
+            return nil
+        }
+        // The stream starts from the newest change when it connects.
+        try await Task.sleep(for: .seconds(2))
+        let results = try await client.push([.favourite(.track, id: track.id, !was, at: Date(), clientId: "live-\(UUID())")])
+        #expect(results.map(\.status) == ["ok"])
+        let deadline = Task {
+            try await Task.sleep(for: .seconds(20))
+            first.cancel()
+        }
+        let event = try await first.value
+        deadline.cancel()
+        #expect(event?.type == "library")
+        _ = try await client.push([.favourite(.track, id: track.id, was, at: Date(), clientId: "live-\(UUID())")])
+        await client.signOut()
+    }
+
     @Test("the catalogue and its records decode")
     func catalogue() async throws {
         let client = try await signedIn()

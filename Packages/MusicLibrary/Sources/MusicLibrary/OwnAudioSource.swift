@@ -9,6 +9,46 @@ public protocol ChangeFeedCatalogue: MusicSource {
     func syncCatalogue(_ state: FeedState?) async throws -> FeedResult
 }
 
+/// A change made while offline, kept on the phone and sent later.
+public struct OfflineEdit: Sendable, Equatable {
+    public enum Change: Sendable, Equatable {
+        case favorite(FavoriteKind, Bool)
+        /// A song or an album; 0 takes the rating away.
+        case rating(FavoriteKind, Int)
+        /// A song heard for `heardSecs`, counted when that much had been heard.
+        case played(startedAt: Date, heardSecs: Double)
+    }
+
+    /// The phone's own id for it, which makes sending it twice harmless.
+    public let clientId: String
+    public let itemId: String
+    public let change: Change
+    public let madeAt: Date
+
+    public init(clientId: String, itemId: String, change: Change, madeAt: Date) {
+        self.clientId = clientId
+        self.itemId = itemId
+        self.change = change
+        self.madeAt = madeAt
+    }
+}
+
+/// A source that takes what was changed offline in one request, rather than one call each.
+public protocol BatchedOfflineEdits: MusicSource {
+    /// Sends `edits`, in the order made. Returns normally once the server has answered every
+    /// one — including those it refused for good (the song is gone), which are not worth
+    /// sending again. Throws when nothing was answered; `SourceError.unsupported` means this
+    /// server has to be sent them one at a time.
+    func push(_ edits: [OfflineEdit]) async throws
+}
+
+/// A source that says when the library changed elsewhere, so the copy on the phone can catch
+/// up at once rather than at the next scheduled sync.
+public protocol LiveLibraryUpdates: MusicSource {
+    /// One element per change, until the connection ends (normally or with an error).
+    func libraryChanges() -> AsyncThrowingStream<Void, Error>
+}
+
 /// Where a change feed was read up to, and the records it brought, kept between launches.
 public struct FeedState: Codable, Sendable {
     let cursor: String
@@ -27,7 +67,7 @@ public struct FeedResult: Sendable {
 /// snapshot and change feed (`/api/v2`); everything else still goes through its Subsonic API —
 /// playlists, search, random songs, lyrics and play-count orders are not in the new API yet —
 /// and both use the same ids, so the two never disagree about what is what.
-public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue {
+public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEdits, LiveLibraryUpdates {
     public let subsonic: SubsonicSource
     public let client: OwnAudioClient
 
@@ -150,6 +190,64 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue {
         }
         guard let cursor = end ?? begin else { throw SourceError.unreadable }
         return FeedState(cursor: cursor, records: records)
+    }
+
+    // MARK: - Offline edits and live updates
+
+    /// The server takes at most this many changes in one request.
+    static let pushBatch = 500
+
+    public func push(_ edits: [OfflineEdit]) async throws {
+        guard await client.tokens.current != nil else { throw SourceError.unsupported }
+        let changes = edits.map(Self.change)
+        do {
+            for start in stride(from: 0, to: changes.count, by: Self.pushBatch) {
+                _ = try await client.push(Array(changes[start..<min(start + Self.pushBatch, changes.count)]))
+            }
+        } catch let error as OwnAudioError {
+            throw Self.sourceError(error)
+        }
+    }
+
+    static func change(_ edit: OfflineEdit) -> OfflineChange {
+        switch edit.change {
+        case .favorite(let kind, let on):
+            return .favourite(itemKind(kind), id: edit.itemId, on, at: edit.madeAt, clientId: edit.clientId)
+        case .rating(let kind, let rating):
+            return .rating(itemKind(kind), id: edit.itemId, rating, at: edit.madeAt, clientId: edit.clientId)
+        case .played(let startedAt, let heardSecs):
+            return .play(Play(
+                clientId: edit.clientId, kind: .track, id: edit.itemId, startedAt: startedAt,
+                endedAt: max(edit.madeAt, startedAt), listenedMs: Int64(max(heardSecs, 0) * 1000)
+            ))
+        }
+    }
+
+    static func itemKind(_ kind: FavoriteKind) -> ItemKind {
+        switch kind {
+        case .song: .track
+        case .album: .album
+        case .artist: .contributor
+        }
+    }
+
+    public func libraryChanges() -> AsyncThrowingStream<Void, Error> {
+        let events = client.events()
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await event in events where event.type == "library" {
+                        continuation.yield()
+                    }
+                    continuation.finish()
+                } catch let error as OwnAudioError {
+                    continuation.finish(throwing: Self.sourceError(error))
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 
     // MARK: - From the API's records to the app's
