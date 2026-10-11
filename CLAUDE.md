@@ -19,6 +19,7 @@ write everything for strangers to read.
 ```bash
 xcodegen generate                       # after changing project.yml; the .xcodeproj is not committed
 (cd Packages/SubsonicKit && swift test)
+(cd Packages/OwnAudioKit && swift test)   # live tests too with OWNAUDIO_HOST/EMAIL/ACCOUNT_PASSWORD set
 (cd Packages/JellyfinKit && swift test)
 (cd Packages/PlayerEngine && swift test)   # includes a real AVAudioEngine playing fixtures
 xcodebuild -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic \
@@ -53,6 +54,7 @@ because the repo is public. App icons must have no alpha channel.
 
 - `App/OwnAudioMusic/` — the app.
 - `Packages/SubsonicKit/` — Subsonic/OpenSubsonic client, Foundation only.
+- `Packages/OwnAudioKit/` — own.audio's own API (`/api/v2`), Foundation only.
 - `Packages/JellyfinKit/` — Jellyfin client, Foundation only.
 - `Packages/PlayerEngine/` — `MusicEngine` + `PlayerCore`; knows tracks by an opaque id,
   nothing about servers.

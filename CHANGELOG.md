@@ -28,6 +28,12 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- `Packages/OwnAudioKit`: a client for own.audio's own API (`/api/v2`, servers from
+  1.0.0-beta.7), Foundation only like the other two. Discovery, sign-in through the OAuth token
+  endpoint (password, two-factor, a provider's id token), refresh tokens that rotate — one
+  refresh at a time, since the server signs a device out when a used refresh token comes back —,
+  problem-details errors, cursor pages, the catalogue, favorites, ratings, progress, plays,
+  `playback-info`, the change feed and the streamed snapshot. Not used by the app yet (M8b).
 - **Jellyfin**, next to Subsonic: adding a server finds out what it is (Jellyfin's public info
   first, then a Subsonic ping); sign in with a password or Quick Connect (Jellyfin); a
   music-library choice per Jellyfin server (Settings → Servers → Music Library…); Instant Mix

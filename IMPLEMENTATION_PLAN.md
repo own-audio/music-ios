@@ -65,6 +65,19 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   instant and complete offline; uses a server change feed where there is one.
 - [ ] **M7: Release.** Icon, App Store text, screenshots, privacy policy section, TestFlight
   under the new bundle id; Jellyfin's and Navidrome's client pages.
+- [ ] **M8: own.audio on its own API.** own.audio servers from 1.0.0-beta.7 speak `/api/v2`
+  (draft until this app ships on it). In steps:
+  - [x] **M8a — OwnAudioKit** (2026-10-11; unit tests and live tests against a beta.7 server): a client for `/api/v2`, Foundation only, beside SubsonicKit and
+    JellyfinKit: discovery (`/.well-known/own-audio`), the token endpoint (password, refresh with
+    rotation, two-factor, device code), problem details, cursor pages, the catalogue, the
+    listener's state, `playback-info`, the change feed and snapshot.
+  - **M8b — the own.audio source on v2**: sign-in through the token endpoint (tokens in the
+    Keychain); favorites, ratings, plays and streaming through v2; the catalogue on the phone
+    from the snapshot and the change feed instead of paging. What v2 does not offer yet
+    (playlists, search, random songs, instant mix, lyrics, play-count orders) still goes
+    through the server's Subsonic API, which uses the same ids.
+  - **M8c**: offline changes through `/sync/push`; live updates from `/events`; the Subsonic
+    path dropped for own.audio once v2 covers the rest.
 - Later: Plex as a fourth server (official API since 2025), podcasts tab where the server has
   podcasts, CarPlay check.
 

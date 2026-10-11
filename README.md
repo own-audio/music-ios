@@ -36,6 +36,7 @@ tests are described in [CLAUDE.md](CLAUDE.md).
 
 - `App/` — the app
 - `Packages/SubsonicKit` — Subsonic/OpenSubsonic client
+- `Packages/OwnAudioKit` — own.audio's own API (`/api/v2`)
 - `Packages/JellyfinKit` — Jellyfin client
 - `Packages/PlayerEngine` — the player (`MusicEngine`, `PlayerCore`); knows nothing about servers
 - `UITests/` — end-to-end tests against real servers
