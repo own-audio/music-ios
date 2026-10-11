@@ -12,10 +12,11 @@ let package = Package(
         .package(path: "../ServerSupport"),
         .package(path: "../SubsonicKit"),
         .package(path: "../JellyfinKit"),
+        .package(path: "../OwnAudioKit"),
     ],
     targets: [
         // The app's view of any server: one set of models, one interface, an adapter per kind.
-        .target(name: "MusicLibrary", dependencies: ["ServerSupport", "SubsonicKit", "JellyfinKit"]),
+        .target(name: "MusicLibrary", dependencies: ["ServerSupport", "SubsonicKit", "JellyfinKit", "OwnAudioKit"]),
         .testTarget(name: "MusicLibraryTests", dependencies: ["MusicLibrary"]),
     ]
 )

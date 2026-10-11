@@ -71,7 +71,7 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     JellyfinKit: discovery (`/.well-known/own-audio`), the token endpoint (password, refresh with
     rotation, two-factor, device code), problem details, cursor pages, the catalogue, the
     listener's state, `playback-info`, the change feed and snapshot.
-  - **M8b — the own.audio source on v2**: sign-in through the token endpoint (tokens in the
+  - [x] **M8b — the own.audio source on v2** (2026-10-11; favorites, ratings and plays stay on Subsonic, which writes the same records, so there was nothing to gain moving them yet): sign-in through the token endpoint (tokens in the
     Keychain); favorites, ratings, plays and streaming through v2; the catalogue on the phone
     from the snapshot and the change feed instead of paging. What v2 does not offer yet
     (playlists, search, random songs, instant mix, lyrics, play-count orders) still goes

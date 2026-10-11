@@ -28,12 +28,21 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps
+  its tokens (refreshed one at a time, rotated tokens saved straight back to the Keychain) and
+  the account's Subsonic key, which it fetches with them. Accounts with **two-factor sign-in**
+  get a code screen after the password, Apple or Google; the code from an authenticator app or
+  a recovery code finishes it. Older own.audio servers, and servers added before this version,
+  go on as before.
+- **The library on the phone from own.audio's change feed**: the whole library once, then only
+  what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
+  feed sync that fails falls back to paging.
 - `Packages/OwnAudioKit`: a client for own.audio's own API (`/api/v2`, servers from
   1.0.0-beta.7), Foundation only like the other two. Discovery, sign-in through the OAuth token
   endpoint (password, two-factor, a provider's id token), refresh tokens that rotate — one
   refresh at a time, since the server signs a device out when a used refresh token comes back —,
   problem-details errors, cursor pages, the catalogue, favorites, ratings, progress, plays,
-  `playback-info`, the change feed and the streamed snapshot. Not used by the app yet (M8b).
+  `playback-info`, the change feed and the streamed snapshot.
 - **Jellyfin**, next to Subsonic: adding a server finds out what it is (Jellyfin's public info
   first, then a Subsonic ping); sign in with a password or Quick Connect (Jellyfin); a
   music-library choice per Jellyfin server (Settings → Servers → Music Library…); Instant Mix

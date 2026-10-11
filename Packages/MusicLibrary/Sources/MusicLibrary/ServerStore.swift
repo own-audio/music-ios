@@ -1,5 +1,6 @@
 import Foundation
 import JellyfinKit
+import OwnAudioKit
 import Security
 import SubsonicKit
 import os
@@ -17,11 +18,17 @@ public enum ServerAuth: Codable, Sendable, Equatable {
     case subsonic(username: String, password: String)
     /// Jellyfin hands out a token; the password is never kept.
     case jellyfin(session: Session)
+    /// own.audio from 1.0.0-beta.7: its own API's tokens (rotated on every refresh, so they are
+    /// saved again each time) and the account's Subsonic key for what that API doesn't offer
+    /// yet. `tokens` is nil once the server has refused a refresh: the key still works, and
+    /// signing in again brings the rest back.
+    case ownAudio(username: String, key: String, tokens: Tokens?)
 
     public var username: String {
         switch self {
         case .subsonic(let username, _): username
         case .jellyfin(let session): session.userName
+        case .ownAudio(let username, _, _): username
         }
     }
 }
@@ -138,6 +145,19 @@ public actor ServerStore {
         try persist(records)
     }
 
+    /// own.audio's rotated tokens; nil after a refused refresh.
+    public func updateTokens(serverId: UUID, _ tokens: Tokens?) {
+        var records = loadAll()
+        guard let index = records.firstIndex(where: { $0.id == serverId }),
+              case .ownAudio(let username, let key, _) = records[index].auth else { return }
+        records[index].auth = .ownAudio(username: username, key: key, tokens: tokens)
+        do {
+            try persist(records)
+        } catch {
+            logger.error("Rotated tokens could not be saved.")
+        }
+    }
+
     public func clear() {
         SecItemDelete(baseQuery() as CFDictionary)
     }
@@ -193,12 +213,58 @@ public struct SourceEnvironment: Sendable {
     public let cache: ResponseCache?
     public let offline: OfflineSwitch?
     public let clientInfo: ClientInfo
+    /// own.audio's token sessions, one per server for as long as the app runs (see `OwnAudioSessions`).
+    public let ownAudioSessions: OwnAudioSessions
 
-    public init(urlSession: URLSession, cache: ResponseCache?, offline: OfflineSwitch?, clientInfo: ClientInfo) {
+    public init(
+        urlSession: URLSession, cache: ResponseCache?, offline: OfflineSwitch?, clientInfo: ClientInfo,
+        ownAudioSessions: OwnAudioSessions = OwnAudioSessions(store: nil)
+    ) {
         self.urlSession = urlSession
         self.cache = cache
         self.offline = offline
         self.clientInfo = clientInfo
+        self.ownAudioSessions = ownAudioSessions
+    }
+}
+
+/// One `TokenSession` per own.audio server, kept across the sources the app rebuilds whenever an
+/// address changes. A refresh token works once; two sources refreshing the same one would look
+/// like theft to the server, which then signs the device out.
+public final class OwnAudioSessions: @unchecked Sendable {
+    private let lock = NSLock()
+    private var sessions: [UUID: TokenSession] = [:]
+    private let store: ServerStore?
+
+    public init(store: ServerStore?) {
+        self.store = store
+    }
+
+    /// The server's session, made from its saved tokens the first time.
+    public func session(for serverId: UUID, tokens: Tokens?) -> TokenSession {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = sessions[serverId] { return existing }
+        let made = TokenSession(tokens, keeper: store.map { StoredTokens(store: $0, serverId: serverId) })
+        sessions[serverId] = made
+        return made
+    }
+
+    /// Forgets a server's session, when it is removed or signed in again.
+    public func forget(_ serverId: UUID) {
+        lock.lock()
+        sessions[serverId] = nil
+        lock.unlock()
+    }
+}
+
+/// Saves rotated tokens into the server's record in the Keychain.
+struct StoredTokens: TokenKeeper {
+    let store: ServerStore
+    let serverId: UUID
+
+    func save(_ tokens: Tokens?) async {
+        await store.updateTokens(serverId: serverId, tokens)
     }
 }
 
@@ -220,6 +286,14 @@ extension ServerRecord {
                 urlSession: environment.urlSession, cache: environment.cache, offline: environment.offline,
                 cacheIdentity: id.uuidString
             ))
+        case .ownAudio(let username, let key, let tokens):
+            let subsonic = SubsonicSource(client: SubsonicClient(
+                host: url, username: username, password: key,
+                session: environment.urlSession, cache: environment.cache, offline: environment.offline,
+                cacheIdentity: id.uuidString
+            ))
+            let session = environment.ownAudioSessions.session(for: id, tokens: tokens)
+            return OwnAudioSource(subsonic: subsonic, client: OwnAudioClient(host: url, tokens: session, session: environment.urlSession))
         }
     }
 }

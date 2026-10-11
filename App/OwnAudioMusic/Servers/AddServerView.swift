@@ -125,6 +125,9 @@ struct AddServerView: View {
         .sheet(isPresented: $isQuickConnecting) {
             QuickConnectView(address: address, name: name) { dismiss() }
         }
+        .sheet(item: model.pendingTwoFactorBinding) { _ in
+            TwoFactorView { dismiss() }
+        }
     }
 
     private func connect() {
@@ -136,6 +139,8 @@ struct AddServerView: View {
                 try await model.addServer(address: address, username: username, password: password, name: name)
                 Haptics.impact(.medium)
                 dismiss()
+            } catch where error.isTwoFactorNeeded {
+                // The code sheet takes it from here.
             } catch {
                 errorMessage = error.localizedDescription
             }

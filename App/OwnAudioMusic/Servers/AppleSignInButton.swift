@@ -63,6 +63,8 @@ struct AppleSignInButton: View {
                 onSignedIn()
             } catch let error as ASAuthorizationError where error.code == .canceled {
                 return
+            } catch where error.isTwoFactorNeeded {
+                // The code sheet takes it from here.
             } catch {
                 errorMessage = error.localizedDescription
             }

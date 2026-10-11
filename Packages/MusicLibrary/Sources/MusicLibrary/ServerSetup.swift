@@ -1,5 +1,6 @@
 import Foundation
 import JellyfinKit
+import OwnAudioKit
 import SubsonicKit
 
 // The app imports only this module; both protocol clients have their own `Song`, `Album`… and
@@ -71,5 +72,70 @@ public enum ServerSetup {
         } catch let error as JellyfinClient.JellyfinError {
             throw JellyfinSource.sourceError(error)
         }
+    }
+}
+
+// MARK: - own.audio's own API
+
+public typealias OwnAudioTokens = OwnAudioKit.Tokens
+
+/// How a sign-in to an own.audio server through its own API ended.
+public enum OwnAudioSignInResult: Sendable {
+    /// Signed in: the account's Subsonic login and key, and the API's tokens.
+    case signedIn(username: String, key: String, tokens: OwnAudioTokens)
+    /// The account has two-factor sign-in: ask for the code and finish with
+    /// `ServerSetup.ownAudioFinishTwoFactor`.
+    case twoFactor(mfaToken: String)
+}
+
+extension ServerSetup {
+    /// Whether the own.audio server at `host` speaks its own API (1.0.0-beta.7 and later).
+    public static func ownAudioSpeaksV2(host: URL, urlSession: URLSession) async -> Bool {
+        (try? await OwnAudioClient.discover(host: host, session: urlSession))?.v2 != nil
+    }
+
+    /// Email and password, through the server's own API.
+    public static func ownAudioSignIn(
+        host: URL, email: String, password: String, deviceName: String, urlSession: URLSession
+    ) async throws -> OwnAudioSignInResult {
+        try await finish(host: host, urlSession: urlSession) {
+            try await OwnAudioClient.signIn(host: host, email: email, password: password, device: .init(name: deviceName), session: urlSession)
+        }
+    }
+
+    /// Apple's or Google's id token, through the server's own API.
+    public static func ownAudioSignIn(
+        host: URL, provider: String, idToken: String, fullName: String?, deviceName: String, urlSession: URLSession
+    ) async throws -> OwnAudioSignInResult {
+        try await finish(host: host, urlSession: urlSession) {
+            try await OwnAudioClient.signIn(host: host, provider: provider, idToken: idToken, fullName: fullName, device: .init(name: deviceName), session: urlSession)
+        }
+    }
+
+    /// The second step: the authenticator's code, or a recovery code.
+    public static func ownAudioFinishTwoFactor(
+        host: URL, mfaToken: String, code: String, urlSession: URLSession
+    ) async throws -> OwnAudioSignInResult {
+        try await finish(host: host, urlSession: urlSession) {
+            try await OwnAudioClient.finishTwoFactor(host: host, mfaToken: mfaToken, code: code, session: urlSession)
+        }
+    }
+
+    /// Tokens, then the Subsonic key fetched with them.
+    private static func finish(
+        host: URL, urlSession: URLSession, _ signIn: () async throws -> OwnAudioTokens
+    ) async throws -> OwnAudioSignInResult {
+        let tokens: OwnAudioTokens
+        do {
+            tokens = try await signIn()
+        } catch OwnAudioError.twoFactorRequired(let mfaToken, _) {
+            return .twoFactor(mfaToken: mfaToken)
+        } catch OwnAudioError.problem(let p) where p.code == "invalid_grant" {
+            throw SourceError.signInRejected
+        } catch let error as OwnAudioError {
+            throw OwnAudioSource.sourceError(error)
+        }
+        let (username, key) = try await ownAudioSubsonicKey(host: host, token: tokens.accessToken, urlSession: urlSession)
+        return .signedIn(username: username, key: key, tokens: tokens)
     }
 }

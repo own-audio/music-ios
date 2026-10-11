@@ -49,6 +49,8 @@ struct GoogleSignInButton: View {
                 onSignedIn()
             } catch is CancellationError {
                 return
+            } catch where error.isTwoFactorNeeded {
+                // The code sheet takes it from here.
             } catch {
                 errorMessage = error.localizedDescription
             }

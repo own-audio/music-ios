@@ -501,6 +501,16 @@
         }
       }
     },
+    "Code" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kód"
+          }
+        }
+      }
+    },
     "Connect" : {
       "localizations" : {
         "cs" : {
@@ -800,6 +810,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Upravit playlist"
+          }
+        }
+      }
+    },
+    "Enter the code from your authenticator app." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadejte kód z ověřovací aplikace."
           }
         }
       }
@@ -1268,6 +1288,16 @@
         }
       }
     },
+    "Sign In" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlásit se"
+          }
+        }
+      }
+    },
     "Sign In with Quick Connect (Jellyfin)" : {
       "localizations" : {
         "cs" : {
@@ -1304,6 +1334,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Říká serveru, co hraje, a počítá přehrání: u serverů Subsonic po poslechu poloviny skladby nebo čtyř minut, u Jellyfinu podle jeho pravidel. Přehrání bez sítě se odešlou později. Server je může předávat na Last.fm nebo ListenBrainz."
+          }
+        }
+      }
+    },
+    "That code isn't right, or it has expired. Try the current one." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kód není správný, nebo už vypršel. Zadejte aktuální."
           }
         }
       }
@@ -1348,6 +1388,16 @@
         }
       }
     },
+    "This account asks for a second step. Enter the code your authenticator app shows for it, or one of your recovery codes." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento účet vyžaduje druhý krok. Zadejte kód, který pro něj ukazuje vaše ověřovací aplikace, nebo jeden ze záchranných kódů."
+          }
+        }
+      }
+    },
     "This account isn't allowed to do that." : {
       "localizations" : {
         "cs" : {
@@ -1374,6 +1424,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vypnout"
+          }
+        }
+      }
+    },
+    "Two-Factor Sign-In" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dvoufázové přihlášení"
           }
         }
       }

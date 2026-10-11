@@ -11,6 +11,9 @@ final class Catalogue: Sendable {
         var songs: [Song]
         var playlists: [Playlist]
         var syncedAt: Date
+        /// Where a server's change feed was read up to, for servers with one (own.audio from
+        /// 1.0.0-beta.7): the next sync asks only for what changed since.
+        var feed: FeedState?
     }
 
     let snapshot: Snapshot
@@ -57,6 +60,25 @@ final class Catalogue: Sendable {
         if keyA.1 != keyB.1 { return keyA.1.localizedStandardCompare(keyB.1) == .orderedAscending }
         if keyA.2 != keyB.2 { return keyA.2 < keyB.2 }
         return keyA.3 < keyB.3
+    }
+
+    /// The library from a server's change feed where it has one — everything once, then only
+    /// what changed since `previous` — and otherwise page by page.
+    static func fetch(from source: any MusicSource, previous: Snapshot?) async throws -> Snapshot {
+        if let feedSource = source as? any ChangeFeedCatalogue {
+            do {
+                let result = try await feedSource.syncCatalogue(previous?.feed)
+                let playlists = (try? await source.playlists()) ?? previous?.playlists ?? []
+                return Snapshot(artists: result.artists, albums: result.albums, songs: result.songs, playlists: playlists, syncedAt: Date(), feed: result.state)
+            } catch SourceError.unsupported {
+                // Signed in before the server had its own API, or its session ended: by paging.
+            } catch where previous?.feed == nil {
+                // A first sync through the feed that failed (own.audio 1.0.0-beta.7 cut its
+                // snapshot short for compressed answers): by paging this time, the feed again
+                // next time.
+            }
+        }
+        return try await fetch(from: source)
     }
 
     /// Everything the server lists, page by page. Some Subsonic servers don't list songs without

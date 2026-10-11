@@ -64,6 +64,9 @@ struct OnboardingView: View {
         .sheet(isPresented: $isQuickConnecting) {
             QuickConnectView(address: address, name: name)
         }
+        .sheet(item: model.pendingTwoFactorBinding) { _ in
+            TwoFactorView()
+        }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
@@ -218,6 +221,8 @@ struct OnboardingView: View {
             do {
                 try await model.addServer(address: address, username: username, password: password, name: name)
                 Haptics.impact(.medium)
+            } catch where error.isTwoFactorNeeded {
+                // The code sheet takes it from here.
             } catch {
                 errorMessage = error.localizedDescription
             }

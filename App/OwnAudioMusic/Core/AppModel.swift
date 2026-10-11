@@ -33,6 +33,8 @@ final class AppModel {
     /// An older catalogue is refreshed; a library rarely changes faster than that, and the
     /// screens online always ask the server anyway.
     private static let catalogueMaxAge: TimeInterval = 6 * 3600
+    /// For a library kept from a server's change feed.
+    private static let fedCatalogueMaxAge: TimeInterval = 10 * 60
 
     /// Offline, show the whole library (what isn't downloaded greyed out) rather than only the
     /// downloads.
@@ -141,6 +143,8 @@ final class AppModel {
     }
 
     private let store: ServerStore
+    /// own.audio's token sessions, one per server for the app's lifetime (`OwnAudioSessions`).
+    @ObservationIgnored private let ownAudioSessions: OwnAudioSessions
     private let registry: ClientRegistry
     private let fileCache: TrackFileCache
     private var sources: [UUID: any MusicSource] = [:]
@@ -198,6 +202,7 @@ final class AppModel {
 
     init(store: ServerStore = ServerStore()) {
         self.store = store
+        ownAudioSessions = OwnAudioSessions(store: store)
         let registry = ClientRegistry()
         self.registry = registry
         covers = CoverArtLoader(registry: registry, offline: offlineSwitch)
@@ -332,7 +337,22 @@ final class AppModel {
         case .rejected:
             // own.audio's Subsonic API takes a per-account key, not the password: with the
             // account's email and password the app fetches the key itself.
-            guard ownAudio != nil else { throw AddServerError.rejected }
+            guard let ownAudio else { throw AddServerError.rejected }
+            // From 1.0.0-beta.7 through the server's own API: tokens, and two-factor sign-in.
+            if await ServerSetup.ownAudioSpeaksV2(host: host, urlSession: Self.quickSession) {
+                let result: OwnAudioSignInResult
+                do {
+                    result = try await ServerSetup.ownAudioSignIn(
+                        host: host, email: username, password: password, deviceName: UIDevice.current.name, urlSession: Self.session
+                    )
+                } catch SourceError.signInRejected {
+                    throw AddServerError.rejected
+                } catch SourceError.network {
+                    throw AddServerError.unreachable
+                }
+                try await finishOwnAudio(result, host: host, info: ownAudio, name: name)
+                return
+            }
             do {
                 (username, secret) = try await ServerSetup.ownAudioSubsonicKey(host: host, email: username, password: password, urlSession: Self.session)
             } catch SourceError.signInRejected {
@@ -377,6 +397,18 @@ final class AppModel {
         } catch {
             throw AddServerError.unreachable
         }
+        if await ServerSetup.ownAudioSpeaksV2(host: host, urlSession: Self.quickSession) {
+            let (provider, idToken, fullName): (String, String, String?) = switch signIn {
+            case .apple(let identityToken, let fullName): ("apple", identityToken, fullName)
+            case .google(let idToken): ("google", idToken, nil)
+            }
+            guard provider == "apple" ? info.signInWithApple : info.signInWithGoogle else { throw AddServerError.providerOff }
+            let result = try await ServerSetup.ownAudioSignIn(
+                host: host, provider: provider, idToken: idToken, fullName: fullName, deviceName: UIDevice.current.name, urlSession: Self.session
+            )
+            try await finishOwnAudio(result, host: host, info: info, name: name)
+            return
+        }
         let token: String
         switch signIn {
         case .apple(let identityToken, let fullName):
@@ -401,6 +433,58 @@ final class AppModel {
         )
         record.learn(info.addresses)
         try await save(record)
+    }
+
+    /// An own.audio sign-in waiting for its second factor (the account has two-factor sign-in on).
+    struct PendingTwoFactor: Identifiable {
+        let id = UUID()
+        let host: URL
+        let mfaToken: String
+        let name: String
+        let info: ServerSetup.OwnAudioInfo
+    }
+
+    /// Set while the code is asked for; the sign-in screens show `TwoFactorView` for it.
+    private(set) var pendingTwoFactor: PendingTwoFactor?
+
+    func cancelTwoFactor() {
+        pendingTwoFactor = nil
+    }
+
+    /// The second step, with the authenticator's code or a recovery code.
+    func finishTwoFactor(code: String) async throws {
+        guard let pending = pendingTwoFactor else { return }
+        let result: OwnAudioSignInResult
+        do {
+            result = try await ServerSetup.ownAudioFinishTwoFactor(
+                host: pending.host, mfaToken: pending.mfaToken, code: code.trimmingCharacters(in: .whitespaces), urlSession: Self.session
+            )
+        } catch SourceError.signInRejected {
+            throw AddServerError.wrongCode
+        } catch SourceError.server {
+            throw AddServerError.wrongCode
+        }
+        pendingTwoFactor = nil
+        try await finishOwnAudio(result, host: pending.host, info: pending.info, name: pending.name)
+    }
+
+    /// Saves a server signed in through own.audio's own API, or asks for the second factor.
+    private func finishOwnAudio(_ result: OwnAudioSignInResult, host: URL, info: ServerSetup.OwnAudioInfo, name: String) async throws {
+        switch result {
+        case .twoFactor(let mfaToken):
+            pendingTwoFactor = PendingTwoFactor(host: host, mfaToken: mfaToken, name: name, info: info)
+            throw AddServerError.twoFactorNeeded
+        case .signedIn(let username, let key, let tokens):
+            guard await ServerSetup.subsonicCheck(host: host, username: username, password: key, urlSession: Self.session) == .ok else {
+                throw AddServerError.rejected
+            }
+            var record = ServerRecord(
+                displayName: displayName(name, fallback: "own.audio"), kind: .ownAudio, host: host,
+                auth: .ownAudio(username: username, key: key, tokens: tokens), serverId: info.id
+            )
+            record.learn(info.addresses)
+            try await save(record)
+        }
     }
 
     /// The public own.audio demo, signed in with the account it offers to anyone.
@@ -467,6 +551,7 @@ final class AppModel {
     func removeServer(id: UUID) async throws {
         // Ends the session on the server too, so the device leaves its dashboard.
         if let source = sources[id] { Task.detached { await source.signOut() } }
+        ownAudioSessions.forget(id)
         try await store.remove(id: id)
         servers.removeAll { $0.id == id }
         downloads.removeAll(serverId: id)
@@ -860,7 +945,10 @@ final class AppModel {
     }
 
     private var sourceEnvironment: SourceEnvironment {
-        SourceEnvironment(urlSession: Self.session, cache: responseCache, offline: offlineSwitch, clientInfo: Self.clientInfo)
+        SourceEnvironment(
+            urlSession: Self.session, cache: responseCache, offline: offlineSwitch, clientInfo: Self.clientInfo,
+            ownAudioSessions: ownAudioSessions
+        )
     }
 
     private func rebuildClients() async {
@@ -985,13 +1073,17 @@ extension AppModel {
             let id = record.id
             guard !syncingCatalogues.contains(id), let source = sources[id] else { continue }
             if !force, let existing = catalogues[id] {
-                if Date().timeIntervalSince(existing.snapshot.syncedAt) < Self.catalogueMaxAge { continue }
-                if network.isExpensive { continue }
+                // From a change feed a refresh is only what changed: worth asking for often,
+                // and small enough for mobile data.
+                let fed = existing.snapshot.feed != nil
+                let maxAge = fed ? Self.fedCatalogueMaxAge : Self.catalogueMaxAge
+                if Date().timeIntervalSince(existing.snapshot.syncedAt) < maxAge { continue }
+                if network.isExpensive, !fed { continue }
             }
             syncingCatalogues.insert(id)
             catalogueErrors[id] = nil
             do {
-                let snapshot = try await Catalogue.fetch(from: source)
+                let snapshot = try await Catalogue.fetch(from: source, previous: catalogues[id]?.snapshot)
                 let store = catalogueStore
                 let catalogue = try await Task.detached {
                     try store.save(snapshot, serverId: id)
@@ -1011,6 +1103,9 @@ extension AppModel {
 
 enum AddServerError: LocalizedError {
     case invalidAddress, rejected, unreachable, notOwnAudio, providerOff
+    /// Not a failure: the code is being asked for (`AppModel.pendingTwoFactor`).
+    case twoFactorNeeded
+    case wrongCode
 
     var errorDescription: String? {
         switch self {
@@ -1019,6 +1114,8 @@ enum AddServerError: LocalizedError {
         case .unreachable: String(localized: "Couldn't reach the server. Check the address, and that this phone can reach it.")
         case .notOwnAudio: String(localized: "This isn't an own.audio server. Sign in with Apple or Google works only there; use the server's username and password.")
         case .providerOff: String(localized: "This own.audio server doesn't offer that sign-in. Use your email and password, or the other button.")
+        case .twoFactorNeeded: String(localized: "Enter the code from your authenticator app.")
+        case .wrongCode: String(localized: "That code isn't right, or it has expired. Try the current one.")
         }
     }
 }
