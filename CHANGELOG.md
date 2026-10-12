@@ -28,6 +28,14 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- Identify Library, on an own.audio server's page when the server offers it: the server compares
+  the songs with MusicBrainz in the background, and the app shows what it proposes by album — to
+  review, sure, not found, done. Accept or reject a song (swipe or hold), accept a whole album
+  (songs matched to another artist are left out), every sure match at once, another edition of an
+  album, or keeping a compilation's song on its own album. A run can be undone or deleted; the
+  files on the server never change. Progress comes from the server's `identify` events where it
+  sends them, else from a slow poll. A server that charges for it says the price before a run
+  starts. `OwnAudioKit` has the calls (`Identify.swift`) and reads a server's `modules`.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps
   its tokens (refreshed one at a time, rotated tokens saved straight back to the Keychain) and
   the account's Subsonic key, which it fetches with them. Accounts with **two-factor sign-in**
@@ -48,8 +56,8 @@ package, merged into this repository — is in `docs/history/`.
   answers and accepts the sign-in, refuses it, or does not answer. For own.audio it checks the
   API's sign-in as well as the Subsonic key.
 - Each server shows **what it is and how the app talks to it** — own.audio's logo,
-  Jellyfin's, or a symbol for Subsonic in the server list, on its detail screen and in the
-  server menu on Home, and "own.audio · own API", "own.audio · Subsonic API" (added the older way: sign in again to switch), "Subsonic
+  Jellyfin's or OpenSubsonic's, without a background, in the server list, on its detail
+  screen and in the server menu on Home, and "own.audio · own API", "own.audio · Subsonic API" (added the older way: sign in again to switch), "Subsonic
   API" or "Jellyfin API" in the list and on the detail screen.
 - **Live updates from own.audio** (servers from 1.0.0-beta.7, signed in through the new API):
   while the app is on screen, the server says when the library or the listener's favorites and

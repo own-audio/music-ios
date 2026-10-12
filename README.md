@@ -52,3 +52,8 @@ servers in the server list. It is © the Jellyfin contributors, from
 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), used as the project's
 [branding guide](https://jellyfin.org/docs/general/contributing/branding/) allows: to show
 that the app works with Jellyfin, not as this app's logo.
+
+The OpenSubsonic logo (`App/OwnAudioMusic/Assets.xcassets/OpenSubsonicLogo.imageset`) marks
+Subsonic servers the same way. It comes from
+[open-subsonic-api](https://github.com/opensubsonic/open-subsonic-api) (`assets/icons/logo.svg`),
+licensed under [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).

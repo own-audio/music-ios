@@ -187,7 +187,8 @@ extension ServerRecord {
 }
 
 /// The server's kind at a glance: own.audio's logo, Jellyfin's (CC BY-SA 4.0, marking a
-/// Jellyfin server, as its branding guide allows), a symbol for Subsonic servers.
+/// Jellyfin server, as its branding guide allows), OpenSubsonic's (Apache-2.0) for Subsonic
+/// servers — one colour, drawn in the text colour.
 struct ServerKindIcon: View {
     let kind: ServerKind
     var size: CGFloat = 28
@@ -198,8 +199,8 @@ struct ServerKindIcon: View {
             case .ownAudio:
                 Image("ServerLogo").resizable().scaledToFit()
             case .subsonic:
-                Image(systemName: "antenna.radiowaves.left.and.right").resizable().scaledToFit().padding(size * 0.2)
-                    .foregroundStyle(.white).background(Color.orange)
+                Image("OpenSubsonicLogo").resizable().scaledToFit().padding(size * 0.06)
+                    .foregroundStyle(.primary)
             case .jellyfin:
                 Image("JellyfinLogo").resizable().scaledToFit().padding(size * 0.08)
             }
@@ -215,15 +216,17 @@ extension ServerKind {
     /// here at the size of a menu's symbols.
     @MainActor
     func menuIcon(dark: Bool, side: CGFloat = 22) -> Image {
-        let name: String? = switch self {
+        let name = switch self {
         case .ownAudio: "ServerLogo"
         case .jellyfin: "JellyfinLogo"
-        case .subsonic: nil
+        case .subsonic: "OpenSubsonicLogo"
         }
         let traits = UITraitCollection(userInterfaceStyle: dark ? .dark : .light)
-        guard let name, let source = UIImage(named: name, in: nil, compatibleWith: traits) else {
-            return Image(systemName: "antenna.radiowaves.left.and.right")
+        guard var source = UIImage(named: name, in: nil, compatibleWith: traits) else {
+            return Image(systemName: "music.note.house")
         }
+        // One colour: drawn as the menu's text would be.
+        if self == .subsonic { source = source.withTintColor(dark ? .white : .black, renderingMode: .alwaysOriginal) }
         let scale = min(side / source.size.width, side / source.size.height)
         let drawn = CGSize(width: source.size.width * scale, height: source.size.height * scale)
         let box = CGSize(width: side, height: side)
