@@ -37,6 +37,8 @@ package, merged into this repository — is in `docs/history/`.
 - **The library on the phone from own.audio's change feed**: the whole library once, then only
   what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
   feed sync that fails falls back to paging.
+- **A new icon**: the own.audio family figures around the note in their own colours, the
+  note in red, and no `</>` at the bottom. The welcome screen and the server list show it too.
 - **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when
   the server stopped accepting the saved sign-in — a changed password, an ended session, a
   demo server that resets every night. With a password, or with Apple or Google where the
