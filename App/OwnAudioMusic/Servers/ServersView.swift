@@ -196,13 +196,12 @@ struct ServerKindIcon: View {
         Group {
             switch kind {
             case .ownAudio:
-                Image("AppLogo").resizable().scaledToFit()
+                Image("ServerLogo").resizable().scaledToFit()
             case .subsonic:
                 Image(systemName: "antenna.radiowaves.left.and.right").resizable().scaledToFit().padding(size * 0.2)
                     .foregroundStyle(.white).background(Color.orange)
             case .jellyfin:
-                Image("JellyfinLogo").resizable().scaledToFit().padding(size * 0.12)
-                    .background(Color(.secondarySystemFill))
+                Image("JellyfinLogo").resizable().scaledToFit().padding(size * 0.08)
             }
         }
         .frame(width: size, height: size)
@@ -217,7 +216,7 @@ extension ServerKind {
     @MainActor
     func menuIcon(dark: Bool, side: CGFloat = 22) -> Image {
         let name: String? = switch self {
-        case .ownAudio: "AppLogo"
+        case .ownAudio: "ServerLogo"
         case .jellyfin: "JellyfinLogo"
         case .subsonic: nil
         }
