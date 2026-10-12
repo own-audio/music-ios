@@ -570,6 +570,27 @@ final class AppModel {
         }
     }
 
+    /// The same with Apple or Google, for an own.audio server whose account signs in that way.
+    func signInAgain(serverId: UUID, with signIn: OwnAudioSignIn) async throws {
+        guard let server = servers.first(where: { $0.id == serverId }) else { return }
+        replacing = serverId
+        do {
+            try await addOwnAudioServer(address: server.host.absoluteString, signIn: signIn, name: server.displayName)
+            replacing = nil
+        } catch {
+            if !error.isTwoFactorNeeded { replacing = nil }
+            throw error
+        }
+    }
+
+    /// Which providers an own.audio server offers, for showing only their buttons.
+    func ownAudioProviders(serverId: UUID) async -> (apple: Bool, google: Bool) {
+        guard let server = servers.first(where: { $0.id == serverId }),
+              let info = try? await ServerSetup.ownAudioInfo(at: server.host, urlSession: Self.quickSession)
+        else { return (false, false) }
+        return (info.signInWithApple, info.signInWithGoogle)
+    }
+
     /// Puts a fresh sign-in on the server being signed in to again; refuses one for another server.
     private func replaceSignIn(of id: UUID, with record: ServerRecord) async throws {
         guard var server = servers.first(where: { $0.id == id }) else { return }
@@ -653,6 +674,21 @@ final class AppModel {
     func checkConnection(id: UUID) async -> ConnectionStatus {
         guard let source = sources[id] else { return .unreachable }
         return await source.checkConnection()
+    }
+
+    /// The last "Check Now" of each server: what it found and when.
+    private(set) var connectionChecks: [UUID: (status: ConnectionStatus, at: Date)] = [:]
+    private(set) var checkingConnections: Set<UUID> = []
+
+    /// Picks the address again, then asks the server whether it accepts the sign-in.
+    func checkNow(id: UUID) async {
+        guard !checkingConnections.contains(id) else { return }
+        checkingConnections.insert(id)
+        await chooseAddresses()
+        let status = await checkConnection(id: id)
+        connectionChecks[id] = (status, Date())
+        if status == .rejected { signInRefused.insert(id) } else if status == .ok { signInRefused.remove(id) }
+        checkingConnections.remove(id)
     }
 
     /// Plays `songs` from the active server, starting at `startSongId` or the first song.

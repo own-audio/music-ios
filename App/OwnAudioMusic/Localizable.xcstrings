@@ -290,6 +290,16 @@
         }
       }
     },
+    "Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this iPhone then stays up to date within seconds." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidáno dřív, než aplikace uměla vlastní API own.audio, nebo ze staršího serveru. Přihlaste se znovu, aby ho používala: knihovna v tomto iPhonu pak bude aktuální během pár sekund."
+          }
+        }
+      }
+    },
     "Address" : {
       "localizations" : {
         "cs" : {
@@ -477,6 +487,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zkontrolovat"
+          }
+        }
+      }
+    },
+    "Checked at %@: no address of the server answers." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkontrolováno v %@: neodpovídá žádná adresa serveru."
+          }
+        }
+      }
+    },
+    "Checked at %@: the server answers and accepts the sign-in." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkontrolováno v %@: server odpovídá a přihlášení přijímá."
+          }
+        }
+      }
+    },
+    "Checked at %@: the server refuses the sign-in. Sign in again below." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkontrolováno v %@: server přihlášení odmítá. Přihlaste se znovu níže."
           }
         }
       }
@@ -1037,6 +1077,16 @@
         }
       }
     },
+    "If you signed up with Apple or Google, sign in the same way." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokud jste se zaregistrovali přes Apple nebo Google, přihlaste se stejně."
+          }
+        }
+      }
+    },
     "Instant Mix" : {
       "localizations" : {
         "cs" : {
@@ -1053,6 +1103,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Internet"
+          }
+        }
+      }
+    },
+    "Jellyfin API" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin API"
           }
         }
       }
@@ -1258,6 +1318,26 @@
         }
       }
     },
+    "own.audio · own API" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio · vlastní API"
+          }
+        }
+      }
+    },
+    "own.audio · Subsonic API" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio · Subsonic API"
+          }
+        }
+      }
+    },
     "Quick Connect" : {
       "localizations" : {
         "cs" : {
@@ -1358,12 +1438,32 @@
         }
       }
     },
+    "Subsonic API" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subsonic API"
+          }
+        }
+      }
+    },
     "Subsonic servers don't say which addresses they have, so add them here; the app checks each one with your sign-in." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Servery Subsonic neříkají, jaké mají adresy, proto je přidejte sem; aplikace každou ověří vaším přihlášením."
+          }
+        }
+      }
+    },
+    "Talks Through" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojení přes"
           }
         }
       }

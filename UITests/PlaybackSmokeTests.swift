@@ -115,6 +115,7 @@ final class PlaybackSmokeTests: XCTestCase {
         servers.tap()
         let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
         XCTAssertTrue(info.waitForExistence(timeout: 10))
+        screenshot(app, "16-servers")
         info.tap()
         let status = app.descendants(matching: .any)["serverDetail.status"].firstMatch
         XCTAssertTrue(status.waitForExistence(timeout: 10))
@@ -122,7 +123,17 @@ final class PlaybackSmokeTests: XCTestCase {
             waitUntil(timeout: 20) { status.label.contains("Connected") },
             "the server should be reached through one of its addresses, got \(status.label)"
         )
+        // Check Now says what it found.
+        app.buttons["serverDetail.check"].tap()
+        let result = app.descendants(matching: .any)["serverDetail.checkResult"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 30), "Check Now should say what it found")
+        XCTAssertTrue(result.label.contains("accepts the sign-in"), "got \(result.label)")
         screenshot(app, "17-server-connection")
+        let talks = app.descendants(matching: .any)["serverDetail.protocol"].firstMatch
+        for _ in 0..<4 where !talks.isHittable { app.swipeUp() }
+        XCTAssertTrue(talks.exists, "the detail should say how the app talks to the server")
+        screenshot(app, "17c-server-protocol")
+        for _ in 0..<4 where !app.buttons["serverDetail.signInAgain"].isHittable { app.swipeDown() }
 
         // Signing in again keeps the server: its detail screen, connected, afterwards.
         let again = app.buttons["serverDetail.signInAgain"]
@@ -130,6 +141,7 @@ final class PlaybackSmokeTests: XCTestCase {
         again.tap()
         let password = app.secureTextFields["signInAgain.password"]
         XCTAssertTrue(password.waitForExistence(timeout: 10))
+        screenshot(app, "17a-sign-in-again")
         XCTAssertFalse((app.textFields["signInAgain.username"].value as? String ?? "").isEmpty, "the username should be filled in")
         password.tap()
         password.typeText(env["SERVER_PASSWORD"] ?? "")
@@ -459,14 +471,18 @@ final class PlaybackSmokeTests: XCTestCase {
     /// system's language, so it is found by position: "Not Now" is the first of its two buttons.
     private func dismissSavePasswordPrompt(_ app: XCUIApplication) {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        for owner in [app, springboard] {
-            let notNow = owner.buttons.matching(NSPredicate(
-                format: "label IN %@", ["Not Now", "Teď ne", "Jetzt nicht", "Plus tard", "Ahora no"]
-            )).firstMatch
-            if notNow.waitForExistence(timeout: 3) {
-                notNow.tap()
-                return
+        let labels = ["Not Now", "Teď ne", "Jetzt nicht", "Plus tard", "Ahora no"]
+        // Either may show it, and over the internet it can come several seconds after signing in.
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            for owner in [app, springboard] {
+                let notNow = owner.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch
+                if notNow.exists {
+                    notNow.tap()
+                    return
+                }
             }
+            Thread.sleep(forTimeInterval: 0.5)
         }
     }
 

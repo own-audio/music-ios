@@ -78,7 +78,20 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
 
     public var capabilities: Capabilities { subsonic.capabilities }
     public var albumSorts: [AlbumSort] { subsonic.albumSorts }
-    public func checkConnection() async -> ConnectionStatus { await subsonic.checkConnection() }
+    /// Both sign-ins: the API's tokens (gone after a refused refresh) and the Subsonic key.
+    public func checkConnection() async -> ConnectionStatus {
+        guard await client.tokens.current != nil else { return .rejected }
+        do {
+            _ = try await client.me()
+        } catch OwnAudioError.signedOut {
+            return .rejected
+        } catch OwnAudioError.problem(let p) where p.status == 401 {
+            return .rejected
+        } catch {
+            return .unreachable
+        }
+        return await subsonic.checkConnection()
+    }
 
     public func artists() async throws -> [Artist] { try await subsonic.artists() }
     public func albums(artistId: String) async throws -> [Album] { try await subsonic.albums(artistId: artistId) }

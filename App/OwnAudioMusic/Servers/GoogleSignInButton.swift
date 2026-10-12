@@ -11,6 +11,8 @@ struct GoogleSignInButton: View {
     @Binding var isWorking: Bool
     @Binding var errorMessage: String?
     var onSignedIn: () -> Void = {}
+    /// Set to sign in to this saved server again rather than add one.
+    var replacing: UUID? = nil
 
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
@@ -44,7 +46,11 @@ struct GoogleSignInButton: View {
             defer { isWorking = false }
             do {
                 let idToken = try await google.signIn()
-                try await model.addOwnAudioServer(address: address, signIn: .google(idToken: idToken), name: name)
+                if let replacing {
+                    try await model.signInAgain(serverId: replacing, with: .google(idToken: idToken))
+                } else {
+                    try await model.addOwnAudioServer(address: address, signIn: .google(idToken: idToken), name: name)
+                }
                 Haptics.impact(.medium)
                 onSignedIn()
             } catch is CancellationError {

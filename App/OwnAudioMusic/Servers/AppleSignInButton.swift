@@ -9,6 +9,8 @@ struct AppleSignInButton: View {
     @Binding var isWorking: Bool
     @Binding var errorMessage: String?
     var onSignedIn: () -> Void = {}
+    /// Set to sign in to this saved server again rather than add one.
+    var replacing: UUID? = nil
 
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
@@ -58,7 +60,12 @@ struct AppleSignInButton: View {
                 }
                 // Apple gives the name only the first time someone signs in to this app.
                 let fullName = credential.fullName.map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
-                try await model.addOwnAudioServer(address: address, signIn: .apple(identityToken: token, fullName: fullName), name: name)
+                let signIn = AppModel.OwnAudioSignIn.apple(identityToken: token, fullName: fullName)
+                if let replacing {
+                    try await model.signInAgain(serverId: replacing, with: signIn)
+                } else {
+                    try await model.addOwnAudioServer(address: address, signIn: signIn, name: name)
+                }
                 Haptics.impact(.medium)
                 onSignedIn()
             } catch let error as ASAuthorizationError where error.code == .canceled {

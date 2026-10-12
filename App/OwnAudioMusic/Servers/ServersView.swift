@@ -66,9 +66,14 @@ struct ServersView: View {
             model.selectServer(id: server.id)
         } label: {
             HStack(spacing: Theme.Spacing.md) {
+                ServerKindIcon(kind: server.kind, size: 34)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(server.displayName).foregroundStyle(.primary)
-                    Text("\(server.kind.title) · \(server.auth.username) · \(server.host.absoluteString)")
+                    Text(server.connectionTitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("servers.protocol.\(server.displayName)")
+                    Text("\(server.auth.username) · \(server.host.absoluteString)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -164,5 +169,42 @@ extension ServerKind {
         case .jellyfin: "Jellyfin"
         case .ownAudio: "own.audio"
         }
+    }
+}
+
+extension ServerRecord {
+    /// How the app talks to it: an own.audio server added before its own API, or on an older
+    /// server, goes through its Subsonic API.
+    var connectionTitle: String {
+        switch (kind, auth) {
+        case (.ownAudio, .ownAudio): String(localized: "own.audio · own API")
+        case (.ownAudio, _): String(localized: "own.audio · Subsonic API")
+        case (.jellyfin, _): String(localized: "Jellyfin API")
+        case (.subsonic, _): String(localized: "Subsonic API")
+        }
+    }
+}
+
+/// The server's kind at a glance: own.audio's logo, a symbol for the others.
+struct ServerKindIcon: View {
+    let kind: ServerKind
+    var size: CGFloat = 28
+
+    var body: some View {
+        Group {
+            switch kind {
+            case .ownAudio:
+                Image("AppLogo").resizable().scaledToFit()
+            case .subsonic:
+                Image(systemName: "antenna.radiowaves.left.and.right").resizable().scaledToFit().padding(size * 0.2)
+                    .foregroundStyle(.white).background(Color.orange)
+            case .jellyfin:
+                Image(systemName: "play.tv").resizable().scaledToFit().padding(size * 0.2)
+                    .foregroundStyle(.white).background(Color.purple)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+        .accessibilityLabel(Text(kind.title))
     }
 }

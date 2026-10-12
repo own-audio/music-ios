@@ -18,10 +18,18 @@ struct ServerDetailView: View {
             List {
                 Section {
                     statusRow(server)
-                    Button("Check Now") {
-                        Task { await model.chooseAddresses() }
+                    Button {
+                        Task { await model.checkNow(id: server.id) }
+                    } label: {
+                        HStack {
+                            Text("Check Now")
+                            Spacer()
+                            if model.checkingConnections.contains(server.id) { ProgressView() }
+                        }
                     }
+                    .disabled(model.checkingConnections.contains(server.id))
                     .accessibilityIdentifier("serverDetail.check")
+                    checkResult(server)
                 } footer: {
                     Text(footer(server))
                 }
@@ -37,6 +45,21 @@ struct ServerDetailView: View {
                     Text("Account")
                 } footer: {
                     Text("Signed in as \(server.auth.username). Downloads and the library on this iPhone stay as they are.")
+                }
+
+                Section {
+                    LabeledContent("Server") {
+                        HStack(spacing: Theme.Spacing.sm) {
+                            ServerKindIcon(kind: server.kind, size: 22)
+                            Text(server.kind.title)
+                        }
+                    }
+                    LabeledContent("Talks Through", value: server.connectionTitle)
+                        .accessibilityIdentifier("serverDetail.protocol")
+                } footer: {
+                    if server.kind == .ownAudio, case .subsonic = server.auth {
+                        Text("Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this iPhone then stays up to date within seconds.")
+                    }
                 }
 
                 Section("Connection") {
@@ -138,6 +161,30 @@ struct ServerDetailView: View {
         } else {
             Text("Not yet updated")
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// What the last "Check Now" found, so the button visibly did something.
+    @ViewBuilder
+    private func checkResult(_ server: ServerRecord) -> some View {
+        if !model.checkingConnections.contains(server.id), let check = model.connectionChecks[server.id] {
+            let when = check.at.formatted(date: .omitted, time: .shortened)
+            Group {
+                switch check.status {
+                case .ok:
+                    Label("Checked at \(when): the server answers and accepts the sign-in.", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                case .rejected:
+                    Label("Checked at \(when): the server refuses the sign-in. Sign in again below.", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red)
+                case .unreachable:
+                    Label("Checked at \(when): no address of the server answers.", systemImage: "wifi.exclamationmark")
+                        .foregroundStyle(.orange)
+                }
+            }
+            .font(.footnote)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("serverDetail.checkResult")
         }
     }
 
@@ -255,10 +302,28 @@ private struct SignInAgainView: View {
     @State private var password = ""
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @State private var providerError: String?
+    @State private var providers: (apple: Bool, google: Bool) = (false, false)
 
     var body: some View {
         NavigationStack {
             Form {
+                if providers.apple || providers.google {
+                    Section {
+                        if providers.apple {
+                            AppleSignInButton(address: server.host.absoluteString, name: server.displayName, isWorking: $isWorking,
+                                              errorMessage: $providerError, onSignedIn: { dismiss() }, replacing: server.id)
+                        }
+                        if providers.google {
+                            GoogleSignInButton(address: server.host.absoluteString, name: server.displayName, isWorking: $isWorking,
+                                               errorMessage: $providerError, onSignedIn: { dismiss() }, replacing: server.id)
+                        }
+                    } footer: {
+                        Text("If you signed up with Apple or Google, sign in the same way.")
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
                 Section {
                     TextField(server.kind == .ownAudio ? "Email" : "Username", text: $username)
                         .textContentType(.username)
@@ -291,6 +356,9 @@ private struct SignInAgainView: View {
                 }
             }
             .onAppear { username = server.auth.username }
+            .task {
+                if server.kind == .ownAudio { providers = await model.ownAudioProviders(serverId: server.id) }
+            }
             .sheet(item: model.pendingTwoFactorBinding) { _ in
                 TwoFactorView { dismiss() }
             }
