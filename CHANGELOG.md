@@ -28,14 +28,6 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
-- Identify Library, on an own.audio server's page when the server offers it: the server compares
-  the songs with MusicBrainz in the background, and the app shows what it proposes by album — to
-  review, sure, not found, done. Accept or reject a song (swipe or hold), accept a whole album
-  (songs matched to another artist are left out), every sure match at once, another edition of an
-  album, or keeping a compilation's song on its own album. A run can be undone or deleted; the
-  files on the server never change. Progress comes from the server's `identify` events where it
-  sends them, else from a slow poll. A server that charges for it says the price before a run
-  starts. `OwnAudioKit` has the calls (`Identify.swift`) and reads a server's `modules`.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps
   its tokens (refreshed one at a time, rotated tokens saved straight back to the Keychain) and
   the account's Subsonic key, which it fetches with them. Accounts with **two-factor sign-in**
