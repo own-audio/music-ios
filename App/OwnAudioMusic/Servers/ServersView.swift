@@ -1,5 +1,6 @@
 import MusicLibrary
 import SwiftUI
+import UIKit
 
 /// Every configured server: pick the one to browse, check, rename or remove.
 struct ServersView: View {
@@ -185,7 +186,8 @@ extension ServerRecord {
     }
 }
 
-/// The server's kind at a glance: own.audio's logo, a symbol for the others.
+/// The server's kind at a glance: own.audio's logo, Jellyfin's (CC BY-SA 4.0, marking a
+/// Jellyfin server, as its branding guide allows), a symbol for Subsonic servers.
 struct ServerKindIcon: View {
     let kind: ServerKind
     var size: CGFloat = 28
@@ -199,12 +201,36 @@ struct ServerKindIcon: View {
                 Image(systemName: "antenna.radiowaves.left.and.right").resizable().scaledToFit().padding(size * 0.2)
                     .foregroundStyle(.white).background(Color.orange)
             case .jellyfin:
-                Image(systemName: "play.tv").resizable().scaledToFit().padding(size * 0.2)
-                    .foregroundStyle(.white).background(Color.purple)
+                Image("JellyfinLogo").resizable().scaledToFit().padding(size * 0.12)
+                    .background(Color(.secondarySystemFill))
             }
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
         .accessibilityLabel(Text(kind.title))
+    }
+}
+
+extension ServerKind {
+    /// The same for a menu row. Menus draw a custom picture at its own size, so it is drawn
+    /// here at the size of a menu's symbols.
+    @MainActor
+    func menuIcon(dark: Bool, side: CGFloat = 22) -> Image {
+        let name: String? = switch self {
+        case .ownAudio: "AppLogo"
+        case .jellyfin: "JellyfinLogo"
+        case .subsonic: nil
+        }
+        let traits = UITraitCollection(userInterfaceStyle: dark ? .dark : .light)
+        guard let name, let source = UIImage(named: name, in: nil, compatibleWith: traits) else {
+            return Image(systemName: "antenna.radiowaves.left.and.right")
+        }
+        let scale = min(side / source.size.width, side / source.size.height)
+        let drawn = CGSize(width: source.size.width * scale, height: source.size.height * scale)
+        let box = CGSize(width: side, height: side)
+        let small = UIGraphicsImageRenderer(size: box).image { _ in
+            source.draw(in: CGRect(x: (side - drawn.width) / 2, y: (side - drawn.height) / 2, width: drawn.width, height: drawn.height))
+        }
+        return Image(uiImage: small).renderingMode(.original)
     }
 }

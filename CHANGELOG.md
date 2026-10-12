@@ -45,9 +45,9 @@ package, merged into this repository — is in `docs/history/`.
 - **Check Now** shows that it is checking and then what it found, with the time: the server
   answers and accepts the sign-in, refuses it, or does not answer. For own.audio it checks the
   API's sign-in as well as the Subsonic key.
-- Each server shows **what it is and how the app talks to it** — an icon for own.audio,
-  Subsonic or Jellyfin in the server list and on its detail screen, and "own.audio · own
-  API", "own.audio · Subsonic API" (added the older way: sign in again to switch), "Subsonic
+- Each server shows **what it is and how the app talks to it** — own.audio's logo,
+  Jellyfin's, or a symbol for Subsonic in the server list, on its detail screen and in the
+  server menu on Home, and "own.audio · own API", "own.audio · Subsonic API" (added the older way: sign in again to switch), "Subsonic
   API" or "Jellyfin API" in the list and on the detail screen.
 - **Live updates from own.audio** (servers from 1.0.0-beta.7, signed in through the new API):
   while the app is on screen, the server says when the library or the listener's favorites and

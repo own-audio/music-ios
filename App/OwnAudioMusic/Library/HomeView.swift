@@ -5,6 +5,7 @@ import SwiftUI
 /// playlists. Settings is a gear here rather than a tab of its own.
 struct HomeView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
     @State private var recent: [Album] = []
     @State private var newest: [Album] = []
     @State private var playlists: [Playlist] = []
@@ -110,7 +111,12 @@ struct HomeView: View {
                 set: { if let id = $0 { model.selectServer(id: id) } }
             )) {
                 ForEach(model.servers) { server in
-                    Text(server.displayName).tag(Optional(server.id))
+                    Label {
+                        Text(server.displayName)
+                    } icon: {
+                        server.kind.menuIcon(dark: colorScheme == .dark)
+                    }
+                    .tag(Optional(server.id))
                 }
             }
         } label: {
