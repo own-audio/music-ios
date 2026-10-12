@@ -8,6 +8,8 @@ options:
 packages:
   MusicLibrary:
     path: Packages/MusicLibrary
+  OwnAudioKit:
+    path: Packages/OwnAudioKit
   PlayerEngine:
     path: Packages/PlayerEngine
 targets:
@@ -63,6 +65,7 @@ targets:
         com.apple.developer.applesignin: [Default]
     dependencies:
       - package: MusicLibrary
+      - package: OwnAudioKit
       - package: PlayerEngine
         product: MusicEngine
   OwnAudioMusicUITests:

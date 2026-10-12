@@ -3200,6 +3200,786 @@
           }
         }
       }
+    },
+    "Identify Whole Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat celou knihovnu"
+          }
+        }
+      }
+    },
+    "Compares your songs with MusicBrainz in the background, then shows what it found: accept the sure matches at once, look at the rest one by one. Your files never change, and a run can be undone. MusicBrainz answers about one album a second, so a large library takes a while." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porovná vaše skladby s MusicBrainz na pozadí a pak ukáže, co našel: jisté shody přijmete najednou, ostatní projdete jednu po druhé. Vaše soubory se nikdy nemění a běh jde vrátit. MusicBrainz odpovídá zhruba na jedno album za sekundu, takže velká knihovna chvíli trvá."
+          }
+        }
+      }
+    },
+    "Runs" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Běhy"
+          }
+        }
+      }
+    },
+    "Identify Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikace knihovny"
+          }
+        }
+      }
+    },
+    "Start" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spustit"
+          }
+        }
+      }
+    },
+    "Couldn't Start Identifying" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikaci se nepodařilo spustit"
+          }
+        }
+      }
+    },
+    "%lld songs to identify. This can cost up to %@: you pay only for songs MusicBrainz finds, once per song, and correcting them later is free." : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skladby k identifikaci. Může to stát až %@: platíte jen za skladby, které MusicBrainz najde, za každou jen jednou, a pozdější opravy jsou zdarma."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skladby k identifikaci. Může to stát až %@: platíte jen za skladby, které MusicBrainz najde, za každou jen jednou, a pozdější opravy jsou zdarma."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skladba k identifikaci. Může to stát až %@: platíte jen za skladby, které MusicBrainz najde, za každou jen jednou, a pozdější opravy jsou zdarma."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld skladeb k identifikaci. Může to stát až %@: platíte jen za skladby, které MusicBrainz najde, za každou jen jednou, a pozdější opravy jsou zdarma."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld song to identify. This can cost up to %@: you pay only for songs MusicBrainz finds, once per song, and correcting them later is free."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs to identify. This can cost up to %@: you pay only for songs MusicBrainz finds, once per song, and correcting them later is free."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Whole library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celá knihovna"
+          }
+        }
+      }
+    },
+    "Selected songs" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrané skladby"
+          }
+        }
+      }
+    },
+    "Queued" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ve frontě"
+          }
+        }
+      }
+    },
+    "Identifying" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikuje se"
+          }
+        }
+      }
+    },
+    "Waiting" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Čeká"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotovo"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selhalo"
+          }
+        }
+      }
+    },
+    "Cancelled" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zrušeno"
+          }
+        }
+      }
+    },
+    "%lld sure · %lld to review · %lld not found · %lld accepted" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld jistých · %2$lld ke kontrole · %3$lld nenalezeno · %4$lld přijato"
+          }
+        }
+      }
+    },
+    "To Review" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ke kontrole"
+          }
+        }
+      }
+    },
+    "Sure" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jisté"
+          }
+        }
+      }
+    },
+    "Not Found" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenalezeno"
+          }
+        }
+      }
+    },
+    "MusicBrainz is busy. The run waits and carries on by itself." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MusicBrainz je přetížený. Běh počká a pokračuje sám."
+          }
+        }
+      }
+    },
+    "%lld songs identified" : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Identifikovány %lld skladby"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Identifikovány %lld skladby"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Identifikována %lld skladba"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Identifikováno %lld skladeb"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld song identified"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs identified"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Accept %lld Sure Matches" : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout %lld jisté shody"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout %lld jisté shody"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout %lld jistou shodu"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout %lld jistých shod"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Accept %lld Sure Match"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Accept %lld Sure Matches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Still looking — more will appear as the run goes on." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pořád se hledá — další přibudou, jak běh pokračuje."
+          }
+        }
+      }
+    },
+    "This run is gone" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento běh už neexistuje"
+          }
+        }
+      }
+    },
+    "Undo Run" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit běh"
+          }
+        }
+      }
+    },
+    "Delete Run" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat běh"
+          }
+        }
+      }
+    },
+    "Put every song this run identified back the way it was?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit všechny skladby, které tento běh identifikoval, do původního stavu?"
+          }
+        }
+      }
+    },
+    "%lld songs put back" : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Vráceny %lld skladby"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Vráceny %lld skladby"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Vrácena %lld skladba"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Vráceno %lld skladeb"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld song put back"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs put back"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Delete this run and its proposals? What you accepted stays." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat tento běh a jeho návrhy? Co jste přijali, zůstane."
+          }
+        }
+      }
+    },
+    "Nothing to review" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic ke kontrole"
+          }
+        }
+      }
+    },
+    "No sure matches waiting" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Žádné jisté shody nečekají"
+          }
+        }
+      }
+    },
+    "Nothing left unfound" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic nezůstalo nenalezeno"
+          }
+        }
+      }
+    },
+    "Nothing accepted or rejected yet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatím nic přijato ani odmítnuto"
+          }
+        }
+      }
+    },
+    "Accept All %lld Songs" : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout všechny %lld skladby"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout všechny %lld skladby"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout %lld skladbu"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přijmout všech %lld skladeb"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Accept %lld Song"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Accept All %lld Songs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Other Edition…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiná edice…"
+          }
+        }
+      }
+    },
+    "Album Actions" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akce alba"
+          }
+        }
+      }
+    },
+    "Nothing found" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic nenalezeno"
+          }
+        }
+      }
+    },
+    "Part of the album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Část alba"
+          }
+        }
+      }
+    },
+    "Some songs not on it" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Některé skladby chybí"
+          }
+        }
+      }
+    },
+    "Different numbering" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiné číslování"
+          }
+        }
+      }
+    },
+    "Two files, one track" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dva soubory, jedna skladba"
+          }
+        }
+      }
+    },
+    "Another match as good" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stejně dobrá jiná shoda"
+          }
+        }
+      }
+    },
+    "Other album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiné album"
+          }
+        }
+      }
+    },
+    "Other artist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiný interpret"
+          }
+        }
+      }
+    },
+    "Weak match" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slabá shoda"
+          }
+        }
+      }
+    },
+    "Not found" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenalezeno"
+          }
+        }
+      }
+    },
+    "Not on this edition" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na této edici není"
+          }
+        }
+      }
+    },
+    "Keep it on “%@”" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ponechat v albu „%@“"
+          }
+        }
+      }
+    },
+    "Accepted" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přijato"
+          }
+        }
+      }
+    },
+    "Rejected" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odmítnuto"
+          }
+        }
+      }
+    },
+    "Accept" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přijmout"
+          }
+        }
+      }
+    },
+    "Reject" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odmítnout"
+          }
+        }
+      }
+    },
+    "No one release fits all these songs, so each was matched on its own. Pick a release to match the whole album to it." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Žádné jedno vydání nesedí na všechny tyto skladby, proto se každá párovala zvlášť. Vyberte vydání, ke kterému se má spárovat celé album."
+          }
+        }
+      }
+    },
+    "No other editions were found." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiné edice se nenašly."
+          }
+        }
+      }
+    },
+    "In Use" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použitá"
+          }
+        }
+      }
+    },
+    "%lld tracks, %lld matched" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld skladeb, %2$lld spárováno"
+          }
+        }
+      }
+    },
+    "Lets MusicBrainz name your songs and albums on the server. Nothing changes until you accept it, and the files stay as they are." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nechá MusicBrainz pojmenovat vaše skladby a alba na serveru. Nic se nezmění, dokud to nepřijmete, a soubory zůstanou, jak jsou."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -10,6 +10,8 @@ struct ServerDetailView: View {
     @State private var newAddress = ""
     @State private var errorMessage: String?
     @State private var isSigningIn = false
+    /// own.audio's optional parts this server has switched on (`identify_library`, `billing`).
+    @State private var modules: [String: Bool] = [:]
 
     private var server: ServerRecord? { model.servers.first { $0.id == serverId } }
 
@@ -103,6 +105,19 @@ struct ServerDetailView: View {
                     Text("Add the server's address on your home network, a VPN such as Tailscale, or a second public name. On each network the app uses the fastest one that answers as this server.")
                 }
 
+                if modules["identify_library"] == true, let client = model.ownAudioSource(serverId: server.id)?.client {
+                    Section {
+                        NavigationLink {
+                            IdentifyRunsView(client: client, charges: modules["billing"] == true)
+                        } label: {
+                            Label("Identify Library", systemImage: "waveform.badge.magnifyingglass")
+                        }
+                        .accessibilityIdentifier("serverDetail.identify")
+                    } footer: {
+                        Text("Lets MusicBrainz name your songs and albums on the server. Nothing changes until you accept it, and the files stay as they are.")
+                    }
+                }
+
                 Section {
                     catalogueRow(server)
                     Button("Update Now") {
@@ -122,6 +137,10 @@ struct ServerDetailView: View {
             .navigationTitle(server.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .task { await model.chooseAddresses() }
+            .task(id: server.id) {
+                guard server.kind == .ownAudio, let client = model.ownAudioSource(serverId: server.id)?.client else { return }
+                modules = (try? await client.modules()) ?? [:]
+            }
             .alert("Add Address", isPresented: $isAdding) {
                 TextField("http://192.168.1.20:4533", text: $newAddress)
                     .textInputAutocapitalization(.never)

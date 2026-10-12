@@ -277,6 +277,12 @@ final class AppModel {
     /// What the active server can do; screens hide what it can't.
     var capabilities: Capabilities { activeSource?.capabilities ?? [] }
 
+    /// own.audio's own API for a server signed in through it; nil for other servers, and for
+    /// an own.audio server still added through its Subsonic API.
+    func ownAudioSource(serverId: UUID) -> OwnAudioSource? {
+        sources[serverId] as? OwnAudioSource
+    }
+
     private var loadTask: Task<Void, Never>?
 
     /// Loads once, however many callers ask: the phone UI and CarPlay can both start the app.
