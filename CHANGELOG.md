@@ -37,6 +37,10 @@ package, merged into this repository — is in `docs/history/`.
 - **The library on the phone from own.audio's change feed**: the whole library once, then only
   what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
   feed sync that fails falls back to paging.
+- **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when
+  the server stopped accepting the saved sign-in — a changed password, an ended session, a
+  demo server that resets every night. The server keeps its downloads, library on the phone
+  and addresses; own.audio's two-factor code is asked for as when adding a server.
 - **Live updates from own.audio** (servers from 1.0.0-beta.7, signed in through the new API):
   while the app is on screen, the server says when the library or the listener's favorites and
   ratings change, and the library on the phone catches up within seconds — a favorite set on

@@ -458,6 +458,7 @@ final class AppModel {
 
     func cancelTwoFactor() {
         pendingTwoFactor = nil
+        replacing = nil
     }
 
     /// The second step, with the authenticator's code or a recovery code.
@@ -545,7 +546,55 @@ final class AppModel {
         return trimmed.isEmpty ? fallback : trimmed
     }
 
+    // MARK: - Signing in again
+
+    /// Servers that refused the saved sign-in (a password changed, a session ended, a demo
+    /// that resets every night); their detail screen offers to sign in again.
+    private(set) var signInRefused: Set<UUID> = []
+
+    /// While set, a successful sign-in replaces this server's sign-in instead of adding a server.
+    private var replacing: UUID?
+
+    /// Signs in to a saved server again, as when it was added (two-factor included). The server
+    /// keeps its id, so its downloads, library on the phone and addresses stay.
+    func signInAgain(serverId: UUID, username: String, password: String) async throws {
+        guard let server = servers.first(where: { $0.id == serverId }) else { return }
+        replacing = serverId
+        do {
+            try await addServer(address: server.host.absoluteString, username: username, password: password, name: server.displayName)
+            replacing = nil
+        } catch {
+            // The two-factor screen finishes it; anything else ends the attempt.
+            if !error.isTwoFactorNeeded { replacing = nil }
+            throw error
+        }
+    }
+
+    /// Puts a fresh sign-in on the server being signed in to again; refuses one for another server.
+    private func replaceSignIn(of id: UUID, with record: ServerRecord) async throws {
+        guard var server = servers.first(where: { $0.id == id }) else { return }
+        let sameServer = server.kind == record.kind
+            && (server.serverId != nil && record.serverId != nil ? server.serverId == record.serverId : server.host == record.host)
+        guard sameServer else { throw AddServerError.differentServer }
+        server.auth = record.auth
+        server.serverId = record.serverId ?? server.serverId
+        server.learn(record.addresses.filter { $0.origin == .server })
+        // A new token session for the new tokens; the old one would refresh with a dead token.
+        ownAudioSessions.forget(id)
+        signInRefused.remove(id)
+        catalogueErrors[id] = nil
+        try await update(server)
+        Task {
+            await chooseAddresses()
+            await syncCatalogues(force: true)
+        }
+    }
+
     private func save(_ record: ServerRecord) async throws {
+        if let id = replacing {
+            replacing = nil
+            return try await replaceSignIn(of: id, with: record)
+        }
         try await store.add(record)
         servers.append(record)
         await rebuildClients()
@@ -1165,6 +1214,7 @@ extension AppModel {
                 if servers.contains(where: { $0.id == id }) { catalogues[id] = catalogue }
             } catch {
                 catalogueErrors[id] = error.userMessage
+                if case SourceError.signInRejected = error { signInRefused.insert(id) }
             }
             syncingCatalogues.remove(id)
         } while resyncRequested.contains(id) && !isOffline
@@ -1202,6 +1252,7 @@ extension AppModel {
                         await self?.syncCatalogue(id)
                     }
                 } catch SourceError.signInRejected {
+                    self?.signInRefused.insert(id)
                     return
                 } catch {}
                 try? await Task.sleep(for: wait)
@@ -1215,6 +1266,8 @@ extension AppModel {
 
 enum AddServerError: LocalizedError {
     case invalidAddress, rejected, unreachable, notOwnAudio, providerOff
+    /// Signing in again reached a different server than the one saved.
+    case differentServer
     /// Not a failure: the code is being asked for (`AppModel.pendingTwoFactor`).
     case twoFactorNeeded
     case wrongCode
@@ -1228,6 +1281,7 @@ enum AddServerError: LocalizedError {
         case .providerOff: String(localized: "This own.audio server doesn't offer that sign-in. Use your email and password, or the other button.")
         case .twoFactorNeeded: String(localized: "Enter the code from your authenticator app.")
         case .wrongCode: String(localized: "That code isn't right, or it has expired. Try the current one.")
+        case .differentServer: String(localized: "That address now answers as a different server. Add it as a new server instead.")
         }
     }
 }

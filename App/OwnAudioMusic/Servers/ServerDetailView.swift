@@ -9,6 +9,7 @@ struct ServerDetailView: View {
     @State private var isAdding = false
     @State private var newAddress = ""
     @State private var errorMessage: String?
+    @State private var isSigningIn = false
 
     private var server: ServerRecord? { model.servers.first { $0.id == serverId } }
 
@@ -23,6 +24,19 @@ struct ServerDetailView: View {
                     .accessibilityIdentifier("serverDetail.check")
                 } footer: {
                     Text(footer(server))
+                }
+
+                Section {
+                    if model.signInRefused.contains(server.id) {
+                        Label("The server no longer accepts this sign-in.", systemImage: "person.crop.circle.badge.exclamationmark")
+                            .foregroundStyle(.orange)
+                    }
+                    Button("Sign In Again") { isSigningIn = true }
+                        .accessibilityIdentifier("serverDetail.signInAgain")
+                } header: {
+                    Text("Account")
+                } footer: {
+                    Text("Signed in as \(server.auth.username). Downloads and the library on this iPhone stay as they are.")
                 }
 
                 Section("Connection") {
@@ -78,6 +92,9 @@ struct ServerDetailView: View {
                 } footer: {
                     Text("A list of everything on the server, without the music itself, so albums open and the library can be browsed offline. Updated in the background, on Wi-Fi.")
                 }
+            }
+            .sheet(isPresented: $isSigningIn) {
+                SignInAgainView(server: server)
             }
             .navigationTitle(server.displayName)
             .navigationBarTitleDisplayMode(.inline)
@@ -225,6 +242,72 @@ extension ServerAddress.Origin {
         case .added: String(localized: "added with")
         case .server: String(localized: "from the server")
         case .user: String(localized: "added by you")
+        }
+    }
+}
+
+/// The saved server's sign-in, entered again: its username kept, the password asked for.
+private struct SignInAgainView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    let server: ServerRecord
+    @State private var username = ""
+    @State private var password = ""
+    @State private var isWorking = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(server.kind == .ownAudio ? "Email" : "Username", text: $username)
+                        .textContentType(.username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("signInAgain.username")
+                    SecureField("Password", text: $password)
+                        .textContentType(.password)
+                        .accessibilityIdentifier("signInAgain.password")
+                } footer: {
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle(server.displayName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isWorking {
+                        ProgressView()
+                    } else {
+                        Button("Sign In") { signIn() }
+                            .disabled(username.isEmpty || password.isEmpty)
+                            .accessibilityIdentifier("signInAgain.submit")
+                    }
+                }
+            }
+            .onAppear { username = server.auth.username }
+            .sheet(item: model.pendingTwoFactorBinding) { _ in
+                TwoFactorView { dismiss() }
+            }
+        }
+    }
+
+    private func signIn() {
+        isWorking = true
+        errorMessage = nil
+        Task {
+            defer { isWorking = false }
+            do {
+                try await model.signInAgain(serverId: server.id, username: username.trimmingCharacters(in: .whitespaces), password: password)
+                dismiss()
+            } catch {
+                if !error.isTwoFactorNeeded { errorMessage = error.localizedDescription }
+            }
         }
     }
 }

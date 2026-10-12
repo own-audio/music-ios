@@ -210,6 +210,16 @@
         }
       }
     },
+    "Account" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Účet"
+          }
+        }
+      }
+    },
     "Add Address" : {
       "localizations" : {
         "cs" : {
@@ -814,6 +824,16 @@
         }
       }
     },
+    "Email" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-mail"
+          }
+        }
+      }
+    },
     "Enter the code from your authenticator app." : {
       "localizations" : {
         "cs" : {
@@ -1298,12 +1318,32 @@
         }
       }
     },
+    "Sign In Again" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlásit se znovu"
+          }
+        }
+      }
+    },
     "Sign In with Quick Connect (Jellyfin)" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přihlásit přes Quick Connect (Jellyfin)"
+          }
+        }
+      }
+    },
+    "Signed in as %@. Downloads and the library on this iPhone stay as they are." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlášeno jako %@. Stažené skladby a knihovna v tomto iPhonu zůstanou, jak jsou."
           }
         }
       }
@@ -1338,6 +1378,16 @@
         }
       }
     },
+    "That address now answers as a different server. Add it as a new server instead." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na této adrese teď odpovídá jiný server. Přidejte ho jako nový server."
+          }
+        }
+      }
+    },
     "That code isn't right, or it has expired. Try the current one." : {
       "localizations" : {
         "cs" : {
@@ -1364,6 +1414,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Server k této skladbě nemá text. Servery ho čtou z tagů souboru nebo ze souboru .lrc vedle něj."
+          }
+        }
+      }
+    },
+    "The server no longer accepts this sign-in." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server už toto přihlášení nepřijímá."
           }
         }
       }

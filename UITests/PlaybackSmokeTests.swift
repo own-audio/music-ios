@@ -123,6 +123,21 @@ final class PlaybackSmokeTests: XCTestCase {
             "the server should be reached through one of its addresses, got \(status.label)"
         )
         screenshot(app, "17-server-connection")
+
+        // Signing in again keeps the server: its detail screen, connected, afterwards.
+        let again = app.buttons["serverDetail.signInAgain"]
+        for _ in 0..<3 where !again.isHittable { app.swipeUp() }
+        again.tap()
+        let password = app.secureTextFields["signInAgain.password"]
+        XCTAssertTrue(password.waitForExistence(timeout: 10))
+        XCTAssertFalse((app.textFields["signInAgain.username"].value as? String ?? "").isEmpty, "the username should be filled in")
+        password.tap()
+        password.typeText(env["SERVER_PASSWORD"] ?? "")
+        app.buttons["signInAgain.submit"].tap()
+        dismissSavePasswordPrompt(app)
+        XCTAssertTrue(waitUntil(timeout: 30) { !password.exists }, "signing in again should close the sheet")
+        XCTAssertTrue(waitUntil(timeout: 20) { status.exists && status.label.contains("Connected") }, "still connected, got \(status.label)")
+        screenshot(app, "17b-signed-in-again")
     }
 
     /// Download an album, then start the app with every server unreachable and play it from
