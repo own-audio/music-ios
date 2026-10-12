@@ -114,13 +114,7 @@ struct HomeView: View {
                 }
             }
         } label: {
-            if let server = model.activeServer {
-                Label {
-                    Text(server.displayName)
-                } icon: {
-                    ServerKindIcon(kind: server.kind, size: 20)
-                }
-            }
+            Label(model.activeServer?.displayName ?? "", systemImage: "server.rack")
         }
         .accessibilityIdentifier("home.serverMenu")
     }
