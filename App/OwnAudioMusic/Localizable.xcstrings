@@ -4700,6 +4700,106 @@
           }
         }
       }
+    },
+    "Identify" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat"
+          }
+        }
+      }
+    },
+    "Identify This Folder" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat tuto složku"
+          }
+        }
+      }
+    },
+    "Put back as it was" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vráceno do původního stavu"
+          }
+        }
+      }
+    },
+    "Undo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit"
+          }
+        }
+      }
+    },
+    "Undo Identify" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit identifikaci"
+          }
+        }
+      }
+    },
+    "Undo Identify…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit identifikaci…"
+          }
+        }
+      }
+    },
+    "Put this song back as its file says, with no MusicBrainz match?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrátit skladbu do stavu podle souboru, bez shody z MusicBrainz?"
+          }
+        }
+      }
+    },
+    "Identify Album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat album"
+          }
+        }
+      }
+    },
+    "Identify Artist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat interpreta"
+          }
+        }
+      }
+    },
+    "This song has not been identified." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tato skladba nebyla identifikována."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

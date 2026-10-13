@@ -149,6 +149,13 @@ public struct IdentifyProgress: Decodable, Sendable, Equatable {
     }
 }
 
+/// A folder on the server's disk that it reads music, books or podcasts from.
+public struct LibraryFolder: Decodable, Sendable, Equatable, Identifiable {
+    public let id: String
+    public let path: String
+    public let kind: String
+}
+
 extension OwnAudioClient {
     /// The optional parts this server offers (`modules` of its discovery document), such as
     /// `identify_library` or `billing`, with whether each is on.
@@ -231,6 +238,14 @@ extension OwnAudioClient {
     public func chooseEdition(group id: String, index: Int) async throws -> IdentifyGroup {
         struct Body: Encodable { let index: Int }
         return try await call("PUT", "identify/groups/\(id)/edition", body: Body(index: index))
+    }
+
+    /// The server's music folders, which a run can be limited to (`IdentifyScope(kind:
+    /// "folder", id:)`). Only `/api/v1` lists them.
+    public func musicFolders() async throws -> [LibraryFolder] {
+        struct Answer: Decodable { let folders: [LibraryFolder]? }
+        let answer: Answer = try await getV1("library/folders")
+        return (answer.folders ?? []).filter { $0.kind == "music" }
     }
 
     /// Undoes one song's identify (revision 12): it goes back to what its file said.

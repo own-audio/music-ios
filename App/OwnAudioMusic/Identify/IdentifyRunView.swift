@@ -38,6 +38,7 @@ struct IdentifyRunView: View {
                 Section {
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         IdentifyStatusBadge(status: run.status)
+                            .accessibilityIdentifier("identify.status")
                         if run.isActive, run.groupsTotal > 0 {
                             ProgressView(value: Double(run.groupsDone), total: Double(run.groupsTotal))
                         }
@@ -70,6 +71,7 @@ struct IdentifyRunView: View {
                             Label("Accept \(proposals.count) Sure Matches", systemImage: "checkmark.circle")
                         }
                         .disabled(busy)
+                        .accessibilityIdentifier("identify.acceptSure")
                     }
                 }
 
@@ -85,7 +87,12 @@ struct IdentifyRunView: View {
                 ForEach(groups, id: \.0.id) { group, items in
                     Section {
                         ForEach(items) { proposal in
-                            ProposalRow(proposal: proposal, busy: busy, accept: {
+                            ProposalRow(proposal: proposal, busy: busy, undo: {
+                                act {
+                                    try await client.undoIdentify(track: proposal.track.id)
+                                    message = String(localized: "Put back as it was")
+                                }
+                            }, accept: {
                                 act { try await client.acceptProposal(proposal.id) }
                             }, reject: {
                                 act { try await client.rejectProposal(proposal.id) }
@@ -293,6 +300,7 @@ private struct GroupHeader: View {
 private struct ProposalRow: View {
     let proposal: IdentifyProposal
     let busy: Bool
+    let undo: () -> Void
     let accept: () -> Void
     let reject: () -> Void
     let keepAlbum: (Bool) -> Void
@@ -341,6 +349,8 @@ private struct ProposalRow: View {
             }
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("identify.proposal")
         .swipeActions(edge: .leading) {
             if proposal.decision == "pending", proposal.proposal != nil {
                 Button("Accept", systemImage: "checkmark", action: accept).tint(.green)
@@ -349,12 +359,16 @@ private struct ProposalRow: View {
         .swipeActions(edge: .trailing) {
             if proposal.decision == "pending" {
                 Button("Reject", systemImage: "xmark", action: reject).tint(.gray)
+            } else if proposal.decision == "accepted" {
+                Button("Undo", systemImage: "arrow.uturn.backward", action: undo).tint(.orange)
             }
         }
         .contextMenu {
             if proposal.decision == "pending" {
                 if proposal.proposal != nil { Button("Accept", systemImage: "checkmark", action: accept) }
                 Button("Reject", systemImage: "xmark", action: reject)
+            } else if proposal.decision == "accepted" {
+                Button("Undo Identify", systemImage: "arrow.uturn.backward", action: undo)
             }
         }
     }

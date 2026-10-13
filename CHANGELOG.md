@@ -36,6 +36,10 @@ package, merged into this repository — is in `docs/history/`.
   files on the server never change. Progress comes from the server's `identify` events where it
   sends them, else from a slow poll. A server that charges for it says the price before a run
   starts. `OwnAudioKit` has the calls (`Identify.swift`) and reads a server's `modules`.
+- Identify Library is in the Library too, and a run can cover one of the server's music folders
+  instead of the whole library. An album's menu has Identify Album, an artist's Identify Artist.
+  A song's menu has Undo Identify, which puts it back as its file says; so does swiping an
+  accepted song on a run's Done tab.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps
   its tokens (refreshed one at a time, rotated tokens saved straight back to the Keychain) and
   the account's Subsonic key, which it fetches with them. Accounts with **two-factor sign-in**

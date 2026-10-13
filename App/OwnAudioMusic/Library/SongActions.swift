@@ -13,6 +13,7 @@ private struct SongActions: ViewModifier {
     let song: Song
     let removeFromPlaylist: (() -> Void)?
     @State private var isAddingToPlaylist = false
+    @State private var isUndoingIdentify = false
 
     func body(content: Content) -> some View {
         let id = model.compositeId(song.id)
@@ -43,6 +44,13 @@ private struct SongActions: ViewModifier {
                 } label: {
                     Label("Add to Playlist…", systemImage: "text.badge.plus")
                 }
+                if IdentifyAccess.shared.server(model) != nil {
+                    Button {
+                        isUndoingIdentify = true
+                    } label: {
+                        Label("Undo Identify…", systemImage: "arrow.uturn.backward")
+                    }
+                }
                 if let id {
                     if model.downloads.isDownloaded(id) {
                         Button(role: .destructive) {
@@ -62,6 +70,13 @@ private struct SongActions: ViewModifier {
                     Button(role: .destructive, action: removeFromPlaylist) {
                         Label("Remove from Playlist", systemImage: "minus.circle")
                     }
+                }
+            }
+            .confirmationDialog("Put this song back as its file says, with no MusicBrainz match?", isPresented: $isUndoingIdentify, titleVisibility: .visible) {
+                Button("Undo Identify", role: .destructive) {
+                    guard let client = IdentifyAccess.shared.server(model)?.client else { return }
+                    let trackId = song.id
+                    model.perform { try await undoIdentify(client, trackId) }
                 }
             }
             .sheet(isPresented: $isAddingToPlaylist) {

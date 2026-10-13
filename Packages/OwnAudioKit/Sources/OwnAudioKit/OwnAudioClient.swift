@@ -170,6 +170,17 @@ public struct OwnAudioClient: Sendable {
         try await call("GET", path, query: query, body: Optional<Empty>.none)
     }
 
+    /// GET `path` under `/api/v1`, for the few things only that version has; the same
+    /// access token works there.
+    func getV1<T: Decodable>(_ path: String) async throws -> T {
+        let data = try await raw("GET", path, query: [:], body: Optional<Empty>.none, idempotencyKey: nil, api: "api/v1")
+        do {
+            return try JSONDecoder.ownAudio.decode(T.self, from: data)
+        } catch {
+            throw OwnAudioError.decoding
+        }
+    }
+
     /// A request with a JSON body, decoded. `idempotencyKey` makes a retry harmless.
     public func call<T: Decodable, B: Encodable>(_ method: String, _ path: String, query: [String: String?] = [:], body: B?, idempotencyKey: String? = nil) async throws -> T {
         let data = try await raw(method, path, query: query, body: body, idempotencyKey: idempotencyKey)
@@ -187,9 +198,9 @@ public struct OwnAudioClient: Sendable {
     }
 
     /// The bytes of a request, with the access token; a `401` is answered once with a refresh.
-    func raw<B: Encodable>(_ method: String, _ path: String, query: [String: String?], body: B?, idempotencyKey: String?) async throws -> Data {
+    func raw<B: Encodable>(_ method: String, _ path: String, query: [String: String?], body: B?, idempotencyKey: String?, api: String = "api/v2") async throws -> Data {
         let build = { (token: String) throws -> URLRequest in
-            var request = URLRequest(url: try url(path, query: query))
+            var request = URLRequest(url: try url(path, query: query, api: api))
             request.httpMethod = method
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -219,8 +230,8 @@ public struct OwnAudioClient: Sendable {
         return { refresh in try await OwnAudioClient.refresh(host: host, refreshToken: refresh, session: session) }
     }
 
-    func url(_ path: String, query: [String: String?]) throws -> URL {
-        var components = URLComponents(url: host.appending(path: "api/v2" + (path.hasPrefix("/") ? path : "/" + path)), resolvingAgainstBaseURL: false)
+    func url(_ path: String, query: [String: String?], api: String = "api/v2") throws -> URL {
+        var components = URLComponents(url: host.appending(path: api + (path.hasPrefix("/") ? path : "/" + path)), resolvingAgainstBaseURL: false)
         let items = query.compactMap { key, value in value.map { URLQueryItem(name: key, value: $0) } }.sorted { $0.name < $1.name }
         if !items.isEmpty { components?.queryItems = items }
         guard let url = components?.url else { throw OwnAudioError.network }

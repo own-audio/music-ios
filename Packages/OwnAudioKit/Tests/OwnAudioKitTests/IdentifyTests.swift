@@ -85,6 +85,17 @@ struct IdentifyTests {
         #expect(modules["auth"] == nil)
     }
 
+    @Test("music folders come from /api/v1, other kinds left out")
+    func folders() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { request in
+            #expect(request.url?.path == "/api/v1/library/folders")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer a")
+            return json(#"{"folders":[{"id":"f1","path":"/music/A","kind":"music"},{"id":"f2","path":"/books","kind":"books"}],"scanning":false}"#)
+        }
+        let folders = try await client(mock).musicFolders()
+        #expect(folders.map(\.id) == ["f1"])
+    }
+
     @Test("an identify event reads as progress; others do not")
     func progress() {
         let event = LiveEvent(type: "identify", id: nil, data: #"{"groups_done":5,"groups_total":5,"run_id":"r1","status":"ready"}"#)

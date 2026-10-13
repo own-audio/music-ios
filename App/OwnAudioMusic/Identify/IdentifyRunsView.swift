@@ -14,16 +14,28 @@ struct IdentifyRunsView: View {
     @State private var quote: IdentifyQuote?
     @State private var errorMessage: String?
     @State private var opened: String?
+    /// "library", or a folder's id.
+    @State private var scope = "library"
+    @State private var folders: [LibraryFolder] = []
 
     var body: some View {
         LoadStateView(state: state, retry: load) { runs in
             List {
                 Section {
+                    if !folders.isEmpty {
+                        Picker("Identify", selection: $scope) {
+                            Text("Whole library").tag("library")
+                            ForEach(folders) { folder in
+                                Text(folder.path).tag(folder.id)
+                            }
+                        }
+                        .accessibilityIdentifier("identify.scope")
+                    }
                     Button {
                         Task { await start() }
                     } label: {
                         HStack {
-                            Label("Identify Whole Library", systemImage: "waveform.badge.magnifyingglass")
+                            Label(scope == "library" ? "Identify Whole Library" : "Identify This Folder", systemImage: "waveform.badge.magnifyingglass")
                             Spacer()
                             if isStarting { ProgressView() }
                         }
@@ -48,11 +60,24 @@ struct IdentifyRunsView: View {
             }
         }
         .navigationTitle("Identify Library")
-        .navigationDestination(item: $opened) { id in
-            IdentifyRunView(client: client, runId: id)
+        // A sheet, not a push: this list is reached through more than one kind of navigation
+        // (the Library's routes, the server page's links), and a pushed destination only
+        // appears in some of them.
+        .sheet(item: Binding(get: { opened.map(OpenedRun.init) }, set: { opened = $0?.id })) { run in
+            NavigationStack {
+                IdentifyRunView(client: client, runId: run.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { opened = nil }
+                        }
+                    }
+            }
+        }
+        .onChange(of: opened) { _, new in
+            if new == nil { Task { await load() } }
         }
         .confirmationDialog(
-            quote.map { confirmText($0) } ?? "",
+            quote.map { identifyChargeText($0) } ?? "",
             isPresented: Binding(get: { quote != nil }, set: { if !$0 { quote = nil } }),
             titleVisibility: .visible
         ) {
@@ -68,9 +93,12 @@ struct IdentifyRunsView: View {
         .task { await watch() }
     }
 
-    private func confirmText(_ quote: IdentifyQuote) -> String {
-        let price = (Double(quote.chargeMicro) / 1_000_000).formatted(.currency(code: "USD").precision(.fractionLength(2...3)))
-        return String(localized: "\(quote.tracks) songs to identify. This can cost up to \(price): you pay only for songs MusicBrainz finds, once per song, and correcting them later is free.")
+    /// What to identify, as picked: the whole library or one of the server's music folders.
+    private var chosenScope: IdentifyScope {
+        guard scope != "library", let folder = folders.first(where: { $0.id == scope }) else {
+            return .library(label: String(localized: "Whole library"))
+        }
+        return IdentifyScope(kind: "folder", id: folder.id, label: folder.path)
     }
 
     private func load() async {
@@ -86,6 +114,9 @@ struct IdentifyRunsView: View {
     /// older servers and a dropped connection.
     private func watch() async {
         await load()
+        // Servers with library folders (and an account that may see them) let a run be limited
+        // to one; without them the whole library is the only choice.
+        folders = (try? await client.musicFolders()) ?? []
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
                 for await _ in IdentifyEvents.progress(client) { await load() }
@@ -109,7 +140,7 @@ struct IdentifyRunsView: View {
         defer { isStarting = false }
         if charges {
             do {
-                let quote = try await client.identifyQuote(.library(label: nil))
+                let quote = try await client.identifyQuote(chosenScope)
                 if quote.chargeMicro > 0 {
                     self.quote = quote
                     return
@@ -125,13 +156,17 @@ struct IdentifyRunsView: View {
     private func begin() async {
         quote = nil
         do {
-            let run = try await client.startIdentify(.library(label: String(localized: "Whole library")))
+            let run = try await client.startIdentify(chosenScope)
             await load()
             opened = run.id
         } catch {
             errorMessage = identifyMessage(error)
         }
     }
+}
+
+private struct OpenedRun: Identifiable {
+    let id: String
 }
 
 struct IdentifyRunRow: View {

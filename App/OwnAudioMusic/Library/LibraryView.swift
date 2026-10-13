@@ -40,6 +40,7 @@ enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
 
 /// The Library tab's root on iPhone: a grid of sections. Downloads is a toolbar button.
 struct LibraryView: View {
+    @Environment(AppModel.self) private var model
     private let columns = [
         GridItem(.flexible(), spacing: Theme.Spacing.md),
         GridItem(.flexible(), spacing: Theme.Spacing.md),
@@ -67,6 +68,20 @@ struct LibraryView: View {
                 }
             }
             .padding(Theme.Spacing.screenEdge)
+
+            if let identify = IdentifyAccess.shared.server(model) {
+                NavigationLink {
+                    IdentifyRunsView(client: identify.client, charges: identify.charges)
+                } label: {
+                    Label("Identify Library", systemImage: "waveform.badge.magnifyingglass")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Theme.Spacing.lg)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, Theme.Spacing.screenEdge)
+                .accessibilityIdentifier("library.identify")
+            }
         }
         .navigationTitle("Library")
         .toolbar {

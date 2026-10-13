@@ -1,14 +1,17 @@
 import XCTest
 
-/// own.audio's "identify library": reach it from the server's page, start a run, look at it,
-/// delete it. Needs an own.audio server that offers it and an account that may start a run:
+/// own.audio's "identify library", end to end: find it in the Library, identify one album from
+/// its menu, accept
+/// the sure matches, undo one song, accept and reject by swiping, look at another edition, undo
+/// and delete the run. Needs an own.audio server that offers it and an account whose library
+/// has songs to identify:
 ///
 /// ```
 /// TEST_RUNNER_IDENTIFY_HOST=https://… TEST_RUNNER_IDENTIFY_EMAIL=… TEST_RUNNER_IDENTIFY_PASSWORD=… \
 /// xcodebuild test … -only-testing:OwnAudioMusicUITests/IdentifyTests
 /// ```
 ///
-/// The run is deleted at the end; nothing it proposed is accepted.
+/// Whatever the run accepts is undone before it is deleted, so the library ends as it began.
 final class IdentifyTests: XCTestCase {
     private var env: [String: String] { ProcessInfo.processInfo.environment }
     private static let english = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -18,11 +21,125 @@ final class IdentifyTests: XCTestCase {
         guard env["IDENTIFY_HOST"] != nil else { throw XCTSkip("IDENTIFY_HOST is not set") }
     }
 
-    func testStartReviewAndDeleteARun() throws {
+    func testIdentifyAnAlbumFromStartToUndo() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-uiTestReset"] + Self.english + (env["IDENTIFY_LANGUAGE"].map { ["-AppleLanguages", "(\($0))"] } ?? [])
+        app.launchArguments = ["-uiTestReset"] + Self.english
         app.launch()
+        signIn(app)
 
+        // The Library offers identify.
+        openTab(app, ["Library", "Knihovna"])
+        let albums = app.buttons["library.albums"]
+        let libraryShown = albums.waitForExistence(timeout: 20)
+        if !libraryShown { screenshot(app, "identify-00-library-missing") }
+        XCTAssertTrue(libraryShown)
+        XCTAssertTrue(app.buttons["library.identify"].waitForExistence(timeout: 15), "The Library should offer identify")
+        screenshot(app, "identify-01-library")
+
+        // Identify one album from its menu: a run of seconds rather than a whole library.
+        albums.tap()
+        let named = env["IDENTIFY_ALBUM"].map { app.buttons.containing(NSPredicate(format: "label CONTAINS %@", $0)).firstMatch }
+        let album = named ?? app.scrollViews.buttons.firstMatch
+        XCTAssertTrue(album.waitForExistence(timeout: 20))
+        album.tap()
+        let more = app.navigationBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 15))
+        more.tap()
+        let identifyAlbum = app.buttons["Identify Album"]
+        XCTAssertTrue(identifyAlbum.waitForExistence(timeout: 5), "The album menu should offer identify")
+        screenshot(app, "identify-02-album-menu")
+        identifyAlbum.tap()
+        let confirm = app.buttons["Start"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+
+        // The new run opens in a sheet; wait for it to finish looking things up.
+        let status = app.staticTexts["identify.status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 15), "The new run should open")
+        XCTAssertTrue(waitUntil(timeout: 180) { status.label == "Ready" }, "The run should finish, is \(status.label)")
+        screenshot(app, "identify-04-ready")
+
+        // Accept every sure match.
+        tapSegment(app, "Sure")
+        let acceptSure = app.buttons["identify.acceptSure"]
+        if acceptSure.waitForExistence(timeout: 8) {
+            acceptSure.tap()
+            sleep(3)
+        }
+
+        // Undo one accepted song on the Done tab.
+        tapSegment(app, "Done")
+        let doneRow = app.descendants(matching: .any)["identify.proposal"].firstMatch
+        if doneRow.waitForExistence(timeout: 8) {
+            doneRow.swipeLeft()
+            let undo = app.buttons["Undo"]
+            XCTAssertTrue(undo.waitForExistence(timeout: 5), "An accepted song can be undone")
+            undo.tap()
+            sleep(3)
+            screenshot(app, "identify-05-undone")
+        }
+
+        // Accept one proposal to review by swiping right, reject the next by swiping left.
+        tapSegment(app, "To Review")
+        let proposals = app.descendants(matching: .any).matching(identifier: "identify.proposal")
+        let first = proposals.element(boundBy: 0)
+        if first.waitForExistence(timeout: 8) {
+            first.swipeRight()
+            let accept = app.buttons["Accept"]
+            if accept.waitForExistence(timeout: 3) { accept.tap(); sleep(3) }
+            let next = proposals.element(boundBy: 0)
+            if next.waitForExistence(timeout: 5) {
+                next.swipeLeft()
+                let reject = app.buttons["Reject"]
+                if reject.waitForExistence(timeout: 3) { reject.tap(); sleep(3) }
+            }
+            screenshot(app, "identify-06-decided")
+
+            // Another edition of an album.
+            let albumActions = app.buttons["Album Actions"].firstMatch
+            if albumActions.waitForExistence(timeout: 5) {
+                albumActions.tap()
+                let otherEdition = app.buttons["Other Edition…"]
+                XCTAssertTrue(otherEdition.waitForExistence(timeout: 5))
+                otherEdition.tap()
+                let done = app.buttons["Done"]
+                XCTAssertTrue(done.waitForExistence(timeout: 10), "The editions sheet should open")
+                sleep(2)
+                screenshot(app, "identify-07-editions")
+                done.tap()
+            }
+        }
+
+        // Undo the whole run, then delete it.
+        let runMore = app.navigationBars.buttons["More"].firstMatch
+        XCTAssertTrue(runMore.waitForExistence(timeout: 5))
+        runMore.tap()
+        let undoRun = app.buttons["Undo Run"].firstMatch
+        if undoRun.waitForExistence(timeout: 3) {
+            undoRun.tap()
+            let confirmUndo = app.buttons.matching(NSPredicate(format: "label == 'Undo Run'")).element(boundBy: 0)
+            XCTAssertTrue(confirmUndo.waitForExistence(timeout: 5))
+            confirmUndo.tap()
+            sleep(3)
+            runMore.tap()
+        }
+        app.buttons["Delete Run"].firstMatch.tap()
+        let confirmDelete = app.buttons.matching(NSPredicate(format: "label == 'Delete Run'")).element(boundBy: 0)
+        XCTAssertTrue(confirmDelete.waitForExistence(timeout: 5))
+        confirmDelete.tap()
+        XCTAssertTrue(more.waitForExistence(timeout: 10), "Deleting closes the run and goes back to the album")
+        screenshot(app, "identify-08-deleted")
+    }
+
+    private func waitUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(1))
+        }
+        return condition()
+    }
+
+    private func signIn(_ app: XCUIApplication) {
         let address = app.textFields["addServer.address"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         address.tap()
@@ -33,54 +150,28 @@ final class IdentifyTests: XCTestCase {
         app.secureTextFields["addServer.password"].typeText(env["IDENTIFY_PASSWORD"] ?? "")
         app.buttons["addServer.connect"].tap()
         dismissSavePasswordPrompt(app)
+        XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 20), "Home should open after connecting")
+    }
 
-        let settings = app.buttons["home.settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 20), "Home should open after connecting")
-        let servers = app.buttons["settings.servers"]
-        // Right after Home appears a tap can land before the toolbar takes it.
-        for _ in 0..<3 where !servers.exists {
-            settings.tap()
-            _ = servers.waitForExistence(timeout: 5)
+    /// The run's tabs are a segmented picker; its segments are buttons with the tab's name.
+    private func tapSegment(_ app: XCUIApplication, _ label: String) {
+        let segment = app.segmentedControls.buttons[label]
+        XCTAssertTrue(segment.waitForExistence(timeout: 5), "No \(label) tab")
+        segment.tap()
+        sleep(2)
+    }
+
+    private func openTab(_ app: XCUIApplication, _ labels: [String]) {
+        let tab = app.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 10))
+        // Right after Home appears a tap can land before the tab bar takes it; try until the
+        // tab says it is selected.
+        for _ in 0..<5 {
+            tab.tap()
+            let deadline = Date().addingTimeInterval(2)
+            while Date() < deadline, !tab.isSelected { RunLoop.current.run(until: Date().addingTimeInterval(0.25)) }
+            if tab.isSelected { return }
         }
-        XCTAssertTrue(servers.exists)
-        servers.tap()
-        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
-        XCTAssertTrue(info.waitForExistence(timeout: 10))
-        info.tap()
-
-        let identify = app.buttons["serverDetail.identify"]
-        // Further down the page; a list makes its rows only when they scroll into view.
-        XCTAssertTrue(app.buttons["serverDetail.check"].waitForExistence(timeout: 10))
-        for _ in 0..<4 where !identify.exists {
-            app.swipeUp()
-            _ = identify.waitForExistence(timeout: 3)
-        }
-        let offered = identify.exists
-        screenshot(app, "identify-01-server")
-        XCTAssertTrue(offered, "The server should offer identify")
-        identify.tap()
-
-        let start = app.buttons["identify.start"]
-        XCTAssertTrue(start.waitForExistence(timeout: 10))
-        sleep(1)
-        screenshot(app, "identify-02-runs")
-        start.tap()
-        // A server that charges asks first, when the run would cost anything.
-        let confirm = app.buttons["Start"]
-        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
-
-        let more = app.buttons["More"]
-        XCTAssertTrue(more.waitForExistence(timeout: 15), "The new run should open")
-        sleep(8)
-        screenshot(app, "identify-03-run")
-
-        more.tap()
-        app.buttons["Delete Run"].firstMatch.tap()
-        let delete = app.buttons.matching(NSPredicate(format: "label == 'Delete Run'")).element(boundBy: 0)
-        XCTAssertTrue(delete.waitForExistence(timeout: 5))
-        delete.tap()
-        XCTAssertTrue(start.waitForExistence(timeout: 10), "Deleting goes back to the runs")
-        screenshot(app, "identify-04-deleted")
     }
 
     private func dismissSavePasswordPrompt(_ app: XCUIApplication) {

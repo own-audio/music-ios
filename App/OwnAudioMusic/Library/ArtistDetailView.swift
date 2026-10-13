@@ -5,6 +5,7 @@ struct ArtistDetailView: View {
     @Environment(AppModel.self) private var model
     let artist: Artist
     @State private var state: LoadState<[Album]> = .loading
+    @State private var identify: IdentifyRequest?
     @State private var isStarting = false
 
     var body: some View {
@@ -46,7 +47,22 @@ struct ArtistDetailView: View {
                     .accessibilityLabel(starred ? "Unfavorite Artist" : "Favorite Artist")
                 }
             }
+            if IdentifyAccess.shared.server(model) != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            identify = .artist(id: artist.id, label: artist.name)
+                        } label: {
+                            Label("Identify Artist", systemImage: "waveform.badge.magnifyingglass")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .accessibilityLabel("More")
+                }
+            }
         }
+        .identifyStarter($identify)
         .onAppear {
             // The artist list says whether it is a favorite; remember that for the button.
             model.learn(artists: [artist])

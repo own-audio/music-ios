@@ -6,6 +6,7 @@ struct AlbumDetailView: View {
     let album: Album
     @State private var state: LoadState<(album: Album, songs: [Song])> = .loading
     @State private var isAddingToPlaylist = false
+    @State private var identify: IdentifyRequest?
 
     var body: some View {
         List {
@@ -76,6 +77,13 @@ struct AlbumDetailView: View {
                             Label("Add Album to Playlist…", systemImage: "text.badge.plus")
                         }
                         .disabled(songs?.isEmpty ?? true)
+                        if IdentifyAccess.shared.server(model) != nil {
+                            Button {
+                                identify = .album(id: album.id, label: album.displayName)
+                            } label: {
+                                Label("Identify Album", systemImage: "waveform.badge.magnifyingglass")
+                            }
+                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
@@ -86,6 +94,7 @@ struct AlbumDetailView: View {
         .sheet(isPresented: $isAddingToPlaylist) {
             AddToPlaylistSheet(songIds: songs?.map(\.id) ?? [])
         }
+        .identifyStarter($identify)
         .task { await load() }
     }
 
