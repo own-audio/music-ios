@@ -234,6 +234,7 @@ public struct SourceEnvironment: Sendable {
 public final class OwnAudioSessions: @unchecked Sendable {
     private let lock = NSLock()
     private var sessions: [UUID: TokenSession] = [:]
+    private var listeners: [UUID: ListenerState] = [:]
     private let store: ServerStore?
 
     public init(store: ServerStore?) {
@@ -250,10 +251,21 @@ public final class OwnAudioSessions: @unchecked Sendable {
         return made
     }
 
+    /// The server's favorites and ratings as the change feed brings them (see `ListenerState`).
+    public func listener(for serverId: UUID) -> ListenerState {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = listeners[serverId] { return existing }
+        let made = ListenerState()
+        listeners[serverId] = made
+        return made
+    }
+
     /// Forgets a server's session, when it is removed or signed in again.
     public func forget(_ serverId: UUID) {
         lock.lock()
         sessions[serverId] = nil
+        listeners[serverId] = nil
         lock.unlock()
     }
 }
@@ -293,7 +305,10 @@ extension ServerRecord {
                 cacheIdentity: id.uuidString
             ))
             let session = environment.ownAudioSessions.session(for: id, tokens: tokens)
-            return OwnAudioSource(subsonic: subsonic, client: OwnAudioClient(host: url, tokens: session, session: environment.urlSession))
+            return OwnAudioSource(
+                subsonic: subsonic, client: OwnAudioClient(host: url, tokens: session, session: environment.urlSession),
+                listener: environment.ownAudioSessions.listener(for: id), offline: environment.offline
+            )
         }
     }
 }

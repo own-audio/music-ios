@@ -67,6 +67,33 @@ struct LiveServerTests {
         await client.signOut()
     }
 
+    @Test("a playlist's life: made, filled, reordered, emptied, deleted; search, random, plays, lyrics")
+    func playlistsAndFinding() async throws {
+        let client = try await signedIn()
+        let tracks = try await client.tracks(limit: 3).items
+        try #require(tracks.count >= 2)
+        let made = try await client.createPlaylist(name: "OwnAudioKit live \(UUID().uuidString.prefix(8))", trackIds: [tracks[0].id])
+        #expect(made.trackCount == 1)
+        let filled = try await client.addToPlaylist(id: made.id, trackIds: [tracks[1].id, tracks[0].id])
+        #expect(filled.trackCount == 3, "a track can be in a playlist twice")
+        let entries = try await client.playlistEntries(id: made.id).items
+        try await client.orderPlaylist(id: made.id, entryIds: [entries[2].id])
+        let reordered = try await client.playlistEntries(id: made.id).items
+        #expect(reordered.map(\.id) == [entries[2].id, entries[0].id, entries[1].id])
+        try await client.removeFromPlaylist(id: made.id, entryId: entries[0].id)
+        #expect(try await client.playlist(id: made.id).trackCount == 2)
+        try await client.deletePlaylist(id: made.id)
+        await #expect(throws: OwnAudioError.self) { _ = try await client.playlist(id: made.id) }
+
+        let word = String(tracks[0].title.split(separator: " ").first ?? "a")
+        let found = try await client.search(word, include: ["albums", "contributors"])
+        #expect(!found.tracks.isEmpty || !found.albums.isEmpty || !found.artists.isEmpty, "searching for \(word)")
+        #expect(try await client.randomTracks(limit: 2).items.count == 2)
+        _ = try await client.played(.album, order: "most")
+        _ = try await client.lyrics(trackId: tracks[0].id)
+        await client.signOut()
+    }
+
     @Test("the catalogue and its records decode")
     func catalogue() async throws {
         let client = try await signedIn()

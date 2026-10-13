@@ -171,3 +171,97 @@ struct OwnAudioAuthTests {
         #expect(sessions.session(for: id, tokens: nil) !== first)
     }
 }
+
+
+@Suite("own.audio through its own API (M8d)")
+struct OwnAudioAPITests {
+    private let host = URL(string: "https://music.example.com")!
+
+    private func value(_ json: String) -> JSONValue {
+        try! JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
+    }
+
+    private func source(_ session: URLSession, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil, signedIn: Bool = true) -> OwnAudioSource {
+        OwnAudioSource(
+            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "me@example.com", password: "k", session: session)),
+            client: OwnAudioClient(host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil), session: session),
+            listener: listener, offline: offline
+        )
+    }
+
+    private func json(_ text: String) -> MockURLProtocol.StubbedResponse {
+        .init(statusCode: 200, body: Data(text.utf8), headers: ["Content-Type": "application/json"])
+    }
+
+    private let track = #"{"id":"t1","title":"Song One","album_id":"al","recording_id":null,"credits":[{"contributor_id":"band","role":"artist","position":0,"join_phrase":""}],"genre_ids":[],"disc_number":1,"track_number":1,"duration_ms":200000,"visibility":"family","owner_id":"u","content_type":"audio/flac","size_bytes":1,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}"#
+    private let album = #"{"id":"al","title":"First Album","credits":[{"contributor_id":"band","role":"artist","position":0,"join_phrase":""}],"release_group_id":null,"release_date":"2001","is_compilation":false,"track_count":1,"duration_ms":200000,"disc_count":1,"image":null,"created_at":"2026-10-11T12:00:00Z"}"#
+    private let band = #"{"id":"band","name":"The Band","sort_name":null,"kind":"group","musicbrainz_artist_id":null,"image":null}"#
+
+    @Test("favorites and ratings come from the change feed")
+    func listenerFromFeed() {
+        let feed = FeedState(cursor: "c", records: [
+            "favourite.track": ["t1": value(#"{"kind":"track","id":"t1"}"#)],
+            "favourite.contributor": ["band": value(#"{"kind":"contributor","id":"band"}"#)],
+            "rating.album": ["al": value(#"{"kind":"album","id":"al","rating":4}"#)],
+        ])
+        let state = ListenerState()
+        state.update(from: feed)
+        #expect(state.current.favourites == ["t1", "band"])
+        #expect(state.current.ratings == ["al": 4])
+    }
+
+    @Test("search: songs keep their hearts, an album found by title gets its artist's name")
+    func search() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [track, album, band] request in
+            switch request.url?.path {
+            case "/api/v2/search": return .init(statusCode: 200, body: Data(#"{"artists":[],"albums":[\#(album)],"tracks":[\#(track)],"included":{"albums":[\#(album)]}}"#.utf8), headers: ["Content-Type": "application/json"])
+            case "/api/v2/contributors/band": return .init(statusCode: 200, body: Data(band.utf8), headers: ["Content-Type": "application/json"])
+            default: return .init(statusCode: 404, body: Data())
+            }
+        }
+        let listener = ListenerState()
+        listener.setFavourite("t1", true)
+        let result = try await source(mock.urlSession, listener: listener).search("song")
+        #expect(result.songs.first?.isFavorite == true)
+        #expect(result.songs.first?.album == "First Album")
+        #expect(result.albums.first?.artist == "The Band")
+    }
+
+    @Test("a playlist: whose it is by owner, and each song with its entry id")
+    func playlist() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [track] request in
+            switch request.url?.path {
+            case "/api/v2/me": return .init(statusCode: 200, body: Data(#"{"id":"u","email":"me@example.com","display_name":"Me","family":{"id":"f","role":"admin","can_upload":true}}"#.utf8), headers: ["Content-Type": "application/json"])
+            case "/api/v2/playlists": return .init(statusCode: 200, body: Data(#"{"items":[{"id":"p1","name":"Mine","description":null,"visibility":"private","owner_id":"u","track_count":1,"duration_ms":200000,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"},{"id":"p2","name":"Theirs","description":"x","visibility":"family","owner_id":"other","track_count":0,"duration_ms":0,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}]}"#.utf8), headers: ["Content-Type": "application/json"])
+            case "/api/v2/playlists/p1": return .init(statusCode: 200, body: Data(#"{"id":"p1","name":"Mine","description":null,"visibility":"private","owner_id":"u","track_count":1,"duration_ms":200000,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}"#.utf8), headers: ["Content-Type": "application/json"])
+            case "/api/v2/playlists/p1/entries": return .init(statusCode: 200, body: Data(#"{"items":[{"id":"e1","position":1,"added_at":"2026-10-11T12:00:00Z","track":\#(track)}]}"#.utf8), headers: ["Content-Type": "application/json"])
+            default: return .init(statusCode: 404, body: Data())
+            }
+        }
+        let src = source(mock.urlSession)
+        let lists = try await src.playlists()
+        #expect(lists.first { $0.id == "p1" }?.owner == "me@example.com", "the account's own: its username, so the app lets it edit")
+        #expect(lists.first { $0.id == "p2" }?.owner == "other")
+        let (record, songs) = try await src.playlist(id: "p1")
+        #expect(record.songCount == 1 && songs.first?.playlistEntryId == "e1")
+    }
+
+    @Test("offline, or with the API's sign-in gone, the Subsonic API answers")
+    func fallbacks() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            .init(statusCode: 200, body: Data(#"{"subsonic-response":{"status":"ok","version":"1.16.1","playlists":{"playlist":[]}}}"#.utf8), headers: ["Content-Type": "application/json"])
+        }
+        let offline = OfflineSwitch()
+        offline.isOn = true
+        _ = try? await source(mock.urlSession, offline: offline).playlists()
+        _ = try? await source(mock.urlSession, signedIn: false).playlists()
+        let paths = await mock.requestLog().compactMap(\.url?.path)
+        #expect(!paths.isEmpty && paths.allSatisfy { $0.hasPrefix("/rest/") }, "\(paths)")
+    }
+
+    @Test("no instant mix for own.audio")
+    func noInstantMix() async {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in .init(statusCode: 404, body: Data()) }
+        #expect(!source(mock.urlSession).capabilities.contains(.instantMix))
+    }
+}

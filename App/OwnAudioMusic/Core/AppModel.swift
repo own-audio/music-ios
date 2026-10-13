@@ -1203,12 +1203,19 @@ final class AppModel {
 // MARK: - Catalogue
 
 extension AppModel {
+    /// own.audio's answers outside the library on the phone don't say what is a favorite; the
+    /// change feed does, and the source takes it from here.
+    private func noteListenerState(_ id: UUID, _ catalogue: Catalogue) {
+        if let feed = catalogue.snapshot.feed { ownAudioSessions.listener(for: id).update(from: feed) }
+    }
+
     private func loadCatalogues() async {
         let store = catalogueStore
         for record in servers {
             let id = record.id
             if let catalogue = await Task.detached(operation: { store.load(serverId: id).map(Catalogue.init) }).value {
                 catalogues[id] = catalogue
+                noteListenerState(id, catalogue)
             }
         }
     }
@@ -1253,7 +1260,10 @@ extension AppModel {
                     return Catalogue(snapshot)
                 }.value
                 // The server may have been removed while its library was on the way.
-                if servers.contains(where: { $0.id == id }) { catalogues[id] = catalogue }
+                if servers.contains(where: { $0.id == id }) {
+                    catalogues[id] = catalogue
+                    noteListenerState(id, catalogue)
+                }
             } catch {
                 catalogueErrors[id] = error.userMessage
                 if case SourceError.signInRejected = error { signInRefused.insert(id) }

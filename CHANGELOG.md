@@ -45,6 +45,11 @@ package, merged into this repository — is in `docs/history/`.
 - **The library on the phone from own.audio's change feed**: the whole library once, then only
   what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
   feed sync that fails falls back to paging.
+- own.audio servers from 1.0.0-beta.11: **playlists, search, random songs, lyrics** and the
+  **Recently Played / Most Played** orders go through the server's own API instead of its
+  Subsonic one. Removing a song from a playlist goes by its entry, so the right one goes when a
+  song is in it twice. Instant Mix is no longer offered for own.audio (the server never had
+  songs to pick for it). Offline, the screens work from saved answers as before.
 - **A new icon**: the own.audio family figures around the note in their own colours, the
   note in red, and no `</>` at the bottom. The welcome screen and the server list show it too.
 - **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when

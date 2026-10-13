@@ -63,20 +63,28 @@ public struct FeedResult: Sendable {
     public let songs: [Song]
 }
 
-/// An own.audio server from 1.0.0-beta.7. The library on the phone comes from its own API's
-/// snapshot and change feed (`/api/v2`); everything else still goes through its Subsonic API —
-/// playlists, search, random songs, lyrics and play-count orders are not in the new API yet —
-/// and both use the same ids, so the two never disagree about what is what.
+/// An own.audio server from 1.0.0-beta.7, through its own API (`/api/v2`): the library on the
+/// phone from its snapshot and change feed, and — from 1.0.0-beta.11 — playlists, search,
+/// random songs, lyrics and the recently / most played orders. Browsing, streaming and covers
+/// still go through its Subsonic API, which uses the same ids, so the two never disagree about
+/// what is what. Offline, or when the API's sign-in was refused, everything goes through
+/// Subsonic, whose saved answers keep the screens working.
 public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEdits, LiveLibraryUpdates {
     public let subsonic: SubsonicSource
     public let client: OwnAudioClient
+    let listener: ListenerState
+    let offline: OfflineSwitch?
 
-    public init(subsonic: SubsonicSource, client: OwnAudioClient) {
+    public init(subsonic: SubsonicSource, client: OwnAudioClient, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil) {
         self.subsonic = subsonic
         self.client = client
+        self.listener = listener
+        self.offline = offline
     }
 
-    public var capabilities: Capabilities { subsonic.capabilities }
+    /// Instant mix is left out: the server has nothing to pick similar songs from (its Subsonic
+    /// answer is always empty), so the action would only ever do nothing.
+    public var capabilities: Capabilities { subsonic.capabilities.subtracting(.instantMix) }
     public var albumSorts: [AlbumSort] { subsonic.albumSorts }
     /// Both sign-ins: the API's tokens (gone after a refused refresh) and the Subsonic key.
     public func checkConnection() async -> ConnectionStatus {
@@ -95,29 +103,149 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
 
     public func artists() async throws -> [Artist] { try await subsonic.artists() }
     public func albums(artistId: String) async throws -> [Album] { try await subsonic.albums(artistId: artistId) }
-    public func albums(_ sort: AlbumSort, limit: Int, offset: Int) async throws -> [Album] { try await subsonic.albums(sort, limit: limit, offset: offset) }
+    public func albums(_ sort: AlbumSort, limit: Int, offset: Int) async throws -> [Album] {
+        guard sort == .recentlyPlayed || sort == .mostPlayed else { return try await subsonic.albums(sort, limit: limit, offset: offset) }
+        return try await throughAPI {
+            let played = try await client.played(.album, order: sort == .mostPlayed ? "most" : "recent", limit: min(offset + limit, 500)).items
+            let wanted = Array(played.dropFirst(offset).prefix(limit))
+            let records = try await withThrowingTaskGroup(of: (String, WithIncluded<OwnAudioKit.Album>?).self) { group in
+                for item in wanted {
+                    group.addTask { (item.id, try? await client.album(id: item.id, include: ["contributors"])) }
+                }
+                return try await group.reduce(into: [String: WithIncluded<OwnAudioKit.Album>]()) { $0[$1.0] = $1.1 }
+            }
+            let listener = listener.current
+            return wanted.compactMap { item in
+                records[item.id].map { RecordMapper($0.included, listener: listener).album($0.record, playCount: item.playCount) }
+            }
+        } else: {
+            try await subsonic.albums(sort, limit: limit, offset: offset)
+        }
+    }
     public func albums(genre: Genre, limit: Int) async throws -> [Album] { try await subsonic.albums(genre: genre, limit: limit) }
     public func album(id: String) async throws -> (album: Album, songs: [Song]) { try await subsonic.album(id: id) }
     public func song(id: String) async throws -> Song { try await subsonic.song(id: id) }
     public func songs(limit: Int, offset: Int) async throws -> [Song] { try await subsonic.songs(limit: limit, offset: offset) }
-    public func randomSongs(limit: Int, genre: Genre?) async throws -> [Song] { try await subsonic.randomSongs(limit: limit, genre: genre) }
+    public func randomSongs(limit: Int, genre: Genre?) async throws -> [Song] {
+        try await throughAPI {
+            // The app's genres come from the Subsonic API, by name; the API wants its id.
+            var genreId: String?
+            if let genre {
+                let all = try await client.all { try await client.genres(cursor: $0) }
+                guard let match = all.first(where: { $0.name.caseInsensitiveCompare(genre.name) == .orderedSame }) else { return [] }
+                genreId = match.id
+            }
+            let page = try await client.randomTracks(genreId: genreId, limit: min(max(limit, 1), 500), include: Self.trackIncludes)
+            let mapper = RecordMapper(page.included, listener: listener.current)
+            return page.items.map { mapper.song($0) }
+        } else: {
+            try await subsonic.randomSongs(limit: limit, genre: genre)
+        }
+    }
     public func genres() async throws -> [Genre] { try await subsonic.genres() }
-    public func search(_ text: String) async throws -> SearchResult { try await subsonic.search(text) }
+    public func search(_ text: String) async throws -> SearchResult {
+        try await throughAPI {
+            let answer = try await client.search(text, limit: 20, include: Self.trackIncludes)
+            var mapper = RecordMapper(answer.included, listener: listener.current)
+            for artist in answer.artists { mapper.contributors[artist.id] = artist }
+            // An album found by its title brings no names with it: fetch those not met yet.
+            let missing = Set(answer.albums.flatMap { $0.credits.map(\.contributorId) }).subtracting(mapper.contributors.keys)
+            for contributor in await contributors(Array(missing)) { mapper.contributors[contributor.id] = contributor }
+            return SearchResult(
+                artists: answer.artists.map { mapper.artist($0) },
+                albums: answer.albums.map { mapper.album($0) },
+                songs: answer.tracks.map { mapper.song($0) }
+            )
+        } else: {
+            try await subsonic.search(text)
+        }
+    }
     public func instantMix(itemId: String) async throws -> [Song] { try await subsonic.instantMix(itemId: itemId) }
 
     public func favorites() async throws -> FavoritesResult { try await subsonic.favorites() }
-    public func setFavorite(_ kind: FavoriteKind, id: String, _ isFavorite: Bool) async throws { try await subsonic.setFavorite(kind, id: id, isFavorite) }
-    public func setRating(id: String, rating: Int) async throws { try await subsonic.setRating(id: id, rating: rating) }
+    public func setFavorite(_ kind: FavoriteKind, id: String, _ isFavorite: Bool) async throws {
+        try await subsonic.setFavorite(kind, id: id, isFavorite)
+        listener.setFavourite(id, isFavorite)
+    }
 
-    public func playlists() async throws -> [Playlist] { try await subsonic.playlists() }
-    public func playlist(id: String) async throws -> (playlist: Playlist, songs: [Song]) { try await subsonic.playlist(id: id) }
-    public func createPlaylist(name: String, songIds: [String]) async throws { try await subsonic.createPlaylist(name: name, songIds: songIds) }
-    public func addToPlaylist(id: String, songIds: [String]) async throws { try await subsonic.addToPlaylist(id: id, songIds: songIds) }
-    public func removeFromPlaylist(id: String, entries: [PlaylistEntry]) async throws { try await subsonic.removeFromPlaylist(id: id, entries: entries) }
-    public func renamePlaylist(id: String, to name: String) async throws { try await subsonic.renamePlaylist(id: id, to: name) }
-    public func deletePlaylist(id: String) async throws { try await subsonic.deletePlaylist(id: id) }
+    public func setRating(id: String, rating: Int) async throws {
+        try await subsonic.setRating(id: id, rating: rating)
+        listener.setRating(id, rating)
+    }
 
-    public func lyrics(for song: Song) async throws -> [Lyrics] { try await subsonic.lyrics(for: song) }
+    public func playlists() async throws -> [Playlist] {
+        try await throughAPI {
+            let mine = try await userId()
+            return try await client.all { try await client.playlists(cursor: $0) }.map { playlist($0, mine: mine) }
+        } else: {
+            try await subsonic.playlists()
+        }
+    }
+
+    public func playlist(id: String) async throws -> (playlist: Playlist, songs: [Song]) {
+        try await throughAPI {
+            async let record = client.playlist(id: id)
+            async let mine = userId()
+            var songs: [Song] = []
+            var cursor: String?
+            let listener = listener.current
+            repeat {
+                let page = try await client.playlistEntries(id: id, include: Self.trackIncludes, cursor: cursor)
+                let mapper = RecordMapper(page.included, listener: listener)
+                songs += page.items.map { mapper.song($0.track, entryId: $0.id) }
+                cursor = page.next
+            } while cursor != nil
+            return (playlist(try await record, mine: try await mine), songs)
+        } else: {
+            try await subsonic.playlist(id: id)
+        }
+    }
+
+    public func createPlaylist(name: String, songIds: [String]) async throws {
+        try await throughAPI { _ = try await client.createPlaylist(name: name, trackIds: songIds) } else: {
+            try await subsonic.createPlaylist(name: name, songIds: songIds)
+        }
+    }
+
+    public func addToPlaylist(id: String, songIds: [String]) async throws {
+        try await throughAPI { _ = try await client.addToPlaylist(id: id, trackIds: songIds) } else: {
+            try await subsonic.addToPlaylist(id: id, songIds: songIds)
+        }
+    }
+
+    /// By the entries' own ids, which only songs listed through the API carry; a list from the
+    /// Subsonic API (saved offline) goes back that way, by position.
+    public func removeFromPlaylist(id: String, entries: [PlaylistEntry]) async throws {
+        let entryIds = entries.compactMap(\.entryId)
+        guard entryIds.count == entries.count else { return try await subsonic.removeFromPlaylist(id: id, entries: entries) }
+        try await throughAPI {
+            for entryId in entryIds { try await client.removeFromPlaylist(id: id, entryId: entryId) }
+        } else: {
+            try await subsonic.removeFromPlaylist(id: id, entries: entries)
+        }
+    }
+
+    public func renamePlaylist(id: String, to name: String) async throws {
+        try await throughAPI { _ = try await client.renamePlaylist(id: id, to: name) } else: {
+            try await subsonic.renamePlaylist(id: id, to: name)
+        }
+    }
+
+    public func deletePlaylist(id: String) async throws {
+        try await throughAPI { try await client.deletePlaylist(id: id) } else: {
+            try await subsonic.deletePlaylist(id: id)
+        }
+    }
+
+    public func lyrics(for song: Song) async throws -> [Lyrics] {
+        try await throughAPI {
+            let answer = try await client.lyrics(trackId: song.id)
+            guard answer.text != nil, !answer.lines.isEmpty else { return [] }
+            return [Lyrics(lines: answer.lines.map { Lyrics.Line(startMs: $0.startMs, text: $0.text) }, isSynced: answer.synced)]
+        } else: {
+            try await subsonic.lyrics(for: song)
+        }
+    }
 
     public func reportNowPlaying(songId: String, positionSecs: Double) async throws { try await subsonic.reportNowPlaying(songId: songId, positionSecs: positionSecs) }
     public func reportProgress(songId: String, positionSecs: Double, isPaused: Bool) async throws { try await subsonic.reportProgress(songId: songId, positionSecs: positionSecs, isPaused: isPaused) }
@@ -134,6 +262,49 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     public func signOut() async {
         await client.signOut()
         await subsonic.signOut()
+    }
+
+    // MARK: - Through the API, or Subsonic
+
+    /// What a track answer brings with it, so songs have their album, artists and genre names.
+    static let trackIncludes = ["albums", "contributors", "genres"]
+
+    /// The API when it can answer; Subsonic offline (its saved answers), when the API's sign-in
+    /// is gone, or when the server can't be reached.
+    func throughAPI<T>(_ api: () async throws -> T, else subsonicPath: () async throws -> T) async throws -> T {
+        if offline?.isOn == true { return try await subsonicPath() }
+        guard await client.tokens.current != nil else { return try await subsonicPath() }
+        do {
+            return try await api()
+        } catch OwnAudioError.network {
+            return try await subsonicPath()
+        } catch let error as OwnAudioError {
+            throw Self.sourceError(error)
+        }
+    }
+
+    /// The signed-in account's id, asked once.
+    func userId() async throws -> String {
+        if let known = listener.current.userId { return known }
+        let id = try await client.me().id
+        listener.setUserId(id)
+        return id
+    }
+
+    /// The app tells its own playlists by owner name: the account's username for its own, the
+    /// owner's id for anyone else's (which no username equals).
+    func playlist(_ p: OwnAudioKit.Playlist, mine: String) -> Playlist {
+        Playlist(
+            id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? subsonic.client.username : p.ownerId,
+            songCount: p.trackCount, duration: Int(p.durationMs / 1000), coverArt: p.image != nil ? p.id : nil
+        )
+    }
+
+    func contributors(_ ids: [String]) async -> [OwnAudioKit.Contributor] {
+        await withTaskGroup(of: OwnAudioKit.Contributor?.self) { group in
+            for id in ids { group.addTask { try? await client.contributor(id: id) } }
+            return await group.reduce(into: []) { if let c = $1 { $0.append(c) } }
+        }
     }
 
     // MARK: - The library on the phone
@@ -277,46 +448,11 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         }
         let contributors = decoded("contributor", OwnAudioKit.Contributor.self)
         let albums = decoded("album", OwnAudioKit.Album.self)
-        let genres = decoded("genre", OwnAudioKit.Genre.self)
         let tracks = decoded("track", OwnAudioKit.Track.self)
-        func ids(_ kind: String) -> Set<String> { Set((state.records[kind] ?? [:]).keys) }
-        func ratings(_ kind: String) -> [String: Int] {
-            decoded(kind, OwnAudioKit.Rating.self).mapValues(\.rating)
-        }
-        let favouriteTracks = ids("favourite.track"), favouriteAlbums = ids("favourite.album"), favouriteArtists = ids("favourite.contributor")
-        let trackRatings = ratings("rating.track"), albumRatings = ratings("rating.album")
-
-        /// The credit line as printed: names in order with what joins them.
-        func line(_ credits: [Credit], roles: Set<String>) -> String? {
-            let parts = credits.filter { roles.contains($0.role) }
-            guard !parts.isEmpty else { return nil }
-            return parts.map { (contributors[$0.contributorId]?.name ?? "") + $0.joinPhrase }.joined()
-        }
-        func firstArtist(_ credits: [Credit]) -> String? {
-            credits.first { $0.role == "artist" }?.contributorId
-        }
-
-        let songs: [Song] = tracks.values.map { t in
-            let album = t.albumId.flatMap { albums[$0] }
-            let seconds = t.durationMs.map { Int($0 / 1000) }
-            return Song(
-                id: t.id, title: t.title, album: album?.title, artist: line(t.credits, roles: ["artist", "featured"]),
-                albumId: t.albumId, artistId: firstArtist(t.credits), track: t.trackNumber, discNumber: t.discNumber,
-                duration: seconds, genre: t.genreIds.first.flatMap { genres[$0]?.name },
-                coverArt: t.image != nil ? t.id : (album?.image != nil ? t.albumId : nil),
-                suffix: suffix(t.contentType),
-                bitRate: (t.sizeBytes ?? 0) > 0 && (seconds ?? 0) > 0 ? Int((t.sizeBytes ?? 0) * 8 / Int64(seconds ?? 1)) : nil,
-                isFavorite: favouriteTracks.contains(t.id), rating: trackRatings[t.id]
-            )
-        }
-        let albumList: [Album] = albums.values.map { a in
-            Album(
-                id: a.id, name: a.title, artist: line(a.credits, roles: ["artist"]), artistId: firstArtist(a.credits),
-                songCount: a.trackCount, duration: Int(a.durationMs / 1000), coverArt: a.image != nil ? a.id : nil,
-                year: a.releaseDate.flatMap { Int($0.prefix(4)) }, isFavorite: favouriteAlbums.contains(a.id),
-                rating: albumRatings[a.id], dateAdded: a.createdAt
-            )
-        }
+        let mapper = RecordMapper(
+            contributors: contributors, albums: albums, genres: decoded("genre", OwnAudioKit.Genre.self),
+            listener: ListenerState.Values(state)
+        )
         // Artists are the contributors credited as one; authors, narrators and hosts are the
         // same records but not this app's.
         var albumCounts: [String: Int] = [:]
@@ -324,15 +460,10 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             for c in Set(a.credits.filter { $0.role == "artist" }.map(\.contributorId)) { albumCounts[c, default: 0] += 1 }
         }
         let trackArtists = Set(tracks.values.flatMap { $0.credits.filter { $0.role == "artist" }.map(\.contributorId) })
-        let artists: [Artist] = contributors.values
+        let artists = contributors.values
             .filter { albumCounts[$0.id] != nil || trackArtists.contains($0.id) }
-            .map { c in
-                Artist(
-                    id: c.id, name: c.name, albumCount: albumCounts[c.id] ?? 0,
-                    imageURL: c.image.flatMap { URL(string: $0 + "&w=512") }, isFavorite: favouriteArtists.contains(c.id)
-                )
-            }
-        return (artists, albumList, songs)
+            .map { mapper.artist($0, albumCount: albumCounts[$0.id] ?? 0) }
+        return (artists, albums.values.map { mapper.album($0) }, tracks.values.map { mapper.song($0) })
     }
 
     /// The format from the content type, as Subsonic names it.

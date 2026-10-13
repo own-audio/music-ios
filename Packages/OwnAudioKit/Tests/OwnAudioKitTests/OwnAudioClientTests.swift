@@ -229,6 +229,53 @@ struct OwnAudioClientTests {
         #expect(await mock.requestLog().first?.value(forHTTPHeaderField: "Authorization") == "Bearer a")
     }
 
+    @Test("playlists, search, random, plays and lyrics: paths, bodies and answers")
+    func lists() async throws {
+        let track = #"{"id":"t1","title":"One","album_id":null,"recording_id":null,"credits":[],"genre_ids":[],"disc_number":null,"track_number":null,"duration_ms":1000,"visibility":"family","owner_id":"u1","content_type":null,"size_bytes":null,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}"#
+        let playlist = #"{"id":"p1","name":"Road","description":null,"visibility":"private","owner_id":"u1","track_count":1,"duration_ms":1000,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}"#
+        let mock = await MockURLProtocol.makeStubbedSession { request in
+            switch (request.httpMethod ?? "GET", request.url?.path ?? "") {
+            case ("GET", "/api/v2/playlists"): return json(#"{"items":[\#(playlist)]}"#)
+            case ("GET", "/api/v2/playlists/p1/entries"): return json(#"{"items":[{"id":"e1","position":1,"added_at":"2026-10-11T12:00:00Z","track":\#(track)}]}"#)
+            case ("POST", "/api/v2/playlists"), ("POST", "/api/v2/playlists/p1/entries"): return json(playlist, status: 200)
+            case ("DELETE", _), ("PUT", "/api/v2/playlists/p1/entries/order"): return .init(statusCode: 204, body: Data())
+            case ("GET", "/api/v2/search"): return json(#"{"artists":[],"albums":[],"tracks":[\#(track)]}"#)
+            case ("GET", "/api/v2/tracks/random"): return json(#"{"items":[\#(track)]}"#)
+            case ("GET", "/api/v2/me/played"): return json(#"{"items":[{"kind":"album","id":"a1","play_count":3,"last_played_at":"2026-10-11T12:00:00Z"}]}"#)
+            case ("GET", "/api/v2/tracks/t1/lyrics"): return json(#"{"text":"[00:01.00]Hi","synced":true,"lines":[{"start_ms":1000,"text":"Hi"}]}"#)
+            default: return json("{}", status: 404)
+            }
+        }
+        let client = OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
+        #expect(try await client.playlists().items.first?.trackCount == 1)
+        #expect(try await client.playlistEntries(id: "p1").items.first?.track.id == "t1")
+        _ = try await client.createPlaylist(name: "Road", trackIds: ["t1"])
+        _ = try await client.addToPlaylist(id: "p1", trackIds: ["t2"])
+        try await client.removeFromPlaylist(id: "p1", entryId: "e1")
+        try await client.orderPlaylist(id: "p1", entryIds: ["e2", "e1"])
+        try await client.deletePlaylist(id: "p1")
+        #expect(try await client.search("one").tracks.map(\.id) == ["t1"])
+        #expect(try await client.randomTracks(limit: 5).items.count == 1)
+        #expect(try await client.played(.album, order: "most").items.first?.playCount == 3)
+        let words = try await client.lyrics(trackId: "t1")
+        #expect(words.synced && words.lines.first?.startMs == 1000)
+
+        let log = await mock.requestLog()
+        let made = try #require(log.first { $0.httpMethod == "POST" && $0.url?.path == "/api/v2/playlists" })
+        let body = try JSONSerialization.jsonObject(with: made.httpBody ?? bodyOf(made)) as? [String: Any]
+        #expect(body?["track_ids"] as? [String] == ["t1"] && body?["name"] as? String == "Road")
+        let played = try #require(log.first { $0.url?.path == "/api/v2/me/played" })
+        #expect(played.url?.query?.contains("order=most") == true && played.url?.query?.contains("kind=album") == true)
+    }
+
+    private func bodyOf(_ request: URLRequest) -> Data {
+        guard let stream = request.httpBodyStream else { return Data() }
+        stream.open(); defer { stream.close() }
+        var data = Data(); var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
+        return data
+    }
+
     @Test("snapshot lines: begin, record, end")
     func snapshotLines() throws {
         guard case .begin(let c)? = try OwnAudioClient.snapshotLine(#"{"type":"begin","cursor":"c1"}"#) else { Issue.record("begin"); return }

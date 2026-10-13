@@ -80,9 +80,19 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     server): what was changed offline goes in one `/sync/push` (favorites, ratings with their
     kind, plays with the time heard; playlist edits stay one call each, v2 has no playlists
     yet); while on screen the active server's `/events` stream triggers a change-feed sync.
-  - **M8d**: the Subsonic path dropped for own.audio once v2 covers the rest — playlists,
-    search, random songs, instant mix, lyrics, play-count orders (server work first,
-    `docs/api-v2-plan.md` in the server repository).
+  - [x] **M8d — the rest of what v2 offers** (2026-10-13; needs server 1.0.0-beta.11): playlists
+    (list, open, make, rename, delete, add, remove by entry id), search, random songs (by genre),
+    lyrics, and the Recently Played / Most Played album orders go through `/api/v2`. Favorites and
+    ratings shown with those answers come from the change feed (`ListenerState`), as the API's
+    records don't carry them. Instant mix is hidden for own.audio: the server has nothing to pick
+    similar songs from. Offline, or with the API's sign-in refused, the Subsonic API answers (its
+    saved answers keep the screens working).
+  - **M8e**: browsing (artists, albums, songs) through v2 — cursor pages behind the app's offset
+    paging — and media through `playback-info` and v2 images (stream URLs become async). Then
+    own.audio needs no Subsonic key at all.
+- [ ] **M9: Smart playlists.** The server has them on v1 only (rules: genres, BPM, energy,
+  favorites, not played for N days, …; a preview; freezing into an ordinary playlist). Server
+  first: a V11 phase of `/api/v2` for them; then a screen to make, edit and play them.
 - Later: Plex as a fourth server (official API since 2025), podcasts tab where the server has
   podcasts, CarPlay check.
 - Later: Ampache (tried 8.2.2 on 2026-10-11): its Subsonic API refuses token sign-in (`t`+`s`,

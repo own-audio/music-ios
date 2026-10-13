@@ -152,6 +152,54 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "17b-signed-in-again")
     }
 
+    /// A playlist made, opened (it is the account's own, so it can be edited) and deleted; then
+    /// a search that finds the download album. On own.audio both go through its own API.
+    func testPlaylistLifeAndSearch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        openTab(app, Self.playlistsTab)
+        let new = app.buttons["playlists.new"]
+        XCTAssertTrue(new.waitForExistence(timeout: 15))
+        new.tap()
+        // Sorted first, so it is on screen however many playlists the server has.
+        let name = "000 UI Test \(Int.random(in: 1000...9999))"
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText(name)
+        app.alerts.buttons["Create"].tap()
+        let row = app.staticTexts[name]
+        // A server may list a new playlist a moment late; pull to refresh until it does.
+        XCTAssertTrue(waitUntil(timeout: 40) {
+            if row.waitForExistence(timeout: 5) { return true }
+            app.swipeDown()
+            return false
+        }, "the new playlist should be listed")
+        row.tap()
+        let edit = app.buttons["Edit Playlist"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 15), "the account's own playlist should offer editing")
+        screenshot(app, "20-playlist")
+        edit.tap()
+        let delete = app.buttons["Delete Playlist"].firstMatch
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        delete.tap()
+        let confirm = app.buttons.matching(NSPredicate(format: "label == 'Delete Playlist'"))
+        XCTAssertTrue(waitUntil(timeout: 5) { confirm.count > 0 && confirm.element(boundBy: confirm.count - 1).isHittable })
+        confirm.element(boundBy: confirm.count - 1).tap()
+        XCTAssertTrue(waitUntil(timeout: 20) { !app.staticTexts[name].exists }, "the deleted playlist should be gone")
+
+        guard let album = env["SERVER_DOWNLOAD_ALBUM"].flatMap({ $0.isEmpty ? nil : $0 }) else { return }
+        openTab(app, Self.searchTab)
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText(album)
+        let hit = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", album)).firstMatch
+        XCTAssertTrue(hit.waitForExistence(timeout: 20), "searching for \(album) should find it")
+        screenshot(app, "21-search")
+    }
+
     /// Download an album, then start the app with every server unreachable and play it from
     /// Downloads. `TEST_RUNNER_SERVER_DOWNLOAD_ALBUM` picks a small album; without it, the
     /// first one.
@@ -454,6 +502,8 @@ final class PlaybackSmokeTests: XCTestCase {
 
     static let homeTab = ["Home", "Domů"]
     static let libraryTab = ["Library", "Knihovna"]
+    static let playlistsTab = ["Playlists", "Playlisty"]
+    static let searchTab = ["Search", "Hledat"]
 
     /// Tabs can't carry identifiers, so they are found by their label in either language.
     private func openTab(_ app: XCUIApplication, _ labels: [String]) {
@@ -463,7 +513,8 @@ final class PlaybackSmokeTests: XCTestCase {
         // takes it; try again until the tab reports itself selected.
         for _ in 0..<3 {
             tab.tap()
-            if waitUntil(timeout: 3, { tab.isSelected }) { return }
+            // The search tab turns into the search field once open: gone means it opened.
+            if waitUntil(timeout: 3, { !tab.exists || tab.isSelected }) { return }
         }
     }
 
