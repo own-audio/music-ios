@@ -4963,6 +4963,16 @@
     },
     "musicbrainz.org/recording/…" : {
       "shouldTranslate" : false
+    },
+    "Correct the album or artist if the tags name it wrong." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokud tagy album nebo interpreta pojmenovávají špatně, opravte je."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

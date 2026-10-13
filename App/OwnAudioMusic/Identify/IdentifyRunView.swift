@@ -21,6 +21,7 @@ struct IdentifyRunView: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppModel.self) private var model
     @State private var run: IdentifyRun?
     @State private var tab: Tab = .review
     @State private var proposals: [IdentifyProposal] = []
@@ -145,7 +146,14 @@ struct IdentifyRunView: View {
             }
         }
         .sheet(item: $editionsFor) { group in
-            EditionsSheet(client: client, group: group) { await reload() }
+            let first = proposals.first { $0.group.id == group.id }?.track
+            EditionsSheet(
+                client: client,
+                group: group,
+                searchable: (IdentifyAccess.shared.server(model)?.revision ?? 0) >= 14,
+                album: first?.album ?? "",
+                artist: first?.artist ?? ""
+            ) { await reload() }
         }
         .sheet(item: $recordingFor) { proposal in
             RecordingPicker(
@@ -433,8 +441,13 @@ private struct ProposalRow: View {
 private struct EditionsSheet: View {
     let client: OwnAudioClient
     let group: IdentifyProposal.Group
+    /// The server can search the editions again with the owner's words (revision 14).
+    let searchable: Bool
+    @State var album: String
+    @State var artist: String
     let changed: () async -> Void
 
+    @State private var searching = false
     @Environment(\.dismiss) private var dismiss
     @State private var state: LoadState<IdentifyGroup> = .loading
     @State private var choosing: Int?
@@ -444,6 +457,23 @@ private struct EditionsSheet: View {
         NavigationStack {
             LoadStateView(state: state, retry: load) { detail in
                 List {
+                    if searchable {
+                        Section {
+                            TextField("Album", text: $album)
+                            TextField("Artist", text: $artist)
+                            Button {
+                                Task { await search() }
+                            } label: {
+                                HStack {
+                                    Label("Search MusicBrainz", systemImage: "magnifyingglass")
+                                    if searching { Spacer(); ProgressView() }
+                                }
+                            }
+                            .disabled(searching || (album.trimmingCharacters(in: .whitespaces).isEmpty && artist.trimmingCharacters(in: .whitespaces).isEmpty))
+                        } footer: {
+                            Text("Correct the album or artist if the tags name it wrong.")
+                        }
+                    }
                     if detail.chosen == nil {
                         Text("No one release fits all these songs, so each was matched on its own. Pick a release to match the whole album to it.")
                             .font(.footnote)
@@ -502,6 +532,22 @@ private struct EditionsSheet: View {
             state = .loaded(try await client.identifyGroup(group.id))
         } catch {
             state = .failed(identifyMessage(error))
+        }
+    }
+
+    private func search() async {
+        searching = true
+        defer { searching = false }
+        let words = { (s: String) -> String? in
+            let t = s.trimmingCharacters(in: .whitespaces)
+            return t.isEmpty ? nil : t
+        }
+        do {
+            let found = try await client.searchGroup(group.id, album: words(album), artist: words(artist))
+            state = .loaded(found)
+            await changed()
+        } catch {
+            errorMessage = identifyMessage(error)
         }
     }
 

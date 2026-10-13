@@ -44,7 +44,8 @@ package, merged into this repository — is in `docs/history/`.
   corrected: a song a run found nothing for, or found wrong, gets Search… / Other Recording…,
   which lists what the server also found, searches MusicBrainz again with your words, or takes a
   pasted musicbrainz.org link. Any song's menu has Identify…, the same for a song on its own
-  (own.audio servers from 1.0.0-beta.14).
+  (own.audio servers from 1.0.0-beta.14). An album's Other Edition… can search again with a
+  corrected album or artist (from 1.0.0-beta.15).
 - Every song row has a **⋯ button** with the same actions as a long press (favorite, rating,
   playlist, identify, download), where people look for them.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps

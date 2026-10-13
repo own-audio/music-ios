@@ -13,8 +13,10 @@ final class IdentifyAccess {
         let client: OwnAudioClient
         /// The server charges for identifying (its `billing` module): ask before starting.
         let charges: Bool
+        /// The server's `/api/v1` revision: 13 searches a song in the owner's words, 14 an album.
+        let revision: Int
         /// Any song can be searched for in the owner's words and identified (revision 13).
-        let searches: Bool
+        var searches: Bool { revision >= 13 }
     }
 
     private var modules: [UUID: [String: Bool]] = [:]
@@ -31,7 +33,7 @@ final class IdentifyAccess {
             return nil
         }
         guard known["identify_library"] == true else { return nil }
-        return Server(client: client, charges: known["billing"] == true, searches: (revisions[id] ?? 0) >= 13)
+        return Server(client: client, charges: known["billing"] == true, revision: revisions[id] ?? 0)
     }
 
     private func ask(_ id: UUID, _ client: OwnAudioClient) {

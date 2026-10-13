@@ -275,6 +275,14 @@ extension OwnAudioClient {
         return try await call("PUT", "identify/groups/\(id)/edition", body: Body(index: index))
     }
 
+    /// Searches an album's editions again with the owner's words (revision 14) and puts its
+    /// pending proposals on the best one.
+    @discardableResult
+    public func searchGroup(_ id: String, album: String?, artist: String?) async throws -> IdentifyGroup {
+        struct Body: Encodable { let album: String?; let artist: String? }
+        return try await call("POST", "identify/groups/\(id)/search", body: Body(album: album, artist: artist))
+    }
+
     /// The server's music folders, which a run can be limited to (`IdentifyScope(kind:
     /// "folder", id:)`). Only `/api/v1` lists them.
     public func musicFolders() async throws -> [LibraryFolder] {
