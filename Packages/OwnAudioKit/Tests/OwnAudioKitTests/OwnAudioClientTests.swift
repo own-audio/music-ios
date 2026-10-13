@@ -276,6 +276,29 @@ struct OwnAudioClientTests {
         return data
     }
 
+    @Test("a smart rule goes as the server's rule: snake_case, its limit kinds, nothing unset")
+    func smartRuleShape() throws {
+        var rule = SmartRule()
+        rule.filters.playedByOthersNotMe = true
+        rule.filters.genres = .init(include: ["jazz"])
+        rule.limit = .minutes(90)
+        rule.arc = .warmupSustainCooldown
+        rule.sort = .leastRecentlyPlayed
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder.ownAudio.encode(rule)) as? [String: Any]
+        let filters = json?["filters"] as? [String: Any]
+        #expect(filters?["played_by_others_not_me"] as? Bool == true)
+        #expect((filters?["genres"] as? [String: Any])?["include"] as? [String] == ["jazz"])
+        #expect(filters?["bpm"] == nil && filters?["min_rating"] == nil, "what is not set is not sent")
+        #expect(json?["limit"] as? [String: AnyHashable] == ["kind": "duration", "minutes": 90])
+        #expect(json?["arc"] as? String == "warmup-sustain-cooldown" && json?["sort"] as? String == "least-recently-played")
+        #expect((json?["sequence"] as? [String: Any])?["max_per_artist"] as? Int == 2)
+
+        let server = #"{"arc":"none","filters":{"not_played_days":365,"starred":true},"limit":{"kind":"count","n":50},"sequence":{"max_per_artist":2,"no_consecutive_artist":true},"sort":"weighted-random"}"#
+        let decoded = try JSONDecoder.ownAudio.decode(SmartRule.self, from: Data(server.utf8))
+        #expect(decoded.filters.notPlayedDays == 365 && decoded.filters.starred == true && decoded.limit == .count(50))
+        #expect(try JSONDecoder.ownAudio.decode(SmartRule.self, from: Data("{}".utf8)) == SmartRule(), "a rule with nothing set is the defaults")
+    }
+
     @Test("snapshot lines: begin, record, end")
     func snapshotLines() throws {
         guard case .begin(let c)? = try OwnAudioClient.snapshotLine(#"{"type":"begin","cursor":"c1"}"#) else { Issue.record("begin"); return }

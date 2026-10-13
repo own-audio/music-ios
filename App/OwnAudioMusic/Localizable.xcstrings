@@ -24,6 +24,16 @@
         }
       }
     },
+    "%@, chosen from %lld that fit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, vybráno z %lld odpovídajících"
+          }
+        }
+      }
+    },
     "%lld" : {
       "shouldTranslate" : false
     },
@@ -61,12 +71,32 @@
         }
       }
     },
+    "%lld genres" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld žánrů"
+          }
+        }
+      }
+    },
     "%lld kbps" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld kb/s"
+          }
+        }
+      }
+    },
+    "%lld min" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
           }
         }
       }
@@ -115,6 +145,16 @@
         }
       }
     },
+    "%lld songs fit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odpovídajících skladeb: %lld"
+          }
+        }
+      }
+    },
     "+10 minutes" : {
       "localizations" : {
         "cs" : {
@@ -141,6 +181,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 skladba"
+          }
+        }
+      }
+    },
+    "1 song fits" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odpovídá 1 skladba"
           }
         }
       }
@@ -196,6 +246,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "60 minut"
+          }
+        }
+      }
+    },
+    "A Month" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Měsíc"
+          }
+        }
+      }
+    },
+    "A Year" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rok"
           }
         }
       }
@@ -300,6 +370,26 @@
         }
       }
     },
+    "Added in the Last" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidané za poslední"
+          }
+        }
+      }
+    },
+    "Added in the last 30 days." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidané za posledních 30 dní."
+          }
+        }
+      }
+    },
     "Address" : {
       "localizations" : {
         "cs" : {
@@ -370,6 +460,26 @@
         }
       }
     },
+    "Any" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jakékoli"
+          }
+        }
+      }
+    },
+    "Any Time" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kdykoli"
+          }
+        }
+      }
+    },
     "Artists" : {
       "localizations" : {
         "cs" : {
@@ -420,12 +530,32 @@
         }
       }
     },
+    "At Most %lld per Artist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nejvýš %lld od jednoho interpreta"
+          }
+        }
+      }
+    },
     "Automatic" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Automaticky"
+          }
+        }
+      }
+    },
+    "Back in Rotation" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zase po čase"
           }
         }
       }
@@ -437,6 +567,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zesílení basů"
+          }
+        }
+      }
+    },
+    "Best First" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nejlepší napřed"
+          }
+        }
+      }
+    },
+    "Building Up" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradace"
           }
         }
       }
@@ -457,6 +607,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Podle názvu"
+          }
+        }
+      }
+    },
+    "Calm" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klidné"
           }
         }
       }
@@ -527,6 +687,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ověřuji…"
+          }
+        }
+      }
+    },
+    "Choose a genre" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte žánr"
+          }
+        }
+      }
+    },
+    "Chosen anew each time, from your own listening." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybírá se pokaždé znovu, podle toho, co posloucháte."
+          }
+        }
+      }
+    },
+    "Chosen anew each time, from your own listening. Shared with the household: everyone gets their own selection." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybírá se pokaždé znovu, podle toho, co posloucháte. Sdílený s domácností: každý dostane vlastní výběr."
           }
         }
       }
@@ -744,6 +934,16 @@
         }
       }
     },
+    "Delete Smart Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat chytrý playlist"
+          }
+        }
+      }
+    },
     "Disc %lld" : {
       "localizations" : {
         "cs" : {
@@ -864,12 +1064,62 @@
         }
       }
     },
+    "Edit Rule" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit pravidlo"
+          }
+        }
+      }
+    },
+    "Edit Smart Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit chytrý playlist"
+          }
+        }
+      }
+    },
     "Email" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-mail"
+          }
+        }
+      }
+    },
+    "Energetic" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energické"
+          }
+        }
+      }
+    },
+    "Energy" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energie"
+          }
+        }
+      }
+    },
+    "Energy Over Time" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Průběh energie"
           }
         }
       }
@@ -910,6 +1160,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ekvalizér"
+          }
+        }
+      }
+    },
+    "Even" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rovnoměrně"
           }
         }
       }
@@ -974,6 +1234,16 @@
         }
       }
     },
+    "Favorites Only" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jen oblíbené"
+          }
+        }
+      }
+    },
     "Filter Artists" : {
       "localizations" : {
         "cs" : {
@@ -991,6 +1261,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rovný"
+          }
+        }
+      }
+    },
+    "Forgotten Favorites" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapomenuté oblíbené"
           }
         }
       }
@@ -1015,12 +1295,42 @@
         }
       }
     },
+    "From %lld BPM" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Od %lld BPM"
+          }
+        }
+      }
+    },
+    "Genre Station" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Žánrová stanice"
+          }
+        }
+      }
+    },
     "Genres" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Žánry"
+          }
+        }
+      }
+    },
+    "Half a Year" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Půl roku"
           }
         }
       }
@@ -1107,12 +1417,42 @@
         }
       }
     },
+    "It is shared with the household: it goes for everyone. Playlists made from it stay." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je sdílený s domácností: zmizí všem. Playlisty z něj uložené zůstanou."
+          }
+        }
+      }
+    },
+    "It's among your playlists, as this rule chose it just now. It won't change from here on." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Najdete ho mezi svými playlisty tak, jak ho pravidlo právě vybralo. Dál se už měnit nebude."
+          }
+        }
+      }
+    },
     "Jellyfin API" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jellyfin API"
+          }
+        }
+      }
+    },
+    "Length" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délka"
           }
         }
       }
@@ -1137,12 +1477,32 @@
         }
       }
     },
+    "Limit the Tempo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omezit tempo"
+          }
+        }
+      }
+    },
     "Long-press a song and choose Favorite." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Podržte prst na skladbě a zvolte Oblíbit."
+          }
+        }
+      }
+    },
+    "Longest Unplayed First" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nejdéle nehrané napřed"
           }
         }
       }
@@ -1188,6 +1548,56 @@
         }
       }
     },
+    "Measure" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Měřit"
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minuty"
+          }
+        }
+      }
+    },
+    "Mixed, Favorites More Often" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promíchané, oblíbené častěji"
+          }
+        }
+      }
+    },
+    "Moderate" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Střední"
+          }
+        }
+      }
+    },
+    "Month" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Měsíc"
+          }
+        }
+      }
+    },
     "More" : {
       "localizations" : {
         "cs" : {
@@ -1228,6 +1638,36 @@
         }
       }
     },
+    "New in the Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nové v knihovně"
+          }
+        }
+      }
+    },
+    "New Selection" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nový výběr"
+          }
+        }
+      }
+    },
+    "New Smart Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nový chytrý playlist"
+          }
+        }
+      }
+    },
     "No address answers right now" : {
       "localizations" : {
         "cs" : {
@@ -1254,6 +1694,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Offline není k dispozici."
+          }
+        }
+      }
+    },
+    "Not Played For" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nehrané po dobu"
+          }
+        }
+      }
+    },
+    "Nothing Fits Right Now" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teď nic neodpovídá"
+          }
+        }
+      }
+    },
+    "Nothing in the library fits this rule at the moment. A wider rule gives more to choose from." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomuto pravidlu teď v knihovně nic neodpovídá. Širší pravidlo dá víc na výběr."
           }
         }
       }
@@ -1308,6 +1778,26 @@
         }
       }
     },
+    "Only songs the server has analysed have a tempo and an energy; with these set, the others are left out." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo a energii mají jen skladby, které server analyzoval; když je nastavíte, ostatní se vynechají."
+          }
+        }
+      }
+    },
+    "Order" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pořadí"
+          }
+        }
+      }
+    },
     "Original" : {
       "localizations" : {
         "cs" : {
@@ -1334,6 +1824,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "own.audio · Subsonic API"
+          }
+        }
+      }
+    },
+    "Played by Others, Not by Me" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrají ostatní, já ne"
+          }
+        }
+      }
+    },
+    "Playlists made from it stay." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlisty z něj uložené zůstanou."
           }
         }
       }
@@ -1388,6 +1898,96 @@
         }
       }
     },
+    "Rated four stars or more, not heard for two months." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hodnocené čtyřmi hvězdičkami a víc, dva měsíce neslyšené."
+          }
+        }
+      }
+    },
+    "Rating at Least" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hodnocení aspoň"
+          }
+        }
+      }
+    },
+    "Ready-Made" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připravené"
+          }
+        }
+      }
+    },
+    "Save as Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uložit jako playlist"
+          }
+        }
+      }
+    },
+    "Save as Smart Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uložit jako chytrý playlist"
+          }
+        }
+      }
+    },
+    "Saved as a Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uloženo jako playlist"
+          }
+        }
+      }
+    },
+    "Share with the Household" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet s domácností"
+          }
+        }
+      }
+    },
+    "Shared with the household" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdíleno s domácností"
+          }
+        }
+      }
+    },
+    "Shared, it is a rule rather than a list: each member gets their own selection, from what they have listened to." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílí se pravidlo, ne seznam: každý člen dostane vlastní výběr podle toho, co sám poslouchal."
+          }
+        }
+      }
+    },
     "Sign In" : {
       "localizations" : {
         "cs" : {
@@ -1424,6 +2024,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přihlášeno jako %@. Stažené skladby a knihovna v tomto iPhonu zůstanou, jak jsou."
+          }
+        }
+      }
+    },
+    "Smart Playlist Actions" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akce chytrého playlistu"
+          }
+        }
+      }
+    },
+    "Smart Playlists" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chytré playlisty"
+          }
+        }
+      }
+    },
+    "Songs you made favorites but haven't played for a year." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oblíbené skladby, které jste rok neposlouchali."
           }
         }
       }
@@ -1474,6 +2104,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Říká serveru, co hraje, a počítá přehrání: u serverů Subsonic po poslechu poloviny skladby nebo čtyř minut, u Jellyfinu podle jeho pravidel. Přehrání bez sítě se odešlou později. Server je může předávat na Last.fm nebo ListenBrainz."
+          }
+        }
+      }
+    },
+    "Tempo and Energy" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo a energie"
           }
         }
       }
@@ -1578,6 +2218,26 @@
         }
       }
     },
+    "Three Months" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tři měsíce"
+          }
+        }
+      }
+    },
+    "To %lld BPM" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do %lld BPM"
+          }
+        }
+      }
+    },
     "Turn Off" : {
       "localizations" : {
         "cs" : {
@@ -1608,6 +2268,16 @@
         }
       }
     },
+    "Up to 100 songs of one genre, no artist twice in a row." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Až 100 skladeb jednoho žánru, žádný interpret dvakrát po sobě."
+          }
+        }
+      }
+    },
     "Use" : {
       "localizations" : {
         "cs" : {
@@ -1634,6 +2304,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Čeká se na schválení…"
+          }
+        }
+      }
+    },
+    "Warm Up, Steady, Cool Down" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rozjezd, ustálení, zklidnění"
+          }
+        }
+      }
+    },
+    "Week" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Týden"
+          }
+        }
+      }
+    },
+    "What others in the household play and you haven't yet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Co pouštějí ostatní v domácnosti a vy ještě ne."
+          }
+        }
+      }
+    },
+    "What the Family Plays" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Co poslouchá rodina"
+          }
+        }
+      }
+    },
+    "Winding Down" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zklidnění"
           }
         }
       }

@@ -200,6 +200,66 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "21-search")
     }
 
+    /// Smart playlists, where the server has them (own.audio from 1.0.0-beta.13): a ready-made
+    /// one opened, a rule made in the editor (the songs that fit counted as it goes), saved,
+    /// played and deleted. Needs `SERVER_SMART_GENRE`, a genre with a few songs.
+    func testSmartPlaylists() throws {
+        guard let genre = env["SERVER_SMART_GENRE"].flatMap({ $0.isEmpty ? nil : $0 }) else {
+            throw XCTSkip("SERVER_SMART_GENRE is not set")
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        openTab(app, Self.playlistsTab)
+        let newSmart = app.buttons["playlists.newSmart"]
+        guard newSmart.waitForExistence(timeout: 20) else { throw XCTSkip("this server has no smart playlists") }
+        screenshot(app, "22-smart-list")
+
+        let preset = app.buttons["playlists.preset.new-in-the-library"]
+        XCTAssertTrue(preset.waitForExistence(timeout: 10))
+        preset.tap()
+        // Play is on only when there are songs (the summary under them can be off screen).
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(waitUntil(timeout: 20) { play.exists && play.isEnabled }, "a ready-made one lists songs")
+        screenshot(app, "23-smart-preset")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        XCTAssertTrue(newSmart.waitForExistence(timeout: 10))
+        newSmart.tap()
+        let name = "000 Smart \(Int.random(in: 1000...9999))"
+        let field = app.textFields["smartEditor.name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText(name)
+        app.buttons["smartEditor.genres"].tap()
+        let choice = app.buttons[genre]
+        XCTAssertTrue(choice.waitForExistence(timeout: 15), "the library's genres should be listed")
+        choice.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let matching = app.staticTexts["smartEditor.matching"]
+        XCTAssertTrue(waitUntil(timeout: 20) { matching.exists && matching.label.contains("fit") }, "the editor should count the songs that fit")
+        if let expected = env["SERVER_SMART_GENRE_COUNT"].flatMap(Int.init) {
+            XCTAssertTrue(waitUntil(timeout: 10) { matching.label.hasPrefix("\(expected) ") }, "\(expected) songs of \(genre), got \(matching.label)")
+        }
+        screenshot(app, "24-smart-editor")
+        app.buttons["smartEditor.save"].tap()
+
+        let row = app.staticTexts[name]
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "the saved smart playlist should be listed")
+        row.tap()
+        XCTAssertTrue(waitUntil(timeout: 20) { play.exists && play.isEnabled }, "the saved one lists songs")
+        screenshot(app, "25-smart-playlist")
+        app.buttons["smart.actions"].tap()
+        let delete = app.buttons["Delete Smart Playlist"].firstMatch
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        delete.tap()
+        let confirm = app.buttons.matching(NSPredicate(format: "label == 'Delete Smart Playlist'"))
+        XCTAssertTrue(waitUntil(timeout: 5) { confirm.count > 0 && confirm.element(boundBy: confirm.count - 1).isHittable })
+        confirm.element(boundBy: confirm.count - 1).tap()
+        XCTAssertTrue(waitUntil(timeout: 20) { !app.staticTexts[name].exists }, "the deleted smart playlist should be gone")
+    }
+
     /// Download an album, then start the app with every server unreachable and play it from
     /// Downloads. `TEST_RUNNER_SERVER_DOWNLOAD_ALBUM` picks a small album; without it, the
     /// first one.

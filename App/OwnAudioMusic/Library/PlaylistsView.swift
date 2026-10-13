@@ -6,28 +6,29 @@ struct PlaylistsView: View {
     @State private var state: LoadState<[Playlist]> = .loading
     @State private var isNaming = false
     @State private var newName = ""
+    @State private var smart: [SmartPlaylistInfo] = []
+    @State private var presets: [SmartPresetInfo] = []
+    @State private var newSmart: SmartRuleEditor.Draft?
+
+    private var smartSource: (any SmartPlaylistSource)? { model.activeSource as? any SmartPlaylistSource }
+    private var hasSmart: Bool { !smart.isEmpty || !presets.isEmpty }
 
     var body: some View {
         LoadStateView(state: state, retry: load) { playlists in
-            if playlists.isEmpty {
+            if playlists.isEmpty, !hasSmart {
                 ContentUnavailableView(
                     "No Playlists", systemImage: "music.note.list",
                     description: Text("Make one with +, or add songs to a new one from any song's menu.")
                 )
             } else {
-                List(playlists) { playlist in
-                    NavigationLink(value: Route.playlist(playlist)) {
-                        HStack(spacing: Theme.Spacing.md) {
-                            CoverArtView(artworkId: model.artworkId(playlist.coverArt), pointSize: 56)
-                                .frame(width: 56, height: 56)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(playlist.name).lineLimit(1)
-                                Text(subtitle(playlist))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                List {
+                    if hasSmart { smartSections }
+                    Section {
+                        ForEach(playlists) { playlist in
+                            playlistRow(playlist)
                         }
+                    } header: {
+                        if hasSmart { Text("Playlists") }
                     }
                 }
                 .listStyle(.plain)
@@ -35,6 +36,17 @@ struct PlaylistsView: View {
         }
         .navigationTitle("Playlists")
         .toolbar {
+            if smartSource != nil, hasSmart {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        newSmart = .init(existingId: nil, name: "", rule: SmartRule(), shared: false)
+                    } label: {
+                        Image(systemName: "wand.and.stars")
+                    }
+                    .accessibilityLabel("New Smart Playlist")
+                    .accessibilityIdentifier("playlists.newSmart")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     newName = ""
@@ -46,6 +58,9 @@ struct PlaylistsView: View {
                 .accessibilityIdentifier("playlists.new")
             }
         }
+        .sheet(item: $newSmart) { draft in
+            SmartRuleEditor(draft: draft) { _ in Task { await load() } }
+        }
         .alert("New Playlist", isPresented: $isNaming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
@@ -53,6 +68,61 @@ struct PlaylistsView: View {
         }
         .refreshable { await load() }
         .task(id: model.isOffline) { await load() }
+    }
+
+    @ViewBuilder
+    private var smartSections: some View {
+        if !smart.isEmpty {
+            Section("Smart Playlists") {
+                ForEach(smart) { item in
+                    NavigationLink(value: Route.smart(.saved(item))) {
+                        smartRow(item.name, subtitle: item.isShared ? String(localized: "Shared with the household") : nil)
+                    }
+                }
+            }
+        }
+        if !presets.isEmpty {
+            Section("Ready-Made") {
+                ForEach(presets) { preset in
+                    NavigationLink(value: Route.smart(.preset(preset))) {
+                        smartRow(preset.localizedName, subtitle: preset.summary)
+                    }
+                    .accessibilityIdentifier("playlists.preset.\(preset.slug)")
+                }
+            }
+        }
+    }
+
+    private func smartRow(_ name: String, subtitle: String?) -> some View {
+        HStack(spacing: Theme.Spacing.md) {
+            Image(systemName: "wand.and.stars")
+                .font(.title2)
+                .foregroundStyle(.tint)
+                .frame(width: 56, height: 56)
+                .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name).lineLimit(1)
+                if let subtitle {
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
+            }
+        }
+    }
+
+    private func playlistRow(_ playlist: Playlist) -> some View {
+        NavigationLink(value: Route.playlist(playlist)) {
+            HStack(spacing: Theme.Spacing.md) {
+                CoverArtView(artworkId: model.artworkId(playlist.coverArt), pointSize: 56)
+                    .frame(width: 56, height: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(playlist.name).lineLimit(1)
+                    Text(subtitle(playlist))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private func subtitle(_ playlist: Playlist) -> String {
@@ -63,6 +133,16 @@ struct PlaylistsView: View {
 
     private func load() async {
         guard let client = model.activeSource else { return }
+        // Smart playlists where the server has them; one without answers an error, and none show.
+        if let smartSource, !model.isOffline {
+            async let saved = try? smartSource.smartPlaylists()
+            async let ready = try? smartSource.smartPresets()
+            smart = await saved ?? []
+            presets = await ready ?? []
+        } else {
+            smart = []
+            presets = []
+        }
         do {
             state = .loaded(try await client.playlists())
         } catch {

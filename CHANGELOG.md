@@ -45,6 +45,11 @@ package, merged into this repository — is in `docs/history/`.
 - **The library on the phone from own.audio's change feed**: the whole library once, then only
   what changed since — refreshed every ten minutes, on mobile data too, as it is small. A first
   feed sync that fails falls back to paging.
+- **Smart playlists** on own.audio servers from 1.0.0-beta.13: your own and the server's
+  ready-made ones at the top of Playlists. Each is a rule, worked out anew whenever it opens from
+  what you have listened to; play it, shuffle it, ask for a new selection, keep it as an ordinary
+  playlist. Make or change one in an editor that counts the songs that fit as you go. Shared with
+  the household, everyone gets their own selection from it.
 - own.audio servers from 1.0.0-beta.11: **playlists, search, random songs, lyrics** and the
   **Recently Played / Most Played** orders go through the server's own API instead of its
   Subsonic one. Removing a song from a playlist goes by its entry, so the right one goes when a

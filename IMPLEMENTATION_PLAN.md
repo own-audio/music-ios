@@ -90,9 +90,15 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   - **M8e**: browsing (artists, albums, songs) through v2 — cursor pages behind the app's offset
     paging — and media through `playback-info` and v2 images (stream URLs become async). Then
     own.audio needs no Subsonic key at all.
-- [ ] **M9: Smart playlists.** The server has them on v1 only (rules: genres, BPM, energy,
-  favorites, not played for N days, …; a preview; freezing into an ordinary playlist). Server
-  first: a V11 phase of `/api/v2` for them; then a screen to make, edit and play them.
+- [x] **M9: Smart playlists.** Done 2026-10-13 (needs own.audio server 1.0.0-beta.13, the API's
+  V11): on Playlists, the account's smart playlists and the server's ready-made ones (Forgotten
+  Favorites, New in the Library, Back in Rotation, What the Family Plays, Genre Station with a
+  genre to pick). Opening one shows what it holds now, for this listener — a new draw each time
+  — to play or shuffle. An editor for the rule (genres, favorites only, rating, not played for,
+  added in, played by others, tempo, energy, length in songs or minutes, order, energy over
+  time, artist spacing) counts the songs that fit as it changes. A smart playlist can be shared
+  with the household (each member gets their own selection), saved as an ordinary playlist, or
+  deleted. Servers without them (Subsonic, Jellyfin, older own.audio) show none.
 - Later: Plex as a fourth server (official API since 2025), podcasts tab where the server has
   podcasts, CarPlay check.
 - Later: Ampache (tried 8.2.2 on 2026-10-11): its Subsonic API refuses token sign-in (`t`+`s`,

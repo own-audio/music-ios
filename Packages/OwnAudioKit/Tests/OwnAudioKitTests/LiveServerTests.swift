@@ -94,6 +94,36 @@ struct LiveServerTests {
         await client.signOut()
     }
 
+    @Test("a smart playlist: presets, a rule tried, saved, played, changed, frozen, deleted")
+    func smartPlaylists() async throws {
+        let client = try await signedIn()
+        guard (try? await client.smartPresets()) != nil else {
+            // A server before 1.0.0-beta.13 has none.
+            await client.signOut()
+            return
+        }
+        var rule = SmartRule()
+        rule.limit = .count(10)
+        let tried = try await client.resolve(rule, include: ["albums"])
+        #expect(tried.items.count <= 10 && tried.candidates >= tried.items.count)
+        let saved = try await client.createSmartPlaylist(name: "OwnAudioKit live \(UUID().uuidString.prefix(8))", rule: rule)
+        #expect(saved.mode == "dynamic" && saved.rule.limit == .count(10))
+        #expect(try await client.smartPlaylists().contains { $0.id == saved.id })
+        _ = try await client.resolveSmartPlaylist(id: saved.id)
+        rule.limit = .count(3)
+        let changed = try await client.updateSmartPlaylist(id: saved.id, name: saved.name, rule: rule, visibility: "private")
+        #expect(changed.rule.limit == .count(3))
+        if !tried.items.isEmpty {
+            let playlist = try await client.freezeSmartPlaylist(id: saved.id)
+            #expect(playlist.trackCount <= 3 && playlist.trackCount > 0)
+            #expect(try await client.smartPlaylist(id: saved.id).mode == "frozen")
+            try await client.deletePlaylist(id: playlist.id)
+        }
+        try await client.deleteSmartPlaylist(id: saved.id)
+        await #expect(throws: OwnAudioError.self) { _ = try await client.smartPlaylist(id: saved.id) }
+        await client.signOut()
+    }
+
     @Test("the catalogue and its records decode")
     func catalogue() async throws {
         let client = try await signedIn()

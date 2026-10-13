@@ -12,6 +12,8 @@
 #   OWNAUDIO_EMAIL=guest@example.com
 #   OWNAUDIO_ACCOUNT_PASSWORD=…                        # used to fetch the Subsonic key
 #   OWNAUDIO_DOWNLOAD_ALBUM="a small album"           # optional
+#   OWNAUDIO_SMART_GENRE=Jazz                          # optional: smart playlists (server 1.0.0-beta.13+)
+#   OWNAUDIO_SMART_GENRE_COUNT=3                       # optional: how many songs that genre has
 #
 #   JELLYFIN_HOST=https://jellyfin.example.com
 #   JELLYFIN_USER=someone
@@ -37,6 +39,7 @@ ui_tests() { # name host user password download-album lyrics-album
   xcodegen generate >/dev/null
   TEST_RUNNER_SERVER_HOST="$host" TEST_RUNNER_SERVER_USER="$user" TEST_RUNNER_SERVER_PASSWORD="$password" \
   TEST_RUNNER_SERVER_DOWNLOAD_ALBUM="$album" TEST_RUNNER_SERVER_LYRICS_ALBUM="$lyrics" \
+  TEST_RUNNER_SERVER_SMART_GENRE="${SMART_GENRE:-}" TEST_RUNNER_SERVER_SMART_GENRE_COUNT="${SMART_GENRE_COUNT:-}" \
   TEST_RUNNER_SCREENSHOT_DIR="$OUT/$name" \
     xcodebuild test -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic -destination "id=$SIM" \
       -derivedDataPath "$OUT/DerivedData" -test-timeouts-enabled YES -default-test-execution-time-allowance 420 \
@@ -64,7 +67,8 @@ if [[ "$only" == all || "$only" == ownaudio ]]; then
     | python3 -c "import sys,json; print(json.load(sys.stdin)['api_key'])")
   subsonic_live ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$key"
   # The app takes the account password and fetches the key itself.
-  [[ "$live_only" == "--live-only" ]] || ui_tests ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$OWNAUDIO_ACCOUNT_PASSWORD" "${OWNAUDIO_DOWNLOAD_ALBUM:-}"
+  [[ "$live_only" == "--live-only" ]] || SMART_GENRE="${OWNAUDIO_SMART_GENRE:-}" SMART_GENRE_COUNT="${OWNAUDIO_SMART_GENRE_COUNT:-}" \
+    ui_tests ownaudio "$OWNAUDIO_HOST" "$OWNAUDIO_EMAIL" "$OWNAUDIO_ACCOUNT_PASSWORD" "${OWNAUDIO_DOWNLOAD_ALBUM:-}"
 fi
 
 if [[ "$only" == all || "$only" == jellyfin ]]; then

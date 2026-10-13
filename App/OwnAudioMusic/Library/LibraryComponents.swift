@@ -7,6 +7,7 @@ enum Route: Hashable {
     case artist(Artist)
     case album(Album)
     case playlist(Playlist)
+    case smart(SmartTarget)
     case albums(AlbumSort)
     case artists
     case playlists
@@ -24,6 +25,7 @@ extension View {
             case .artist(let artist): ArtistDetailView(artist: artist)
             case .album(let album): AlbumDetailView(album: album)
             case .playlist(let playlist): PlaylistDetailView(playlist: playlist)
+            case .smart(let target): SmartPlaylistView(target: target)
             case .albums(let type): AlbumsView(initialType: type)
             case .artists: ArtistsView()
             case .playlists: PlaylistsView()
