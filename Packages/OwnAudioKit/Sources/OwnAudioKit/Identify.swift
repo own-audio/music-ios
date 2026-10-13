@@ -101,10 +101,45 @@ public struct IdentifyProposal: Decodable, Sendable, Equatable, Identifiable {
     public let keepAlbum: Bool
     /// `pending`, `accepted` or `rejected`.
     public let decision: String
+    /// The owner picked this recording (revision 13).
+    public let chosenByOwner: Bool?
+    /// How many other recordings the server keeps for it (revision 13).
+    public let alternatives: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, group, track, reasons, proposal, keepAlbum, decision
+        case id, group, track, reasons, proposal, keepAlbum, decision, chosenByOwner, alternatives
         case proposalClass = "class"
+    }
+}
+
+/// A MusicBrainz recording a search found for a song, best first.
+public struct RecordingCandidate: Decodable, Sendable, Equatable, Identifiable {
+    public let mbRecordingId: String
+    public let title: String
+    public let artist: String?
+    public let album: String?
+    public let mbReleaseId: String?
+    public let durationMs: Int?
+    public let trackNumber: Int?
+    public let year: Int?
+    public let coverArtUrl: String?
+    /// 0–100, relative to the other results.
+    public let score: Int
+
+    /// The same recording can come back on several releases.
+    public var id: String { mbRecordingId + "/" + (mbReleaseId ?? "") }
+}
+
+/// What to search MusicBrainz for, in the owner's words.
+public struct RecordingSearch: Encodable, Sendable, Equatable {
+    public var title: String?
+    public var artist: String?
+    public var album: String?
+
+    public init(title: String? = nil, artist: String? = nil, album: String? = nil) {
+        self.title = title
+        self.artist = artist
+        self.album = album
     }
 }
 
@@ -246,6 +281,54 @@ extension OwnAudioClient {
         struct Answer: Decodable { let folders: [LibraryFolder]? }
         let answer: Answer = try await getV1("library/folders")
         return (answer.folders ?? []).filter { $0.kind == "music" }
+    }
+
+    /// The server's `/api/v1` revision, which says what it offers beyond the modules (13: a
+    /// song's own search and choice of recording).
+    public func apiRevision() async throws -> Int {
+        struct Info: Decodable {
+            struct Api: Decodable { let revision: Int }
+            let api: Api?
+        }
+        let info: Info = try await getV1("server")
+        return info.api?.revision ?? 0
+    }
+
+    /// The other recordings the server keeps for a proposal (revision 13).
+    public func proposalAlternatives(_ id: String) async throws -> [RecordingCandidate] {
+        struct Answer: Decodable { let items: [RecordingCandidate] }
+        let answer: Answer = try await get("identify/proposals/\(id)/alternatives")
+        return answer.items
+    }
+
+    /// Searches again for a proposal's song in the owner's words; the results become its
+    /// alternatives.
+    public func searchProposal(_ id: String, _ search: RecordingSearch) async throws -> [RecordingCandidate] {
+        struct Answer: Decodable { let items: [RecordingCandidate] }
+        let answer: Answer = try await call("POST", "identify/proposals/\(id)/search", body: search)
+        return answer.items
+    }
+
+    /// Makes a recording the proposal — one of its alternatives, or any recording by id or
+    /// musicbrainz.org link — and accepts it when `accept`.
+    @discardableResult
+    public func chooseRecording(proposal id: String, recording: String, release: String? = nil, accept: Bool) async throws -> IdentifyProposal {
+        struct Body: Encodable { let recording: String; let release: String?; let accept: Bool }
+        return try await call("PUT", "identify/proposals/\(id)/recording", body: Body(recording: recording, release: release, accept: accept))
+    }
+
+    /// Searches MusicBrainz for any of the account's songs, in the owner's words.
+    public func searchRecordings(track id: String, _ search: RecordingSearch) async throws -> [RecordingCandidate] {
+        struct Answer: Decodable { let items: [RecordingCandidate] }
+        let answer: Answer = try await call("POST", "tracks/\(id)/identity/search", body: search)
+        return answer.items
+    }
+
+    /// Identifies one song as a recording, by id or musicbrainz.org link. `undoIdentify` puts
+    /// it back.
+    public func identify(track id: String, recording: String, release: String? = nil) async throws {
+        struct Body: Encodable { let recording: String; let release: String? }
+        let _: JSONValue = try await call("PUT", "tracks/\(id)/identity", body: Body(recording: recording, release: release))
     }
 
     /// Undoes one song's identify (revision 12): it goes back to what its file said.

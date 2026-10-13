@@ -130,6 +130,94 @@ final class IdentifyTests: XCTestCase {
         screenshot(app, "identify-08-deleted")
     }
 
+    /// One song in your own words: the tags are wrong, so the search is typed over and a
+    /// recording picked. Needs a server from 1.0.0-beta.14; leaves the song as it was.
+    func testIdentifyOneSongInYourOwnWords() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        signIn(app)
+        openTab(app, ["Library", "Knihovna"])
+        let albums = app.buttons["library.albums"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        albums.tap()
+        let named = env["IDENTIFY_ALBUM"].map { app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", $0)).firstMatch }
+        let album = named ?? app.scrollViews.buttons.firstMatch
+        XCTAssertTrue(album.waitForExistence(timeout: 20))
+        album.tap()
+        let song = app.cells.firstMatch
+        XCTAssertTrue(song.waitForExistence(timeout: 15))
+        // Playing it first: a 22 kHz mono FLAC streamed into the player used to take the app down.
+        song.tap()
+        sleep(4)
+        XCTAssertEqual(app.state, .runningForeground, "Playing a song should not end the app")
+        let more = app.buttons["song.more"].firstMatch
+        XCTAssertTrue(more.waitForExistence(timeout: 10), "A song row should have a More button")
+        more.tap()
+        let identify = app.buttons["Identify…"]
+        let offered = identify.waitForExistence(timeout: 5)
+        screenshot(app, "identify-09-song-menu")
+        XCTAssertTrue(offered, "A song's menu should offer Identify…")
+        identify.tap()
+
+        let title = app.textFields["picker.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        title.tap()
+        title.press(forDuration: 1.0)
+        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
+        title.typeText("Yesterday")
+        let artist = app.textFields["picker.artist"]
+        artist.tap()
+        artist.press(forDuration: 1.0)
+        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
+        artist.typeText("The Beatles")
+        app.buttons["picker.search"].tap()
+        let result = app.buttons["picker.result"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 30), "MusicBrainz should find Yesterday")
+        screenshot(app, "identify-10-own-words")
+        result.tap()
+        XCTAssertTrue(waitUntil(timeout: 20) { !title.exists }, "Choosing closes the picker")
+
+        // Put it back.
+        XCTAssertTrue(more.waitForExistence(timeout: 10))
+        more.tap()
+        let undo = app.buttons["Undo Identify…"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5))
+        undo.tap()
+        let confirm = app.buttons.matching(NSPredicate(format: "label == 'Undo Identify'")).firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        sleep(2)
+        screenshot(app, "identify-11-put-back")
+    }
+
+    /// The More menus on an artist and an album start a run (or say why not).
+    func testMoreMenusStartARun() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        signIn(app)
+        openTab(app, ["Library", "Knihovna"])
+        let albums = app.buttons["library.albums"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        albums.tap()
+        let card = app.scrollViews.buttons.firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        card.tap()
+        sleep(2)
+        screenshot(app, "more-01-opened")
+        let more = app.navigationBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 10), "No More button")
+        more.tap()
+        sleep(1)
+        screenshot(app, "more-02-menu")
+        let item = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Identify'")).firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "No Identify item in the menu")
+        item.tap()
+        sleep(4)
+        screenshot(app, "more-03-after")
+    }
+
     private func waitUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {

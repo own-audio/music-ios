@@ -14,74 +14,115 @@ private struct SongActions: ViewModifier {
     let removeFromPlaylist: (() -> Void)?
     @State private var isAddingToPlaylist = false
     @State private var isUndoingIdentify = false
+    @State private var isIdentifying = false
 
     func body(content: Content) -> some View {
         let id = model.compositeId(song.id)
-        content
-            .contextMenu {
-                if let id {
-                    let starred = model.isFavorite(id)
-                    Button {
-                        model.perform { try await model.toggleFavorite(id, kind: .song) }
-                    } label: {
-                        Label(starred ? "Unfavorite" : "Favorite", systemImage: starred ? "star.slash" : "star")
+        HStack(spacing: Theme.Spacing.sm) {
+            content
+            // The same actions as a long press, where people look for them.
+            Menu {
+                menuItems(id)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("More")
+            .accessibilityIdentifier("song.more")
+        }
+        .contextMenu { menuItems(id) }
+        .confirmationDialog("Put this song back as its file says, with no MusicBrainz match?", isPresented: $isUndoingIdentify, titleVisibility: .visible) {
+            Button("Undo Identify", role: .destructive) {
+                guard let client = IdentifyAccess.shared.server(model)?.client else { return }
+                let trackId = song.id
+                model.perform { try await undoIdentify(client, trackId) }
+            }
+        }
+        .sheet(isPresented: $isAddingToPlaylist) {
+            AddToPlaylistSheet(songIds: [song.id])
+        }
+        .sheet(isPresented: $isIdentifying) {
+            if let client = IdentifyAccess.shared.server(model)?.client {
+                let trackId = song.id
+                RecordingPicker(
+                    songTitle: song.title,
+                    songArtist: song.artist,
+                    songAlbum: song.album,
+                    durationSecs: song.duration,
+                    search: { try await client.searchRecordings(track: trackId, $0) },
+                    choose: { recording, release in
+                        try await client.identify(track: trackId, recording: recording, release: release)
                     }
-                    if model.capabilities.contains(.ratings) {
-                        RatingMenu(rating: model.ratings[id]) { rating in
-                            model.perform { try await model.setRating(id, kind: .song, rating: rating) }
-                        }
-                    }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func menuItems(_ id: String?) -> some View {
+        if let id {
+            let starred = model.isFavorite(id)
+            Button {
+                model.perform { try await model.toggleFavorite(id, kind: .song) }
+            } label: {
+                Label(starred ? "Unfavorite" : "Favorite", systemImage: starred ? "star.slash" : "star")
+            }
+            if model.capabilities.contains(.ratings) {
+                RatingMenu(rating: model.ratings[id]) { rating in
+                    model.perform { try await model.setRating(id, kind: .song, rating: rating) }
                 }
-                if model.capabilities.contains(.instantMix), !model.isOffline {
-                    Button {
-                        model.playInstantMix(itemId: song.id)
-                    } label: {
-                        Label("Instant Mix", systemImage: "wand.and.stars")
-                    }
-                }
+            }
+        }
+        if model.capabilities.contains(.instantMix), !model.isOffline {
+            Button {
+                model.playInstantMix(itemId: song.id)
+            } label: {
+                Label("Instant Mix", systemImage: "wand.and.stars")
+            }
+        }
+        Button {
+            isAddingToPlaylist = true
+        } label: {
+            Label("Add to Playlist…", systemImage: "text.badge.plus")
+        }
+        if let identify = IdentifyAccess.shared.server(model) {
+            if identify.searches {
                 Button {
-                    isAddingToPlaylist = true
+                    isIdentifying = true
                 } label: {
-                    Label("Add to Playlist…", systemImage: "text.badge.plus")
-                }
-                if IdentifyAccess.shared.server(model) != nil {
-                    Button {
-                        isUndoingIdentify = true
-                    } label: {
-                        Label("Undo Identify…", systemImage: "arrow.uturn.backward")
-                    }
-                }
-                if let id {
-                    if model.downloads.isDownloaded(id) {
-                        Button(role: .destructive) {
-                            model.downloads.remove(trackId: id)
-                        } label: {
-                            Label("Remove Download", systemImage: "trash")
-                        }
-                    } else {
-                        Button {
-                            model.download(songs: [song])
-                        } label: {
-                            Label("Download", systemImage: "arrow.down.circle")
-                        }
-                    }
-                }
-                if let removeFromPlaylist {
-                    Button(role: .destructive, action: removeFromPlaylist) {
-                        Label("Remove from Playlist", systemImage: "minus.circle")
-                    }
+                    Label("Identify…", systemImage: "magnifyingglass")
                 }
             }
-            .confirmationDialog("Put this song back as its file says, with no MusicBrainz match?", isPresented: $isUndoingIdentify, titleVisibility: .visible) {
-                Button("Undo Identify", role: .destructive) {
-                    guard let client = IdentifyAccess.shared.server(model)?.client else { return }
-                    let trackId = song.id
-                    model.perform { try await undoIdentify(client, trackId) }
+            Button {
+                isUndoingIdentify = true
+            } label: {
+                Label("Undo Identify…", systemImage: "arrow.uturn.backward")
+            }
+        }
+        if let id {
+            if model.downloads.isDownloaded(id) {
+                Button(role: .destructive) {
+                    model.downloads.remove(trackId: id)
+                } label: {
+                    Label("Remove Download", systemImage: "trash")
+                }
+            } else {
+                Button {
+                    model.download(songs: [song])
+                } label: {
+                    Label("Download", systemImage: "arrow.down.circle")
                 }
             }
-            .sheet(isPresented: $isAddingToPlaylist) {
-                AddToPlaylistSheet(songIds: [song.id])
+        }
+        if let removeFromPlaylist {
+            Button(role: .destructive, action: removeFromPlaylist) {
+                Label("Remove from Playlist", systemImage: "minus.circle")
             }
+        }
     }
 }
 

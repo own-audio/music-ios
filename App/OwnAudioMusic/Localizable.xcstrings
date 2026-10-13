@@ -4800,6 +4800,169 @@
           }
         }
       }
+    },
+    "Search MusicBrainz" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hledat v MusicBrainz"
+          }
+        }
+      }
+    },
+    "Correct the words if the tags are wrong — a typo, “Track 02”, the artist in the title." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokud jsou tagy špatně, opravte slova — překlep, „Track 02“, interpret v názvu."
+          }
+        }
+      }
+    },
+    "Nothing found. Try fewer or other words." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic nenalezeno. Zkuste méně slov nebo jiná."
+          }
+        }
+      }
+    },
+    "Nothing found yet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatím nic nenalezeno."
+          }
+        }
+      }
+    },
+    "Recordings" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nahrávky"
+          }
+        }
+      }
+    },
+    "Use This Recording" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použít tuto nahrávku"
+          }
+        }
+      }
+    },
+    "Or Paste a Link" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebo vložte odkaz"
+          }
+        }
+      }
+    },
+    "A recording's link or ID from musicbrainz.org." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odkaz nebo ID nahrávky z musicbrainz.org."
+          }
+        }
+      }
+    },
+    "Title" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Název"
+          }
+        }
+      }
+    },
+    "Artist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interpret"
+          }
+        }
+      }
+    },
+    "Album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Album"
+          }
+        }
+      }
+    },
+    "Song identified" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skladba identifikována"
+          }
+        }
+      }
+    },
+    "Search…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hledat…"
+          }
+        }
+      }
+    },
+    "Other Recording…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jiná nahrávka…"
+          }
+        }
+      }
+    },
+    "Your choice" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaše volba"
+          }
+        }
+      }
+    },
+    "Identify…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifikovat…"
+          }
+        }
+      }
+    },
+    "musicbrainz.org/recording/…" : {
+      "shouldTranslate" : false
     }
   },
   "version" : "1.0"

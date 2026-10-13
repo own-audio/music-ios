@@ -40,6 +40,13 @@ package, merged into this repository — is in `docs/history/`.
   instead of the whole library. An album's menu has Identify Album, an artist's Identify Artist.
   A song's menu has Undo Identify, which puts it back as its file says; so does swiping an
   accepted song on a run's Done tab.
+- When the tags are wrong — "Track 02", a typo, the artist in the title — the search can be
+  corrected: a song a run found nothing for, or found wrong, gets Search… / Other Recording…,
+  which lists what the server also found, searches MusicBrainz again with your words, or takes a
+  pasted musicbrainz.org link. Any song's menu has Identify…, the same for a song on its own
+  (own.audio servers from 1.0.0-beta.14).
+- Every song row has a **⋯ button** with the same actions as a long press (favorite, rating,
+  playlist, identify, download), where people look for them.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps
   its tokens (refreshed one at a time, rotated tokens saved straight back to the Keychain) and
   the account's Subsonic key, which it fetches with them. Accounts with **two-factor sign-in**
@@ -150,3 +157,7 @@ package, merged into this repository — is in `docs/history/`.
 - UI test: the server's connection screen ends up connected (on Jellyfin from the home
   network: the home address the server named).
 
+### Fixed
+
+- Playing a streamed song whose format differs from the player's — a 22 kHz mono FLAC — ended
+  the app; the stream is now converted, as a downloaded file already was.

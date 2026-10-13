@@ -96,6 +96,42 @@ struct IdentifyTests {
         #expect(folders.map(\.id) == ["f1"])
     }
 
+    @Test("a search in the owner's words sends only what was typed and decodes candidates")
+    func search() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            json(#"{"items":[{"mb_recording_id":"m1","title":"Yesterday","artist":"The Beatles","mb_artist_id":null,"album":"Help!","mb_release_id":"rel1","duration_ms":125000,"genre":null,"track_number":13,"year":1965,"cover_art_url":null,"score":100}]}"#)
+        }
+        let found = try await client(mock).searchRecordings(track: "t1", RecordingSearch(title: "Yesterday", artist: "The Beatles"))
+        #expect(found.first?.album == "Help!")
+        #expect(found.first?.id == "m1/rel1")
+        let sent = await mock.requestLog().first!
+        #expect(sent.url?.path == "/api/v2/tracks/t1/identity/search")
+        #expect(!body(sent).contains("album"))
+    }
+
+    @Test("choosing a recording for a proposal sends the link and whether to accept")
+    func choose() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            json(#"{"id":"p1","group":{"id":"g1","kind":"track","label":"Track 02"},"track":{"id":"t1","title":"Track 02","artist":null,"album":null,"disc_number":null,"track_number":2,"duration_secs":125},"class":"review","reasons":["chosen"],"proposal":{"mb_recording_id":"m1","title":"Yesterday","artist":"The Beatles","album":"Help!","album_artist":null,"mb_release_id":"rel1","track_number":13,"disc_number":null,"year":null,"length_ms":null,"score":100},"keep_album":false,"decision":"accepted","chosen_by_owner":true,"alternatives":3}"#)
+        }
+        let p = try await client(mock).chooseRecording(proposal: "p1", recording: "https://musicbrainz.org/recording/m1", accept: true)
+        #expect(p.chosenByOwner == true)
+        #expect(p.alternatives == 3)
+        let sent = await mock.requestLog().first!
+        #expect(sent.httpMethod == "PUT")
+        #expect(sent.url?.path == "/api/v2/identify/proposals/p1/recording")
+        #expect(body(sent).contains(#""accept":true"#))
+    }
+
+    @Test("the server's revision comes from /api/v1/server")
+    func revision() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { request in
+            #expect(request.url?.path == "/api/v1/server")
+            return json(#"{"api":{"version":1,"revision":13},"edition":"foss"}"#)
+        }
+        #expect(try await client(mock).apiRevision() == 13)
+    }
+
     @Test("an identify event reads as progress; others do not")
     func progress() {
         let event = LiveEvent(type: "identify", id: nil, data: #"{"groups_done":5,"groups_total":5,"run_id":"r1","status":"ready"}"#)

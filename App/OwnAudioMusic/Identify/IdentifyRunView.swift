@@ -31,6 +31,7 @@ struct IdentifyRunView: View {
     @State private var confirmRevert = false
     @State private var confirmDelete = false
     @State private var editionsFor: IdentifyProposal.Group?
+    @State private var recordingFor: IdentifyProposal?
 
     var body: some View {
         List {
@@ -98,7 +99,7 @@ struct IdentifyRunView: View {
                                 act { try await client.rejectProposal(proposal.id) }
                             }, keepAlbum: { keep in
                                 act { try await client.setKeepAlbum(proposal.id, keep) }
-                            })
+                            }, otherRecording: proposal.alternatives == nil ? nil : { recordingFor = proposal })
                         }
                     } header: {
                         GroupHeader(group: group, items: items, busy: busy, acceptAlbum: {
@@ -145,6 +146,21 @@ struct IdentifyRunView: View {
         }
         .sheet(item: $editionsFor) { group in
             EditionsSheet(client: client, group: group) { await reload() }
+        }
+        .sheet(item: $recordingFor) { proposal in
+            RecordingPicker(
+                songTitle: proposal.track.title,
+                songArtist: proposal.track.artist,
+                songAlbum: proposal.track.album,
+                durationSecs: proposal.track.durationSecs,
+                initial: { try await client.proposalAlternatives(proposal.id) },
+                search: { try await client.searchProposal(proposal.id, $0) },
+                choose: { recording, release in
+                    try await client.chooseRecording(proposal: proposal.id, recording: recording, release: release, accept: true)
+                    message = String(localized: "Song identified")
+                    await reload()
+                }
+            )
         }
         .alert("That Didn't Work", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
@@ -304,6 +320,8 @@ private struct ProposalRow: View {
     let accept: () -> Void
     let reject: () -> Void
     let keepAlbum: (Bool) -> Void
+    /// Pick another recording; nil where the server cannot (before revision 13).
+    let otherRecording: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
@@ -328,7 +346,17 @@ private struct ProposalRow: View {
                     }
                 }
             } else {
-                Text("Nothing found").font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Text("Nothing found").font(.caption).foregroundStyle(.secondary)
+                    if let otherRecording, proposal.decision != "accepted" {
+                        Spacer()
+                        Button("Search…", action: otherRecording)
+                            .font(.caption.weight(.medium))
+                            .buttonStyle(.borderless)
+                            .disabled(busy)
+                            .accessibilityIdentifier("identify.search")
+                    }
+                }
             }
             if !proposal.reasons.isEmpty {
                 Text(proposal.reasons.map(reasonTitle).joined(separator: " · "))
@@ -370,6 +398,9 @@ private struct ProposalRow: View {
             } else if proposal.decision == "accepted" {
                 Button("Undo Identify", systemImage: "arrow.uturn.backward", action: undo)
             }
+            if let otherRecording, proposal.decision != "accepted" {
+                Button("Other Recording…", systemImage: "magnifyingglass", action: otherRecording)
+            }
         }
     }
 
@@ -392,6 +423,7 @@ private struct ProposalRow: View {
         case "weak": String(localized: "Weak match")
         case "not_found": String(localized: "Not found")
         case "not_on_release": String(localized: "Not on this edition")
+        case "chosen": String(localized: "Your choice")
         default: code
         }
     }

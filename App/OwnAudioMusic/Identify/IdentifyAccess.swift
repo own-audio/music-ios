@@ -13,9 +13,12 @@ final class IdentifyAccess {
         let client: OwnAudioClient
         /// The server charges for identifying (its `billing` module): ask before starting.
         let charges: Bool
+        /// Any song can be searched for in the owner's words and identified (revision 13).
+        let searches: Bool
     }
 
     private var modules: [UUID: [String: Bool]] = [:]
+    private var revisions: [UUID: Int] = [:]
     @ObservationIgnored private var asking: Set<UUID> = []
 
     /// The active server's identify, when it offers it. The first call for a server asks it
@@ -28,7 +31,7 @@ final class IdentifyAccess {
             return nil
         }
         guard known["identify_library"] == true else { return nil }
-        return Server(client: client, charges: known["billing"] == true)
+        return Server(client: client, charges: known["billing"] == true, searches: (revisions[id] ?? 0) >= 13)
     }
 
     private func ask(_ id: UUID, _ client: OwnAudioClient) {
@@ -36,7 +39,10 @@ final class IdentifyAccess {
         asking.insert(id)
         Task {
             // A failed ask is not remembered, so the next screen asks again.
-            if let answer = try? await client.modules() { modules[id] = answer }
+            if let answer = try? await client.modules() {
+                revisions[id] = (try? await client.apiRevision()) ?? 0
+                modules[id] = answer
+            }
             asking.remove(id)
         }
     }

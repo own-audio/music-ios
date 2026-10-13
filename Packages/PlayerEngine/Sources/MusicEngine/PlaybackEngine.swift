@@ -151,6 +151,8 @@ public final class PlaybackEngine {
     /// (gapless mode) or fading out during a crossfade.
     private var activeIsA = true
     private var activeNode: AVAudioPlayerNode { activeIsA ? playerA : playerB }
+    /// Converts a streamed track whose format differs from the node's; one per track.
+    private var streamConverter: AVAudioConverter?
     private var idleNode: AVAudioPlayerNode { activeIsA ? playerB : playerA }
 
     /// Sample-accurate boundaries for whatever is chained on the *active* node right now, in
@@ -836,6 +838,7 @@ public final class PlaybackEngine {
         streamingFrameCursor = 0
         streamingBuffersPending = 0
         streamingFinishedReceiving = false
+        streamConverter = nil
 
         if !engine.isRunning { try? engine.start() }
 
@@ -880,7 +883,7 @@ public final class PlaybackEngine {
     /// `scheduleFile`/`scheduleSegment` call did, just spread over however many buffers a track
     /// takes to arrive instead of one.
     private func scheduleStreamedBuffer(_ decoded: AudioStreamDecoder.DecodedBuffer, trackId: String, generation: UInt64) {
-        let buffer = decoded.buffer
+        guard let buffer = conformed(decoded.buffer) else { return }
         let frameLength = AVAudioFramePosition(buffer.frameLength)
         guard frameLength > 0 else { return }
         let startFrame = streamingFrameCursor
@@ -903,6 +906,35 @@ public final class PlaybackEngine {
         } else {
             boundaries[0].endFrame = streamingFrameCursor
         }
+    }
+
+    /// The buffer in the format the player node is connected with. `scheduleFile` converts by
+    /// itself; `scheduleBuffer` raises an exception instead — a 22 kHz mono FLAC streamed into a
+    /// node connected for 48 kHz stereo took the app down.
+    private func conformed(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        let target = activeNode.outputFormat(forBus: 0)
+        if buffer.format == target { return buffer }
+        if streamConverter?.inputFormat != buffer.format || streamConverter?.outputFormat != target {
+            streamConverter = AVAudioConverter(from: buffer.format, to: target)
+        }
+        guard let converter = streamConverter else { return nil }
+        let ratio = target.sampleRate / buffer.format.sampleRate
+        let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1024
+        guard let out = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: capacity) else { return nil }
+        var fed = false
+        var error: NSError?
+        // `.noDataNow`, not `.endOfStream`: the converter keeps its resampling state from one
+        // buffer to the next, so the joins stay seamless.
+        converter.convert(to: out, error: &error) { _, status in
+            if fed {
+                status.pointee = .noDataNow
+                return nil
+            }
+            fed = true
+            status.pointee = .haveData
+            return buffer
+        }
+        return error == nil ? out : nil
     }
 
     /// A streamed buffer finished *playing* (as opposed to finished arriving, which
