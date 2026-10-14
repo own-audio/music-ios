@@ -435,6 +435,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     /// The record's image link at the nearest size the server makes. The link was learned with
     /// the record; one that ran out (or a cover id never seen) is read again.
     public func coverURL(id: String, size: Int) async throws -> URL {
+        let id = Self.recordId(ofCover: id)
         let link: URL
         if let known = records.image(of: id) {
             link = known
@@ -451,6 +452,20 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         let items = (components.queryItems ?? []).filter { $0.name != "w" }
         components.queryItems = items + [URLQueryItem(name: "w", value: String(RecordIndex.width(for: size)))]
         return components.url ?? link
+    }
+
+    /// A cover id that changes when the image does: the record's id and the image's object
+    /// (`…/api/v2/images/{object}`). Covers are cached by this id, so a cover replaced on the
+    /// server — an identify that fetched the release's — is fetched again, not shown stale.
+    static func coverId(_ recordId: String, image: String?) -> String? {
+        guard let image else { return nil }
+        guard let object = URL(string: image)?.pathComponents.last, image.contains("/api/v2/images/") else { return recordId }
+        return "\(recordId)~\(object)"
+    }
+
+    /// The record a cover id is for.
+    static func recordId(ofCover id: String) -> String {
+        id.split(separator: "~", maxSplits: 1).first.map(String.init) ?? id
     }
 
     /// Reads the record again for its image link: by its known kind, else album, track,
@@ -605,7 +620,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         records.learn(p.id, .playlist, image: p.image)
         return Playlist(
             id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? username : p.ownerId,
-            songCount: p.trackCount, duration: Int(p.durationMs / 1000), coverArt: p.image != nil ? p.id : nil
+            songCount: p.trackCount, duration: Int(p.durationMs / 1000), coverArt: OwnAudioSource.coverId(p.id, image: p.image)
         )
     }
 

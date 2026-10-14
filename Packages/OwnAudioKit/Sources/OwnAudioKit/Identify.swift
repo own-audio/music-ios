@@ -81,6 +81,7 @@ public struct IdentifyProposal: Decodable, Sendable, Equatable, Identifiable {
         public let album: String?
         public let albumArtist: String?
         public let mbReleaseId: String?
+        public let mbReleaseGroupId: String?
         public let trackNumber: Int?
         public let discNumber: Int?
         public let year: Int?
@@ -148,6 +149,7 @@ public struct IdentifyGroup: Decodable, Sendable, Equatable {
     public struct Edition: Decodable, Sendable, Equatable, Identifiable {
         public let index: Int
         public let mbReleaseId: String
+        public let mbReleaseGroupId: String?
         public let title: String
         public let artist: String?
         public let year: Int?
@@ -342,5 +344,16 @@ extension OwnAudioClient {
     /// Undoes one song's identify (revision 12): it goes back to what its file said.
     public func undoIdentify(track id: String) async throws {
         let _: Empty = try await call("DELETE", "tracks/\(id)/identity", body: Optional<Empty>.none)
+    }
+}
+
+/// Cover Art Archive's front covers for a release, best first: the release's own, then its
+/// release group's, which many reissues and digital editions fall back on. For showing what a
+/// match is; the server fetches the one it keeps.
+public enum CoverArtArchive {
+    public static func fronts(release: String?, group: String?, size: Int = 250) -> [URL] {
+        [release.map { "release/\($0)" }, group.map { "release-group/\($0)" }]
+            .compactMap { $0 }
+            .compactMap { URL(string: "https://coverartarchive.org/\($0)/front-\(size)") }
     }
 }

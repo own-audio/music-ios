@@ -148,6 +148,7 @@ private struct CandidateRow: View {
 
     var body: some View {
         HStack {
+            CoverThumb(urls: CoverArtArchive.fronts(release: candidate.mbReleaseId, group: nil))
             VStack(alignment: .leading, spacing: 2) {
                 Text(candidate.title).foregroundStyle(.primary)
                 Text([candidate.artist, candidate.album, candidate.year.map { String($0) }].compactMap { $0 }.joined(separator: " · "))

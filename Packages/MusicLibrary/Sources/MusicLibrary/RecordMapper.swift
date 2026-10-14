@@ -48,7 +48,7 @@ struct RecordMapper {
             id: t.id, title: t.title, album: album?.title, artist: line(t.credits, roles: ["artist", "featured"]),
             albumId: t.albumId, artistId: firstArtist(t.credits), track: t.trackNumber, discNumber: t.discNumber,
             duration: seconds, genre: t.genreIds.first.flatMap { genres[$0]?.name },
-            coverArt: t.image != nil ? t.id : (album?.image != nil ? t.albumId : nil),
+            coverArt: OwnAudioSource.coverId(t.id, image: t.image) ?? t.albumId.flatMap { OwnAudioSource.coverId($0, image: album?.image) },
             suffix: OwnAudioSource.suffix(t.contentType),
             bitRate: (t.sizeBytes ?? 0) > 0 && (seconds ?? 0) > 0 ? Int((t.sizeBytes ?? 0) * 8 / Int64(seconds ?? 1)) : nil,
             isFavorite: listener.favourites.contains(t.id), rating: listener.ratings[t.id], playlistEntryId: entryId
@@ -59,7 +59,7 @@ struct RecordMapper {
         index?.learn(a.id, .album, image: a.image)
         return Album(
             id: a.id, name: a.title, artist: line(a.credits, roles: ["artist"]), artistId: firstArtist(a.credits),
-            songCount: a.trackCount, duration: Int(a.durationMs / 1000), coverArt: a.image != nil ? a.id : nil,
+            songCount: a.trackCount, duration: Int(a.durationMs / 1000), coverArt: OwnAudioSource.coverId(a.id, image: a.image),
             year: a.releaseDate.flatMap { Int($0.prefix(4)) }, isFavorite: listener.favourites.contains(a.id),
             rating: listener.ratings[a.id], playCount: playCount, dateAdded: a.createdAt
         )
@@ -69,7 +69,7 @@ struct RecordMapper {
     func artist(_ c: OwnAudioKit.Contributor, albumCount: Int? = nil) -> Artist {
         index?.learn(c.id, .contributor, image: c.image)
         return Artist(
-            id: c.id, name: c.name, albumCount: albumCount, coverArt: c.image != nil ? c.id : nil,
+            id: c.id, name: c.name, albumCount: albumCount, coverArt: OwnAudioSource.coverId(c.id, image: c.image),
             isFavorite: listener.favourites.contains(c.id)
         )
     }

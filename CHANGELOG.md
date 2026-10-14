@@ -46,6 +46,11 @@ package, merged into this repository — is in `docs/history/`.
   pasted musicbrainz.org link. Any song's menu has Identify…, the same for a song on its own
   (own.audio servers from 1.0.0-beta.14). An album's Other Edition… can search again with a
   corrected album or artist (from 1.0.0-beta.15).
+- **Covers of the matches** in identify: a proposal's release, each edition and each recording
+  show their cover from Cover Art Archive (the release group's when the release has none), so the
+  right one is seen at a glance.
+- A cover changed on an own.audio server — an identify now brings the release's — shows in the
+  app: covers are cached by the image, not only by the album or song, so a new one is fetched.
 - Every song row has a **⋯ button** with the same actions as a long press (favorite, rating,
   playlist, identify, download), where people look for them.
 - own.audio servers from 1.0.0-beta.7 are signed in to through their own API: the app keeps

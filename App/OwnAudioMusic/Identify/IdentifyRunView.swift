@@ -340,10 +340,8 @@ private struct ProposalRow: View {
                 Text(proposal.track.title).lineLimit(1)
             }
             if let match = proposal.proposal {
-                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs) {
-                    Image(systemName: "arrow.turn.down.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                HStack(alignment: .center, spacing: Theme.Spacing.sm) {
+                    CoverThumb(urls: proposal.keepAlbum ? [] : CoverArtArchive.fronts(release: match.mbReleaseId, group: match.mbReleaseGroupId), size: 36)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(match.title).font(.subheadline).lineLimit(1)
                         Text([match.artist, proposal.keepAlbum ? proposal.track.album : match.album, match.year.map { String($0) }]
@@ -487,6 +485,7 @@ private struct EditionsSheet: View {
                             Task { await choose(edition.index) }
                         } label: {
                             HStack {
+                                CoverThumb(urls: CoverArtArchive.fronts(release: edition.mbReleaseId, group: edition.mbReleaseGroupId))
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(edition.year.map { "\(edition.title) (\(String($0)))" } ?? edition.title)
                                         .foregroundStyle(.primary)

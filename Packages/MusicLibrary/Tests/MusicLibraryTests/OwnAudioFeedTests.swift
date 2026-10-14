@@ -47,7 +47,7 @@ struct OwnAudioFeedTests {
         let album = try! #require(albums.first)
         #expect(album.artist == "The Band" && album.year == 2001 && album.rating == 4 && album.coverArt == "al")
         #expect(Set(artists.map(\.id)) == ["band"], "a featured guest on a track, and a narrator, are not artists")
-        #expect(artists.first?.coverArt == "band", "a picture by id, like a cover: its link runs out")
+        #expect(artists.first?.coverArt == "band~o1", "a picture by id and image, like a cover: a new picture is a new id")
         #expect(artists.first?.imageURL == nil)
     }
 
