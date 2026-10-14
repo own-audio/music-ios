@@ -965,6 +965,47 @@ final class AppModel {
         return songs.contains { sharing(of: $0)?.isMine == true }
     }
 
+    // MARK: - The listener's own pictures (own.audio)
+
+    /// Covers changed here, by composite artwork id: how many times, so their views load again.
+    private(set) var coverChanges: [String: Int] = [:]
+
+    var artwork: (any ArtworkSource)? {
+        guard case .ownAudio(_, _, .some) = activeServer?.auth else { return nil }
+        return activeSource as? any ArtworkSource
+    }
+
+    enum ArtworkTarget {
+        /// The listener's own songs among these; an album's when `albumId` is set.
+        case songs([Song], albumId: String?)
+        case artist(Artist)
+        case playlist(String)
+    }
+
+    /// Uploads `image` as the target's picture, then shows it everywhere at once.
+    func setArtwork(_ target: ArtworkTarget, image: Data, contentType: String) async throws {
+        guard let artwork, let serverId = activeServerId else { return }
+        var changed: [String] = []
+        switch target {
+        case .songs(let songs, let albumId):
+            let mine = songs.filter { sharing(of: $0)?.isMine == true }
+            guard !mine.isEmpty else { return }
+            try await artwork.setCover(songIds: mine.map(\.id), albumId: albumId, image: image, contentType: contentType)
+            changed = mine.map(\.id) + mine.compactMap(\.coverArt) + mine.compactMap(\.albumId) + [albumId].compactMap { $0 }
+        case .artist(let artist):
+            try await artwork.setPicture(artist: artist, image: image, contentType: contentType)
+            changed = [artist.id] + [artist.coverArt].compactMap { $0 }
+        case .playlist(let id):
+            try await artwork.setCover(playlistId: id, image: image, contentType: contentType)
+            changed = [id]
+        }
+        for id in Set(changed) {
+            let composite = TrackID.make(serverId: serverId, itemId: id)
+            await covers.forget(artworkId: composite)
+            coverChanges[composite, default: 0] += 1
+        }
+    }
+
     func isFavorite(_ compositeId: String) -> Bool {
         favoriteIds.contains(compositeId)
     }

@@ -6,6 +6,7 @@ struct ArtistDetailView: View {
     let artist: Artist
     @State private var state: LoadState<[Album]> = .loading
     @State private var identify: IdentifyRequest?
+    @State private var isChoosingPicture = false
     @State private var isStarting = false
 
     var body: some View {
@@ -47,13 +48,24 @@ struct ArtistDetailView: View {
                     .accessibilityLabel(starred ? "Unfavorite Artist" : "Favorite Artist")
                 }
             }
-            if IdentifyAccess.shared.server(model) != nil, model.mayIdentify(artistId: artist.id) {
+            let identifies = IdentifyAccess.shared.server(model) != nil && model.mayIdentify(artistId: artist.id)
+            let pictures = model.artwork != nil && !model.isOffline
+            if identifies || pictures {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button {
-                            identify = .artist(id: artist.id, label: artist.name)
-                        } label: {
-                            Label("Identify Artist", systemImage: "waveform.badge.magnifyingglass")
+                        if pictures {
+                            Button {
+                                isChoosingPicture = true
+                            } label: {
+                                Label("Choose Picture…", systemImage: "photo")
+                            }
+                        }
+                        if identifies {
+                            Button {
+                                identify = .artist(id: artist.id, label: artist.name)
+                            } label: {
+                                Label("Identify Artist", systemImage: "waveform.badge.magnifyingglass")
+                            }
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -63,6 +75,7 @@ struct ArtistDetailView: View {
             }
         }
         .identifyStarter($identify)
+        .artworkPicker(isPresented: $isChoosingPicture) { .artist(artist) }
         .onAppear {
             // The artist list says whether it is a favorite; remember that for the button.
             model.learn(artists: [artist])

@@ -177,6 +177,13 @@ public final class RecordIndex: @unchecked Sendable {
         lock.unlock()
     }
 
+    /// After a new picture: the next cover asked for reads the record again.
+    func forget(_ id: String) {
+        lock.lock()
+        entries[id] = nil
+        lock.unlock()
+    }
+
     func kind(of id: String) -> Kind? {
         lock.lock()
         defer { lock.unlock() }

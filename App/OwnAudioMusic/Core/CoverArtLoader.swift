@@ -40,6 +40,15 @@ actor CoverArtLoader {
         await image(artworkId: artworkId, size: size)?.jpegData(compressionQuality: 0.9)
     }
 
+    /// After a new picture: every size of this cover is read from the server again.
+    func forget(artworkId: String) {
+        memory.removeAllObjects()
+        let prefix = Self.encode(artworkId) + "@"
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? [] where name.hasPrefix(prefix) {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+        }
+    }
+
     func clear() {
         memory.removeAllObjects()
         try? FileManager.default.removeItem(at: directory)

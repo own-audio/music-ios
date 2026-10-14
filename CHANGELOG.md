@@ -87,6 +87,11 @@ package, merged into this repository — is in `docs/history/`.
   only the API's tokens and the account's email. Servers signed in earlier keep their key, which
   still sends the "now playing" report and lists music folders; without one there is neither,
   as v2 has no word for them yet.
+- **Your own pictures** on own.audio servers: Choose Cover… on your songs, Choose Album Cover…
+  on an album of yours (its songs take it), Choose Picture… on any artist, and Choose Cover… on
+  your playlists. The picture comes from the system's photo picker, which needs no access to the
+  whole library, is made smaller (1600 px, JPEG) and uploaded; the app shows it at once. An
+  artist's picture chosen this way is kept: the automatic lookup never replaces it.
 - An ✕ at the top right of the player stops playback and closes it.
 - own.audio servers come first in the server menu and in Settings → Servers.
 - **The family on own.audio servers**: Settings → Family lists who is in it, with the family's

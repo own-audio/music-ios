@@ -15,6 +15,7 @@ private struct SongActions: ViewModifier {
     @State private var isAddingToPlaylist = false
     @State private var isUndoingIdentify = false
     @State private var isIdentifying = false
+    @State private var isChoosingCover = false
 
     func body(content: Content) -> some View {
         let id = model.compositeId(song.id)
@@ -35,6 +36,7 @@ private struct SongActions: ViewModifier {
             .accessibilityIdentifier("song.more")
         }
         .contextMenu { menuItems(id) }
+        .artworkPicker(isPresented: $isChoosingCover) { .songs([song], albumId: nil) }
         .confirmationDialog("Put this song back as its file says, with no MusicBrainz match?", isPresented: $isUndoingIdentify, titleVisibility: .visible) {
             Button("Undo Identify", role: .destructive) {
                 guard let client = IdentifyAccess.shared.server(model)?.client else { return }
@@ -88,6 +90,13 @@ private struct SongActions: ViewModifier {
             isAddingToPlaylist = true
         } label: {
             Label("Add to Playlist…", systemImage: "text.badge.plus")
+        }
+        if model.artwork != nil, !model.isOffline, model.sharing(of: song)?.isMine == true {
+            Button {
+                isChoosingCover = true
+            } label: {
+                Label("Choose Cover…", systemImage: "photo")
+            }
         }
         // Only one's own songs; "private" means not shared, never locked.
         if model.household != nil, !model.isOffline, let sharing = model.sharing(of: song), sharing.isMine {

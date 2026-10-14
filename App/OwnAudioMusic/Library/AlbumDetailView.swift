@@ -6,6 +6,7 @@ struct AlbumDetailView: View {
     let album: Album
     @State private var state: LoadState<(album: Album, songs: [Song])> = .loading
     @State private var isAddingToPlaylist = false
+    @State private var isChoosingCover = false
     @State private var identify: IdentifyRequest?
 
     var body: some View {
@@ -77,6 +78,13 @@ struct AlbumDetailView: View {
                             Label("Add Album to Playlist…", systemImage: "text.badge.plus")
                         }
                         .disabled(songs?.isEmpty ?? true)
+                        if model.artwork != nil, !model.isOffline, songs?.contains(where: { model.sharing(of: $0)?.isMine == true }) == true {
+                            Button {
+                                isChoosingCover = true
+                            } label: {
+                                Label("Choose Album Cover…", systemImage: "photo")
+                            }
+                        }
                         // The listener's own songs on it, shared or kept to themselves together.
                         if model.household != nil, !model.isOffline, let mine = songs?.filter({ model.sharing(of: $0)?.isMine == true }), !mine.isEmpty {
                             if mine.allSatisfy({ model.sharing(of: $0) == .shared }) {
@@ -111,6 +119,7 @@ struct AlbumDetailView: View {
             AddToPlaylistSheet(songIds: songs?.map(\.id) ?? [])
         }
         .identifyStarter($identify)
+        .artworkPicker(isPresented: $isChoosingCover) { .songs(songs ?? [], albumId: album.id) }
         .task { await load() }
     }
 

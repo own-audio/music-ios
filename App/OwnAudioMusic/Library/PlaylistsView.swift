@@ -171,6 +171,7 @@ struct PlaylistDetailView: View {
     @State private var isRenaming = false
     @State private var newName = ""
     @State private var isConfirmingDelete = false
+    @State private var isChoosingCover = false
 
     init(playlist: Playlist) {
         _playlist = State(initialValue: playlist)
@@ -232,6 +233,13 @@ struct PlaylistDetailView: View {
                         } label: {
                             Label("Rename", systemImage: "pencil")
                         }
+                        if model.artwork != nil, !model.isOffline {
+                            Button {
+                                isChoosingCover = true
+                            } label: {
+                                Label("Choose Cover…", systemImage: "photo")
+                            }
+                        }
                         if let shared = playlist.isShared, model.household != nil, !model.isOffline {
                             Button {
                                 setShared(!shared)
@@ -255,6 +263,7 @@ struct PlaylistDetailView: View {
                 }
             }
         }
+        .artworkPicker(isPresented: $isChoosingCover) { .playlist(playlist.id) }
         .alert("Rename Playlist", isPresented: $isRenaming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}

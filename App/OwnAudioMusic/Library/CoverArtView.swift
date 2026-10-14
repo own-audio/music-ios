@@ -28,7 +28,8 @@ struct CoverArtView: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .clipped()
-        .task(id: artworkId) {
+        // The change count too: a new picture has the same id as the old one.
+        .task(id: "\(artworkId ?? "")#\(model.coverChanges[artworkId ?? ""] ?? 0)") {
             image = nil
             guard let artworkId else { return }
             let pixels = Self.bucket(Int(pointSize * displayScale))

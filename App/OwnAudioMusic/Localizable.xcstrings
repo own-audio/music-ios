@@ -825,6 +825,36 @@
         }
       }
     },
+    "Choose Album Cover…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat obálku alba…"
+          }
+        }
+      }
+    },
+    "Choose Cover…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat obálku…"
+          }
+        }
+      }
+    },
+    "Choose Picture…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat obrázek…"
+          }
+        }
+      }
+    },
     "Chosen anew each time, from your own listening." : {
       "localizations" : {
         "cs" : {
