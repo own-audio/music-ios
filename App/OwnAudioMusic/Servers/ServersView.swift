@@ -17,7 +17,7 @@ struct ServersView: View {
     var body: some View {
         List {
             Section {
-                ForEach(model.servers) { server in
+                ForEach(model.serversInOrder) { server in
                     row(server)
                 }
             } footer: {

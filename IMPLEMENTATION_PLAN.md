@@ -101,7 +101,7 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     earlier keep their key for the "now playing" report, music folders, and as the fallback
     while the API's sign-in is refused; without one there is no "now playing" report and no
     music-folder choice for own.audio until v2 has them.
-- [x] **M10: The household** (2026-10-14, own.audio servers signed in through the API): the
+- [x] **M10: The family** (2026-10-14, own.audio servers signed in through the API): the
   household's members, invitations (code, QR, share sheet) for admins, joining with a code;
   sharing one's own songs, albums and playlists, with a people icon on one's shared songs —
   never a lock. `HouseholdSource` in MusicLibrary; `Song.sharing`, `Playlist.isShared`.

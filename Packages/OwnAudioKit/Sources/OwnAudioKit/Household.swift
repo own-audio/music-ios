@@ -91,3 +91,68 @@ extension OwnAudioClient {
         return try await call("PATCH", "playlists/\(playlistId)", body: Body(visibility: visibility))
     }
 }
+
+/// What the family keeps on the server, in bytes.
+public struct FamilyStorage: Decodable, Sendable, Equatable {
+    public let totalBytes: Int64
+    public let musicBytes: Int64
+    public let audiobooksBytes: Int64
+    public let podcastsBytes: Int64
+    public let otherBytes: Int64
+}
+
+/// The family's prepaid credit, on a hosted server that charges for storage. Amounts are in
+/// millionths of the currency.
+public struct FamilyBilling: Decodable, Sendable, Equatable {
+    public struct Pricing: Decodable, Sendable, Equatable {
+        public let currency: String
+        public let pricePerGbMonthMicro: Int64
+    }
+
+    public let balanceMicro: Int64
+    /// The balance less what running jobs have reserved.
+    public let availableMicro: Int64
+    public let estimatedMonthlyCostMicro: Int64
+    public let daysRemaining: Int64?
+    public let depleted: Bool
+    public let pricing: Pricing
+}
+
+extension OwnAudioClient {
+    public func familyStorage() async throws -> FamilyStorage {
+        try await get("family/storage")
+    }
+
+    /// Only where the server charges (the hosted service); elsewhere a 404 or 501.
+    public func familyBilling() async throws -> FamilyBilling {
+        try await get("family/billing")
+    }
+}
+
+extension OwnAudioClient {
+    /// A family or member picture. The API names them by a path on the server (`/api/v1/…`)
+    /// that wants the access token rather than a signed link; a full link is fetched as it is.
+    public func picture(_ path: String) async throws -> Data {
+        let key = "\(cacheIdentity ?? host.absoluteString)|picture|\(path)"
+        if isOffline() {
+            guard let saved = cache?.data(forKey: key) else { throw OwnAudioError.offline }
+            return saved
+        }
+        var request: URLRequest
+        if let absolute = URL(string: path), absolute.scheme != nil {
+            request = URLRequest(url: absolute)
+        } else {
+            guard let url = URL(string: path, relativeTo: host)?.absoluteURL else { throw OwnAudioError.network }
+            request = URLRequest(url: url)
+            request.setValue("Bearer \(try await tokens.accessToken(using: refresher()))", forHTTPHeaderField: "Authorization")
+        }
+        do {
+            let data = try await Self.data(request, session: session)
+            cache?.store(data, forKey: key)
+            return data
+        } catch OwnAudioError.network {
+            if let saved = cache?.data(forKey: key) { return saved }
+            throw OwnAudioError.network
+        }
+    }
+}

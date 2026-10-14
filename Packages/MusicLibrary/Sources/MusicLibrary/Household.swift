@@ -5,7 +5,8 @@ import OwnAudioKit
 /// own.audio servers have one; screens ask `model.activeSource as? HouseholdSource`.
 public struct HouseholdInfo: Sendable, Equatable {
     public let name: String
-    public let imageURL: URL?
+    /// For `HouseholdSource.picture`.
+    public let picture: String?
     /// Admins invite people.
     public let isAdmin: Bool
     public let members: [HouseholdMember]
@@ -18,7 +19,8 @@ public struct HouseholdMember: Sendable, Equatable, Identifiable {
     /// Invited, not signed in yet.
     public let isPending: Bool
     public let isMe: Bool
-    public let imageURL: URL?
+    /// For `HouseholdSource.picture`.
+    public let picture: String?
 }
 
 /// A code that lets someone join; `joinURL` opens the server's own join page with it.
@@ -31,8 +33,32 @@ public struct HouseholdInvite: Sendable, Equatable, Identifiable {
     public let expiresAt: Date?
 }
 
+/// What the family keeps on the server, in bytes.
+public struct HouseholdStorage: Sendable, Equatable {
+    public let total: Int64
+    public let music: Int64
+    public let audiobooks: Int64
+    public let podcasts: Int64
+}
+
+/// The family's prepaid credit, where the server charges for storage (the hosted service).
+public struct HouseholdCredit: Sendable, Equatable {
+    /// In the currency's units.
+    public let balance: Decimal
+    public let currency: String
+    public let monthlyCost: Decimal
+    /// How long the balance lasts at today's storage; nil when it isn't being drawn on.
+    public let daysLeft: Int?
+    public let isDepleted: Bool
+}
+
 public protocol HouseholdSource: MusicSource {
     func household() async throws -> HouseholdInfo
+    /// The family's or a member's picture, by what `HouseholdInfo` names it.
+    func picture(_ name: String) async throws -> Data
+    func storage() async throws -> HouseholdStorage
+    /// Nil where the server doesn't charge.
+    func credit() async throws -> HouseholdCredit?
     func invites() async throws -> [HouseholdInvite]
     func createInvite() async throws -> HouseholdInvite
     func deleteInvite(id: String) async throws
@@ -60,15 +86,44 @@ extension OwnAudioSource: HouseholdSource {
             let members = try await client.members()
             let f = try await family
             return HouseholdInfo(
-                name: f.name, imageURL: f.image.flatMap(URL.init(string:)), isAdmin: f.me.role == "admin",
+                name: f.name, picture: f.image, isAdmin: f.me.role == "admin",
                 members: members.map {
                     HouseholdMember(
                         id: $0.userId, name: $0.name, isAdmin: $0.role == "admin", isPending: $0.pending == true,
-                        isMe: $0.userId == f.me.userId, imageURL: $0.image.flatMap(URL.init(string:))
+                        isMe: $0.userId == f.me.userId, picture: $0.image
                     )
                 }
                 // You first, then admins, then by name.
                 .sorted { ($0.isMe ? 0 : 1, $0.isAdmin ? 0 : 1, $0.name) < ($1.isMe ? 0 : 1, $1.isAdmin ? 0 : 1, $1.name) }
+            )
+        }
+    }
+
+    public func picture(_ name: String) async throws -> Data {
+        try await household { try await client.picture(name) }
+    }
+
+    public func storage() async throws -> HouseholdStorage {
+        try await household {
+            let s = try await client.familyStorage()
+            return HouseholdStorage(total: s.totalBytes, music: s.musicBytes, audiobooks: s.audiobooksBytes, podcasts: s.podcastsBytes)
+        }
+    }
+
+    public func credit() async throws -> HouseholdCredit? {
+        try await household {
+            let billing: FamilyBilling
+            do {
+                billing = try await client.familyBilling()
+            } catch OwnAudioError.problem(let p) where p.status == 501 || p.status == 404 {
+                // A server that doesn't charge (the open-source one says `feature_unavailable`).
+                return nil
+            }
+            let units = { (micro: Int64) in Decimal(micro) / 1_000_000 }
+            return HouseholdCredit(
+                balance: units(billing.availableMicro), currency: billing.pricing.currency,
+                monthlyCost: units(billing.estimatedMonthlyCostMicro), daysLeft: billing.daysRemaining.map(Int.init),
+                isDepleted: billing.depleted
             )
         }
     }

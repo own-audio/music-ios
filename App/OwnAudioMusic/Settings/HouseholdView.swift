@@ -8,6 +8,8 @@ struct HouseholdView: View {
     @Environment(AppModel.self) private var model
     @State private var state: LoadState<HouseholdInfo> = .loading
     @State private var invites: [HouseholdInvite] = []
+    @State private var storage: HouseholdStorage?
+    @State private var credit: HouseholdCredit?
     @State private var shownInvite: HouseholdInvite?
     @State private var isCreatingInvite = false
     @State private var isAskingCode = false
@@ -29,7 +31,48 @@ struct HouseholdView: View {
                 } header: {
                     Text("Members")
                 } footer: {
-                    Text("What you add to the library is yours. Share songs from their menu, or a whole album or playlist; everyone in the household can then play them. Smart playlists can be shared too: each member gets their own selection.")
+                    Text("What you add to the library is yours. Share songs from their menu, or a whole album or playlist; everyone in the family can then play them. Smart playlists can be shared too: each member gets their own selection.")
+                }
+
+                if let storage {
+                    Section {
+                        StorageBar(storage: storage)
+                            .listRowSeparator(.hidden)
+                        StorageRow(title: "Music", bytes: storage.music, colour: StorageBar.music)
+                        StorageRow(title: "Audiobooks", bytes: storage.audiobooks, colour: StorageBar.audiobooks)
+                        StorageRow(title: "Podcasts", bytes: storage.podcasts, colour: StorageBar.podcasts)
+                    } header: {
+                        HStack {
+                            Text("Storage")
+                            Spacer()
+                            Text(ByteCountFormatter.string(fromByteCount: storage.total, countStyle: .file))
+                                .accessibilityIdentifier("family.storageTotal")
+                        }
+                    }
+                }
+
+                if let credit {
+                    Section {
+                        LabeledContent("Balance") {
+                            Text(credit.balance, format: .currency(code: credit.currency))
+                                .foregroundStyle(credit.isDepleted ? AnyShapeStyle(.red) : AnyShapeStyle(.primary))
+                                .accessibilityIdentifier("family.credit")
+                        }
+                        LabeledContent("A Month at Today's Storage") {
+                            Text(credit.monthlyCost, format: .currency(code: credit.currency))
+                        }
+                        if let days = credit.daysLeft {
+                            LabeledContent("Lasts About") {
+                                Text(days == 1 ? String(localized: "1 day") : String(localized: "\(days) days"))
+                            }
+                        }
+                    } header: {
+                        Text("Credit")
+                    } footer: {
+                        Text(credit.isDepleted
+                             ? String(localized: "The credit has run out: the family's admin can top it up.")
+                             : String(localized: "Storage is paid from the family's prepaid credit, day by day; the family's admin tops it up."))
+                    }
                 }
 
                 if household.isAdmin {
@@ -75,22 +118,22 @@ struct HouseholdView: View {
                         code = ""
                         isAskingCode = true
                     } label: {
-                        Label("Join Another Household…", systemImage: "person.2.badge.key")
+                        Label("Join Another Family…", systemImage: "person.2.badge.key")
                     }
                     .disabled(model.isOffline)
                 } footer: {
-                    Text("With a code from that household's admin. You then leave this one.")
+                    Text("With a code from that family's admin. You then leave this one.")
                 }
             }
         }
-        .navigationTitle("Household")
+        .navigationTitle("Family")
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load() }
         .sheet(item: $shownInvite) { invite in
             InviteSheet(invite: invite)
         }
-        .alert("Join Another Household", isPresented: $isAskingCode) {
+        .alert("Join Another Family", isPresented: $isAskingCode) {
             TextField("Code", text: $code)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
@@ -100,31 +143,23 @@ struct HouseholdView: View {
         } message: {
             Text("Enter the code from the invitation.")
         }
-        .confirmationDialog("Leave this household and join the other one?", isPresented: $isConfirmingJoin, titleVisibility: .visible) {
+        .confirmationDialog("Leave this family and join the other one?", isPresented: $isConfirmingJoin, titleVisibility: .visible) {
             Button("Join") { join() }
         } message: {
-            Text("What its members share appears instead of what this household shares.")
+            Text("What its members share appears instead of what this family shares.")
         }
     }
 
     private func header(_ household: HouseholdInfo) -> some View {
         VStack(spacing: Theme.Spacing.sm) {
-            Group {
-                if let url = household.imageURL {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Color(.secondarySystemFill)
-                    }
-                } else {
-                    Image(systemName: "person.3.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.tint)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(.tint.opacity(0.12))
-                }
+            FamilyPicture(name: household.picture) {
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.tint)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.tint.opacity(0.12))
             }
-            .frame(width: 88, height: 88)
+            .frame(width: 104, height: 104)
             .clipShape(Circle())
             .accessibilityHidden(true)
             Text(household.name).font(.title2.bold())
@@ -138,9 +173,13 @@ struct HouseholdView: View {
     private func load() async {
         guard let household = model.household else { return }
         do {
+            async let used = try? household.storage()
+            async let paid = try? household.credit()
             let info = try await household.household()
             state = .loaded(info)
             invites = info.isAdmin ? ((try? await household.invites()) ?? []) : []
+            storage = await used
+            credit = await paid ?? nil
         } catch {
             state = .failed(error.userMessage)
         }
@@ -181,18 +220,8 @@ private struct MemberRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.md) {
-            Group {
-                if let url = member.imageURL {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        initials
-                    }
-                } else {
-                    initials
-                }
-            }
-            .frame(width: 40, height: 40)
+            FamilyPicture(name: member.picture) { initials }
+                .frame(width: 44, height: 44)
             .clipShape(Circle())
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -250,7 +279,7 @@ private struct InviteSheet: View {
                     .font(.title.monospaced().bold())
                     .textSelection(.enabled)
                     .accessibilityIdentifier("household.inviteCode")
-                Text("Scanned or typed in, it lets one person join your household.")
+                Text("Scanned or typed in, it lets one person join your family.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -279,4 +308,78 @@ private struct InviteSheet: View {
         else { return nil }
         return UIImage(cgImage: cg)
     }
+}
+
+/// What the family keeps, as one bar in three colours.
+private struct StorageBar: View {
+    static let music = Color(red: 0.43, green: 0.27, blue: 1.0)
+    static let audiobooks = Color(red: 0.98, green: 0.73, blue: 0.02)
+    static let podcasts = Color(red: 0.16, green: 0.67, blue: 0.89)
+
+    let storage: HouseholdStorage
+
+    var body: some View {
+        GeometryReader { geometry in
+            let total = max(Double(storage.music + storage.audiobooks + storage.podcasts), 1)
+            HStack(spacing: 2) {
+                ForEach(Array([(storage.music, Self.music), (storage.audiobooks, Self.audiobooks), (storage.podcasts, Self.podcasts)].enumerated()), id: \.offset) { _, part in
+                    if part.0 > 0 {
+                        part.1.frame(width: max(geometry.size.width * Double(part.0) / total - 2, 3))
+                    }
+                }
+            }
+            .clipShape(Capsule())
+        }
+        .frame(height: 12)
+        .padding(.vertical, Theme.Spacing.xs)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct StorageRow: View {
+    let title: LocalizedStringKey
+    let bytes: Int64
+    let colour: Color
+
+    var body: some View {
+        LabeledContent {
+            Text(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))
+        } label: {
+            HStack(spacing: Theme.Spacing.sm) {
+                Circle().fill(colour).frame(width: 10, height: 10)
+                Text(title)
+            }
+        }
+    }
+}
+
+/// A family or member picture, fetched with the account's sign-in (the server doesn't sign
+/// these links), and kept for the app's lifetime; `placeholder` until then, or without one.
+private struct FamilyPicture<Placeholder: View>: View {
+    @Environment(AppModel.self) private var model
+    let name: String?
+    @ViewBuilder let placeholder: () -> Placeholder
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+            } else {
+                placeholder()
+            }
+        }
+        .task(id: name) {
+            guard let name else { image = nil; return }
+            if let known = FamilyPictures.loaded[name] { image = known; return }
+            guard let data = try? await model.household?.picture(name), let picture = UIImage(data: data) else { return }
+            FamilyPictures.loaded[name] = picture
+            image = picture
+        }
+    }
+}
+
+/// Pictures already fetched, by name, for as long as the app runs.
+@MainActor private enum FamilyPictures {
+    static var loaded: [String: UIImage] = [:]
 }

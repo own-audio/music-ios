@@ -30,7 +30,7 @@ struct SettingsView: View {
                     NavigationLink {
                         HouseholdView()
                     } label: {
-                        Label("Household", systemImage: "person.2")
+                        Label("Family", systemImage: "person.2")
                     }
                     .accessibilityIdentifier("settings.household")
                 }

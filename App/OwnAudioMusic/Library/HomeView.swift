@@ -110,7 +110,7 @@ struct HomeView: View {
                 get: { model.activeServerId },
                 set: { if let id = $0 { model.selectServer(id: id) } }
             )) {
-                ForEach(model.servers) { server in
+                ForEach(model.serversInOrder) { server in
                     Label {
                         Text(server.displayName)
                     } icon: {

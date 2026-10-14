@@ -68,7 +68,7 @@ package, merged into this repository — is in `docs/history/`.
   ready-made ones at the top of Playlists. Each is a rule, worked out anew whenever it opens from
   what you have listened to; play it, shuffle it, ask for a new selection, keep it as an ordinary
   playlist. Make or change one in an editor that counts the songs that fit as you go. Shared with
-  the household, everyone gets their own selection from it.
+  the family, everyone gets their own selection from it.
 - own.audio servers from 1.0.0-beta.11: **playlists, search, random songs, lyrics** and the
   **Recently Played / Most Played** orders go through the server's own API instead of its
   Subsonic one. Removing a song from a playlist goes by its entry, so the right one goes when a
@@ -88,9 +88,11 @@ package, merged into this repository — is in `docs/history/`.
   still sends the "now playing" report and lists music folders; without one there is neither,
   as v2 has no word for them yet.
 - An ✕ at the top right of the player stops playback and closes it.
-- **The household on own.audio servers**: Settings → Household lists who is in it, with their
-  pictures; an admin invites someone with a code (a QR code, or the share sheet), and anyone can
-  join another household with one. Your own songs can be shared with the household or kept to
+- own.audio servers come first in the server menu and in Settings → Servers.
+- **The family on own.audio servers**: Settings → Family lists who is in it, with the family's
+  and each member's picture, what the family keeps on the server (music, audiobooks, podcasts)
+  and, on a server that charges for storage, the prepaid credit and how long it lasts; an admin invites someone with a code (a QR code, or the share sheet), and anyone can
+  join another family with one. Your own songs can be shared with the family or kept to
   yourself from their menu, a whole album's at once, and your playlists from theirs; a shared
   song of yours shows a small people icon. Nothing is shown locked: private only means not
   shared.
@@ -200,8 +202,8 @@ package, merged into this repository — is in `docs/history/`.
 - Searching MusicBrainz for a song kept the album from its tags, so correcting the title and
   artist found nothing when the album was wrong too; with nothing on that album, the search now
   goes on without it, and says so. Each search field has a ✕ to empty it.
-- Another household member's playlist on an own.audio server said "by" and a long id; it says
-  their name now, as the household calls them.
+- Another family member's playlist on an own.audio server said "by" and a long id; it says
+  their name now, as the family calls them.
 - VoiceOver read an album's song rows and their ⋯ buttons under the same name, so the ⋯
   button could not be told from its row (UI tests downloaded the wrong song).
 - Playing a streamed song whose format differs from the player's — a 22 kHz mono FLAC — ended

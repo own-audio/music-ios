@@ -76,7 +76,7 @@ struct PlaylistsView: View {
             Section("Smart Playlists") {
                 ForEach(smart) { item in
                     NavigationLink(value: Route.smart(.saved(item))) {
-                        smartRow(item.name, subtitle: item.isShared ? String(localized: "Shared with the household") : nil)
+                        smartRow(item.name, subtitle: item.isShared ? String(localized: "Shared with the family") : nil)
                     }
                 }
             }
@@ -239,7 +239,7 @@ struct PlaylistDetailView: View {
                                 if shared {
                                     Label("Stop Sharing", systemImage: "person")
                                 } else {
-                                    Label("Share with the Household", systemImage: "person.2")
+                                    Label("Share with the Family", systemImage: "person.2")
                                 }
                             }
                         }

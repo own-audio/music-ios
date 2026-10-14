@@ -266,6 +266,11 @@ final class AppModel {
         Task { await fileCache.setLocalFileLookup { files.url(for: $0) } }
     }
 
+    /// As lists show them: own.audio servers first, then the others, each in the order added.
+    var serversInOrder: [ServerRecord] {
+        servers.filter { $0.kind == .ownAudio } + servers.filter { $0.kind != .ownAudio }
+    }
+
     var activeServer: ServerRecord? {
         servers.first { $0.id == activeServerId }
     }

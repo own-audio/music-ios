@@ -32,7 +32,7 @@ extension SmartPresetInfo {
         case "forgotten-favourites": String(localized: "Songs you made favorites but haven't played for a year.")
         case "new-in-the-library": String(localized: "Added in the last 30 days.")
         case "back-in-rotation": String(localized: "Rated four stars or more, not heard for two months.")
-        case "what-the-family-plays": String(localized: "What others in the household play and you haven't yet.")
+        case "what-the-family-plays": String(localized: "What others in the family play and you haven't yet.")
         case "genre-station": String(localized: "Up to 100 songs of one genre, no artist twice in a row.")
         default: nil
         }
@@ -127,7 +127,7 @@ struct SmartPlaylistView: View {
             Button("Delete Smart Playlist", role: .destructive) { delete() }
         } message: {
             Text(saved?.isShared == true
-                 ? String(localized: "It is shared with the household: it goes for everyone. Playlists made from it stay.")
+                 ? String(localized: "It is shared with the family: it goes for everyone. Playlists made from it stay.")
                  : String(localized: "Playlists made from it stay."))
         }
         .alert("Saved as a Playlist", isPresented: $savedAsPlaylist) {
@@ -181,7 +181,7 @@ struct SmartPlaylistView: View {
     private var explanation: String {
         if let preset, let summary = preset.summary { return summary }
         if saved?.isShared == true {
-            return String(localized: "Chosen anew each time, from your own listening. Shared with the household: everyone gets their own selection.")
+            return String(localized: "Chosen anew each time, from your own listening. Shared with the family: everyone gets their own selection.")
         }
         return String(localized: "Chosen anew each time, from your own listening.")
     }

@@ -101,7 +101,7 @@ private struct SongActions: ViewModifier {
                 Button {
                     model.setShared([song], true)
                 } label: {
-                    Label("Share with the Household", systemImage: "person.2")
+                    Label("Share with the Family", systemImage: "person.2")
                 }
             }
         }

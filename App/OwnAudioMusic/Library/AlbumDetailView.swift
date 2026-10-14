@@ -89,7 +89,7 @@ struct AlbumDetailView: View {
                                 Button {
                                     model.setShared(mine, true)
                                 } label: {
-                                    Label("Share My Songs with the Household", systemImage: "person.2")
+                                    Label("Share My Songs with the Family", systemImage: "person.2")
                                 }
                             }
                         }

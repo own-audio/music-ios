@@ -81,6 +81,40 @@
         }
       }
     },
+    "%lld days" : {
+      "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld den"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dny"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dne"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dní"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld genres" : {
       "localizations" : {
         "cs" : {
@@ -195,6 +229,16 @@
         }
       }
     },
+    "1 day" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 den"
+          }
+        }
+      }
+    },
     "1 member" : {
       "localizations" : {
         "cs" : {
@@ -286,6 +330,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Měsíc"
+          }
+        }
+      }
+    },
+    "A Month at Today's Storage" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Měsíc při dnešním úložišti"
           }
         }
       }
@@ -590,6 +644,16 @@
         }
       }
     },
+    "Audiobooks" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audioknihy"
+          }
+        }
+      }
+    },
     "Automatic" : {
       "localizations" : {
         "cs" : {
@@ -606,6 +670,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zase po čase"
+          }
+        }
+      }
+    },
+    "Balance" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zůstatek"
           }
         }
       }
@@ -761,12 +835,12 @@
         }
       }
     },
-    "Chosen anew each time, from your own listening. Shared with the household: everyone gets their own selection." : {
+    "Chosen anew each time, from your own listening. Shared with the family: everyone gets their own selection." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vybírá se pokaždé znovu, podle toho, co posloucháte. Sdílený s domácností: každý dostane vlastní výběr."
+            "value" : "Vybírá se pokaždé znovu, podle toho, co posloucháte. Sdílený s rodinou: každý dostane vlastní výběr."
           }
         }
       }
@@ -950,6 +1024,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vytvořit"
+          }
+        }
+      }
+    },
+    "Credit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kredit"
           }
         }
       }
@@ -1254,6 +1338,16 @@
         }
       }
     },
+    "Family" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rodina"
+          }
+        }
+      }
+    },
     "Favorite" : {
       "localizations" : {
         "cs" : {
@@ -1447,16 +1541,6 @@
         }
       }
     },
-    "Household" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Domácnost"
-          }
-        }
-      }
-    },
     "Hz. Applies to everything played." : {
       "localizations" : {
         "cs" : {
@@ -1537,12 +1621,12 @@
         }
       }
     },
-    "It is shared with the household: it goes for everyone. Playlists made from it stay." : {
+    "It is shared with the family: it goes for everyone. Playlists made from it stay." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je sdílený s domácností: zmizí všem. Playlisty z něj uložené zůstanou."
+            "value" : "Je sdílený s rodinou: zmizí všem. Playlisty z něj uložené zůstanou."
           }
         }
       }
@@ -1577,32 +1661,42 @@
         }
       }
     },
-    "Join Another Household" : {
+    "Join Another Family" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Připojit se k jiné domácnosti"
+            "value" : "Připojit se k jiné rodině"
           }
         }
       }
     },
-    "Join Another Household…" : {
+    "Join Another Family…" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Připojit se k jiné domácnosti…"
+            "value" : "Připojit se k jiné rodině…"
           }
         }
       }
     },
-    "Leave this household and join the other one?" : {
+    "Lasts About" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opustit tuto domácnost a připojit se k té druhé?"
+            "value" : "Vydrží asi"
+          }
+        }
+      }
+    },
+    "Leave this family and join the other one?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opustit tuto rodinu a připojit se k té druhé?"
           }
         }
       }
@@ -1784,6 +1878,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nejhranější"
+          }
+        }
+      }
+    },
+    "Music" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hudba"
           }
         }
       }
@@ -2028,6 +2132,16 @@
         }
       }
     },
+    "Podcasts" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podcasty"
+          }
+        }
+      }
+    },
     "QR code of the invitation" : {
       "localizations" : {
         "cs" : {
@@ -2148,12 +2262,12 @@
         }
       }
     },
-    "Scanned or typed in, it lets one person join your household." : {
+    "Scanned or typed in, it lets one person join your family." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Naskenovaná nebo opsaná umožní jednomu člověku připojit se k vaší domácnosti."
+            "value" : "Naskenovaná nebo opsaná umožní jednomu člověku připojit se k vaší rodině."
           }
         }
       }
@@ -2168,32 +2282,32 @@
         }
       }
     },
-    "Share My Songs with the Household" : {
+    "Share My Songs with the Family" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sdílet mé skladby s domácností"
+            "value" : "Sdílet mé skladby s rodinou"
           }
         }
       }
     },
-    "Share with the Household" : {
+    "Share with the Family" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sdílet s domácností"
+            "value" : "Sdílet s rodinou"
           }
         }
       }
     },
-    "Shared with the household" : {
+    "Shared with the family" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sdíleno s domácností"
+            "value" : "Sdíleno s rodinou"
           }
         }
       }
@@ -2308,6 +2422,26 @@
         }
       }
     },
+    "Storage" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úložiště"
+          }
+        }
+      }
+    },
+    "Storage is paid from the family's prepaid credit, day by day; the family's admin tops it up." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úložiště se platí z předplaceného kreditu rodiny, den po dni; dobíjí ho správce rodiny."
+          }
+        }
+      }
+    },
     "Streaming" : {
       "localizations" : {
         "cs" : {
@@ -2384,6 +2518,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kód není správný, nebo už vypršel. Zadejte aktuální."
+          }
+        }
+      }
+    },
+    "The credit has run out: the family's admin can top it up." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kredit došel: správce rodiny ho může dobít."
           }
         }
       }
@@ -2578,22 +2722,22 @@
         }
       }
     },
-    "What its members share appears instead of what this household shares." : {
+    "What its members share appears instead of what this family shares." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Místo toho, co sdílí tato domácnost, uvidíte, co sdílejí členové té druhé."
+            "value" : "Místo toho, co sdílí tato rodina, uvidíte, co sdílejí členové té druhé."
           }
         }
       }
     },
-    "What others in the household play and you haven't yet." : {
+    "What others in the family play and you haven't yet." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Co pouštějí ostatní v domácnosti a vy ještě ne."
+            "value" : "Co pouštějí ostatní v rodině a vy ještě ne."
           }
         }
       }
@@ -2608,12 +2752,12 @@
         }
       }
     },
-    "What you add to the library is yours. Share songs from their menu, or a whole album or playlist; everyone in the household can then play them. Smart playlists can be shared too: each member gets their own selection." : {
+    "What you add to the library is yours. Share songs from their menu, or a whole album or playlist; everyone in the family can then play them. Smart playlists can be shared too: each member gets their own selection." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Co přidáte do knihovny, je vaše. Skladby sdílejte z jejich nabídky, nebo celé album či playlist; pak je může přehrát každý v domácnosti. Sdílet jdou i chytré playlisty: každý člen dostane vlastní výběr."
+            "value" : "Co přidáte do knihovny, je vaše. Skladby sdílejte z jejich nabídky, nebo celé album či playlist; pak je může přehrát každý v rodině. Sdílet jdou i chytré playlisty: každý člen dostane vlastní výběr."
           }
         }
       }
@@ -2628,12 +2772,12 @@
         }
       }
     },
-    "With a code from that household's admin. You then leave this one." : {
+    "With a code from that family's admin. You then leave this one." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "S kódem od správce té domácnosti. Z této pak odejdete."
+            "value" : "S kódem od správce té rodiny. Z této pak odejdete."
           }
         }
       }

@@ -35,7 +35,7 @@ struct SmartRuleEditor: View {
                 Section {
                     TextField("Name", text: $draft.name)
                         .accessibilityIdentifier("smartEditor.name")
-                    Toggle("Share with the Household", isOn: $draft.shared)
+                    Toggle("Share with the Family", isOn: $draft.shared)
                 } footer: {
                     Text("Shared, it is a rule rather than a list: each member gets their own selection, from what they have listened to.")
                 }

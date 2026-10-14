@@ -189,7 +189,7 @@ struct SongRow: View {
                 Image(systemName: "person.2.fill")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Shared with the household")
+                    .accessibilityLabel("Shared with the family")
             }
             if let id = model.compositeId(song.id), model.downloads.isDownloaded(id) {
                 Image(systemName: "arrow.down.circle.fill")

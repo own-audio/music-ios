@@ -247,7 +247,7 @@ public struct OwnAudioClient: Sendable {
         case "artists", "contributors", "albums", "tracks", "genres", "playlists", "smart-playlists":
             return !path.hasSuffix("/random") && !path.hasSuffix("/resolve")
         case "family":
-            return path == "family" || path == "family/members"
+            return path == "family" || path == "family/members" || path == "family/storage" || path == "family/billing"
         case "me":
             // Not `me` itself: the connection check asks it, and must not be answered from here.
             return path.hasPrefix("me/favourites") || path.hasPrefix("me/ratings") || path.hasPrefix("me/played")
@@ -287,7 +287,7 @@ public struct OwnAudioClient: Sendable {
         }
     }
 
-    private func refresher() -> @Sendable (String) async throws -> Tokens {
+    func refresher() -> @Sendable (String) async throws -> Tokens {
         let host = host
         let session = session
         return { refresh in try await OwnAudioClient.refresh(host: host, refreshToken: refresh, session: session) }

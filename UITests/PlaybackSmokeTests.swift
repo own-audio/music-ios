@@ -427,11 +427,11 @@ final class PlaybackSmokeTests: XCTestCase {
             if app.buttons["settings.servers"].waitForExistence(timeout: 5) { break }
             dismissSavePasswordPrompt(app, within: 3)
         }
-        guard household.waitForExistence(timeout: 5) else { throw XCTSkip("this server has no household") }
+        guard household.waitForExistence(timeout: 5) else { throw XCTSkip("this server has no family") }
         household.tap()
         XCTAssertTrue(app.staticTexts["Members"].waitForExistence(timeout: 15), "the members should be listed")
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label ENDSWITH '(you)'")).firstMatch.exists, "the listener should be among them")
-        screenshot(app, "22-household")
+        screenshot(app, "22-family")
     }
 
     /// The catalogue reaches the phone after adding a server; offline, with Whole Library on,
