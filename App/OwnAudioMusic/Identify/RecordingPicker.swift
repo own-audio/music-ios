@@ -23,6 +23,8 @@ struct RecordingPicker: View {
     @State private var link = ""
     @State private var results: [RecordingCandidate] = []
     @State private var searched = false
+    /// The album left out because nothing was found on it.
+    @State private var widened: String?
     @State private var searching = false
     @State private var choosing: String?
     @State private var errorMessage: String?
@@ -31,11 +33,9 @@ struct RecordingPicker: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Title", text: $title)
-                        .accessibilityIdentifier("picker.title")
-                    TextField("Artist", text: $artist)
-                        .accessibilityIdentifier("picker.artist")
-                    TextField("Album", text: $album)
+                    ClearableField("Title", text: $title, id: "picker.title")
+                    ClearableField("Artist", text: $artist, id: "picker.artist")
+                    ClearableField("Album", text: $album, id: "picker.album")
                     Button {
                         Task { await runSearch() }
                     } label: {
@@ -55,6 +55,10 @@ struct RecordingPicker: View {
                 Section {
                     if results.isEmpty {
                         Text(searched ? "Nothing found. Try fewer or other words." : "Nothing found yet.")
+                            .foregroundStyle(.secondary)
+                    } else if let widened {
+                        Text("Nothing on \u{201C}\(widened)\u{201D}: these are from other releases.")
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                     ForEach(results) { candidate in
@@ -122,7 +126,13 @@ struct RecordingPicker: View {
             return t.isEmpty ? nil : t
         }
         do {
+            widened = nil
             results = try await search(RecordingSearch(title: words(title), artist: words(artist), album: words(album)))
+            // The album is often the tag that was wrong too: with nothing on it, anywhere.
+            if results.isEmpty, let onAlbum = words(album), words(title) != nil || words(artist) != nil {
+                results = try await search(RecordingSearch(title: words(title), artist: words(artist), album: nil))
+                if !results.isEmpty { widened = onAlbum }
+            }
             searched = true
         } catch {
             errorMessage = identifyMessage(error)
@@ -171,5 +181,37 @@ private struct CandidateRow: View {
     private func lengthFits(_ ms: Int) -> Bool {
         guard let songSecs else { return true }
         return abs(ms / 1000 - songSecs) <= 5
+    }
+}
+
+/// A text field with a ✕ that empties it: the tags fill these, and correcting one usually
+/// means typing it anew.
+private struct ClearableField: View {
+    let title: LocalizedStringKey
+    @Binding var text: String
+    let id: String
+
+    init(_ title: LocalizedStringKey, text: Binding<String>, id: String) {
+        self.title = title
+        _text = text
+        self.id = id
+    }
+
+    var body: some View {
+        HStack {
+            TextField(title, text: $text)
+                .accessibilityIdentifier(id)
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Clear")
+                .accessibilityIdentifier("\(id).clear")
+            }
+        }
     }
 }

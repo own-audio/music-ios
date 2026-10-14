@@ -105,7 +105,8 @@ final class IdentifyTests: XCTestCase {
                 let otherEdition = app.buttons["Other Edition…"]
                 XCTAssertTrue(otherEdition.waitForExistence(timeout: 5))
                 otherEdition.tap()
-                let done = app.buttons["Done"]
+                // The sheet's own Done, not the run's "Done" tab.
+                let done = app.navigationBars.buttons["Done"].firstMatch
                 XCTAssertTrue(done.waitForExistence(timeout: 10), "The editions sheet should open")
                 sleep(2)
                 screenshot(app, "identify-07-editions")
@@ -148,7 +149,8 @@ final class IdentifyTests: XCTestCase {
         let album = findAlbum(app)
         XCTAssertTrue(album.exists, "The album should be in the Library")
         album.tap()
-        let song = app.cells.firstMatch
+        // A song row, not the album's header (its artist link opens the artist).
+        let song = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'album.song.'")).firstMatch
         XCTAssertTrue(song.waitForExistence(timeout: 15))
         // Playing it first: a 22 kHz mono FLAC streamed into the player used to take the app down.
         song.tap()
@@ -163,16 +165,16 @@ final class IdentifyTests: XCTestCase {
         XCTAssertTrue(offered, "A song's menu should offer Identify…")
         identify.tap()
 
+        // The tags fill the fields; each is emptied with its ✕ and typed anew. The album is left
+        // as the tags have it: with nothing found on it, the search goes on without it.
         let title = app.textFields["picker.title"]
         XCTAssertTrue(title.waitForExistence(timeout: 10))
+        app.buttons["picker.title.clear"].tap()
         title.tap()
-        title.press(forDuration: 1.0)
-        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
         title.typeText("Yesterday")
         let artist = app.textFields["picker.artist"]
+        app.buttons["picker.artist.clear"].tap()
         artist.tap()
-        artist.press(forDuration: 1.0)
-        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
         artist.typeText("The Beatles")
         app.buttons["picker.search"].tap()
         let result = app.buttons["picker.result"].firstMatch

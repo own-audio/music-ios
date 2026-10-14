@@ -951,6 +951,15 @@ final class AppModel {
         }
     }
 
+    /// Whether the listener owns any of the artist's songs, which is all the server identifies;
+    /// true when that isn't known (no library on the phone yet, or no household).
+    func mayIdentify(artistId: String) -> Bool {
+        guard let songs = activeCatalogue?.songs.filter({ $0.artistId == artistId }), !songs.isEmpty,
+              songs.contains(where: { $0.sharing != nil })
+        else { return true }
+        return songs.contains { sharing(of: $0)?.isMine == true }
+    }
+
     func isFavorite(_ compositeId: String) -> Bool {
         favoriteIds.contains(compositeId)
     }

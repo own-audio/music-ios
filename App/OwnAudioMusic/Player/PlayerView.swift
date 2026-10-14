@@ -11,8 +11,6 @@ struct PlayerView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var seekTarget: Double?
-    @State private var isScrubbing = false
     @State private var activeSheet: ActiveSheet?
 
     private var engine: PlaybackEngine { model.engine }
@@ -35,6 +33,19 @@ struct PlayerView: View {
                     }
                     .accessibilityLabel("Close Player")
                     .accessibilityIdentifier("player.close")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Haptics.impact(.light)
+                        // The player closes itself once nothing is playing.
+                        engine.stop()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Stop Playback")
+                    .accessibilityIdentifier("player.stop")
                 }
             }
         }
@@ -74,21 +85,6 @@ struct PlayerView: View {
         .ignoresSafeArea()
     }
 
-    /// `Slider`-style controls go blank on a non-finite value, without crashing; a stream's first
-    /// moments can produce one.
-    private var currentTimeSafe: Double {
-        let value = engine.currentTime
-        guard value.isFinite else { return 0 }
-        return min(max(value, 0), durationSafe)
-    }
-
-    /// Never zero: a 0...0 range is its own invisible control.
-    private var durationSafe: Double {
-        let value = engine.duration
-        guard value.isFinite, value > 0 else { return 1 }
-        return value
-    }
-
     private var content: some View {
         // `maxWidth: .infinity` stops the horizontal tool row's content width leaking into
         // the layout of its siblings.
@@ -96,7 +92,7 @@ struct PlayerView: View {
             Spacer(minLength: 0)
             cover
             titles
-            scrubber
+            PlayerScrubber(engine: engine)
             transport
             if let errorMessage = engine.errorMessage {
                 Text(errorMessage)
@@ -186,48 +182,6 @@ struct PlayerView: View {
         .padding(.horizontal, Theme.Spacing.screenEdge)
     }
 
-    private var scrubber: some View {
-        VStack(spacing: Theme.Spacing.xs) {
-            PlaybackScrubber(
-                progress: (isScrubbing ? (seekTarget ?? currentTimeSafe) : currentTimeSafe) / durationSafe,
-                buffered: engine.bufferedTime / durationSafe,
-                onScrub: { fraction in
-                    if !isScrubbing { Haptics.selection() }
-                    isScrubbing = true
-                    seekTarget = fraction * durationSafe
-                },
-                onScrubEnded: { fraction in
-                    let target = fraction * durationSafe
-                    isScrubbing = false
-                    Task { await engine.seek(to: target) }
-                }
-            )
-            // A fixed height: a `GeometryReader` takes all the height it is offered.
-            .frame(maxWidth: .infinity)
-            .frame(height: Theme.minTarget)
-            .accessibilityElement(children: .ignore)
-            .accessibilityIdentifier("player.scrubber")
-            .accessibilityLabel("Playback position")
-            .accessibilityValue("\(formatDuration(currentTimeSafe)) of \(formatDuration(durationSafe))")
-            .accessibilityAdjustableAction { direction in
-                let step = durationSafe * 0.05
-                let target = min(max(currentTimeSafe + (direction == .increment ? step : -step), 0), durationSafe)
-                Task { await engine.seek(to: target) }
-            }
-
-            HStack {
-                Text(formatDuration(isScrubbing ? (seekTarget ?? currentTimeSafe) : currentTimeSafe))
-                Spacer()
-                Text("-" + formatDuration(max(durationSafe - currentTimeSafe, 0)))
-            }
-            .frame(maxWidth: PlayerLayout.contentWidth)
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.white.opacity(0.6))
-            .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, Theme.Spacing.screenEdge)
-    }
 
     private var transport: some View {
         HStack(spacing: Theme.Spacing.xxl) {
@@ -368,5 +322,81 @@ struct PlayerView: View {
         case .all: Text("All")
         case .one: Text("One")
         }
+    }
+}
+
+/// The position and the times under it, on their own: the engine's clock moves four times a
+/// second, and only this redraws with it, not the whole player (the blurred cover behind it is
+/// costly to draw).
+private struct PlayerScrubber: View {
+    let engine: PlaybackEngine
+    /// Where the listener has dragged to, held until the seek has landed, so the bar doesn't
+    /// jump back to the old position meanwhile.
+    @State private var seekTarget: Double?
+    @State private var isScrubbing = false
+
+    /// `Slider`-style controls go blank on a non-finite value, without crashing; a stream's first
+    /// moments can produce one.
+    private var currentTimeSafe: Double {
+        let value = engine.currentTime
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), durationSafe)
+    }
+
+    /// Never zero: a 0...0 range is its own invisible control.
+    private var durationSafe: Double {
+        let value = engine.duration
+        guard value.isFinite, value > 0 else { return 1 }
+        return value
+    }
+
+    private var shownTime: Double { seekTarget ?? currentTimeSafe }
+
+    var body: some View {
+        VStack(spacing: Theme.Spacing.xs) {
+            PlaybackScrubber(
+                progress: shownTime / durationSafe,
+                buffered: engine.bufferedTime / durationSafe,
+                onScrub: { fraction in
+                    if !isScrubbing { Haptics.selection() }
+                    isScrubbing = true
+                    seekTarget = fraction * durationSafe
+                },
+                onScrubEnded: { fraction in
+                    let target = fraction * durationSafe
+                    seekTarget = target
+                    isScrubbing = false
+                    Task {
+                        await engine.seek(to: target)
+                        // A newer drag has its own target; leave that one alone.
+                        if !isScrubbing, seekTarget == target { seekTarget = nil }
+                    }
+                }
+            )
+            // A fixed height: a `GeometryReader` takes all the height it is offered.
+            .frame(maxWidth: .infinity)
+            .frame(height: Theme.minTarget)
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier("player.scrubber")
+            .accessibilityLabel("Playback position")
+            .accessibilityValue("\(formatDuration(currentTimeSafe)) of \(formatDuration(durationSafe))")
+            .accessibilityAdjustableAction { direction in
+                let step = durationSafe * 0.05
+                let target = min(max(currentTimeSafe + (direction == .increment ? step : -step), 0), durationSafe)
+                Task { await engine.seek(to: target) }
+            }
+
+            HStack {
+                Text(formatDuration(shownTime))
+                Spacer()
+                Text("-" + formatDuration(max(durationSafe - shownTime, 0)))
+            }
+            .frame(maxWidth: PlayerLayout.contentWidth)
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.white.opacity(0.6))
+            .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, Theme.Spacing.screenEdge)
     }
 }

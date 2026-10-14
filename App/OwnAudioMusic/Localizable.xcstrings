@@ -771,6 +771,16 @@
         }
       }
     },
+    "Clear" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vymazat"
+          }
+        }
+      }
+    },
     "Clear Rating" : {
       "localizations" : {
         "cs" : {
@@ -1888,6 +1898,16 @@
         }
       }
     },
+    "Nothing on “%@”: these are from other releases." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na „%@“ nic: tyto jsou z jiných vydání."
+          }
+        }
+      }
+    },
     "Offline Mode" : {
       "localizations" : {
         "cs" : {
@@ -2254,6 +2274,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oblíbené skladby, které jste rok neposlouchali."
+          }
+        }
+      }
+    },
+    "Stop Playback" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zastavit přehrávání"
           }
         }
       }

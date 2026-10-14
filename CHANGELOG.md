@@ -87,6 +87,7 @@ package, merged into this repository — is in `docs/history/`.
   only the API's tokens and the account's email. Servers signed in earlier keep their key, which
   still sends the "now playing" report and lists music folders; without one there is neither,
   as v2 has no word for them yet.
+- An ✕ at the top right of the player stops playback and closes it.
 - **The household on own.audio servers**: Settings → Household lists who is in it, with their
   pictures; an admin invites someone with a code (a QR code, or the share sheet), and anyone can
   join another household with one. Your own songs can be shared with the household or kept to
@@ -190,6 +191,15 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Moving the position in the player made it flash: the format, the cover and the times reset
+  while the song reloaded, and the bar jumped back before jumping forward. They now stay, and
+  the bar holds where it was dropped. Only the position and times redraw as the song plays, not
+  the whole player with its blurred cover.
+- Identify was offered on every song, and failed on anyone else's: the server identifies only
+  the owner's. It is offered now on your own songs, and on albums and artists you have songs of.
+- Searching MusicBrainz for a song kept the album from its tags, so correcting the title and
+  artist found nothing when the album was wrong too; with nothing on that album, the search now
+  goes on without it, and says so. Each search field has a ✕ to empty it.
 - Another household member's playlist on an own.audio server said "by" and a long id; it says
   their name now, as the household calls them.
 - VoiceOver read an album's song rows and their ⋯ buttons under the same name, so the ⋯

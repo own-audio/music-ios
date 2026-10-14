@@ -105,7 +105,8 @@ private struct SongActions: ViewModifier {
                 }
             }
         }
-        if let identify = IdentifyAccess.shared.server(model) {
+        // The server identifies only its owner's songs; on anyone else's it could only fail.
+        if let identify = IdentifyAccess.shared.server(model), model.sharing(of: song)?.isMine != false {
             if identify.searches {
                 Button {
                     isIdentifying = true

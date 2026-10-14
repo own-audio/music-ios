@@ -47,7 +47,7 @@ struct ArtistDetailView: View {
                     .accessibilityLabel(starred ? "Unfavorite Artist" : "Favorite Artist")
                 }
             }
-            if IdentifyAccess.shared.server(model) != nil {
+            if IdentifyAccess.shared.server(model) != nil, model.mayIdentify(artistId: artist.id) {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {

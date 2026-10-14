@@ -101,6 +101,51 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "16-mobile-data-player")
     }
 
+    /// Dragging the position: the player stays as it was (cover, format, times) while the song
+    /// moves there, and the bar doesn't spring back. The ✕ stops playback and closes the player.
+    func testSeekThenStop() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        let miniPlayPause = app.buttons["miniPlayer.playPause"]
+        XCTAssertTrue(waitUntil(timeout: 30) { miniPlayPause.exists && miniPlayPause.label == "Pause" })
+        app.buttons["miniPlayer"].tap()
+        let scrubber = app.descendants(matching: .any)["player.scrubber"].firstMatch
+        XCTAssertTrue(scrubber.waitForExistence(timeout: 10))
+        sleep(3)
+        screenshot(app, "23a-before-seek")
+
+        let start = scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)))
+        screenshot(app, "23b-just-after-seek")
+        sleep(1)
+        screenshot(app, "23c-a-second-after")
+        // Read as "1:23 of 3:20": the position should be past the middle, not back at the start.
+        XCTAssertTrue(waitUntil(timeout: 30) {
+            let parts = (scrubber.value as? String ?? "").components(separatedBy: " of ")
+            guard parts.count == 2, let at = Self.seconds(parts[0]), let of = Self.seconds(parts[1]), of > 0 else { return false }
+            return Double(at) / Double(of) > 0.5
+        }, "the song should move to where the bar was dragged, is \(scrubber.value as? String ?? "")")
+        XCTAssertTrue(waitUntil(timeout: 15) { miniPlayPause.exists || app.buttons["player.stop"].exists })
+
+        app.buttons["player.stop"].tap()
+        XCTAssertTrue(waitUntil(timeout: 10) { !scrubber.exists }, "stopping should close the player")
+        XCTAssertFalse(app.buttons["miniPlayer"].exists, "nothing should be left playing")
+    }
+
+    /// "1:23" or "1:02:03" as seconds.
+    static func seconds(_ text: String) -> Int? {
+        let parts = text.trimmingCharacters(in: .whitespaces).split(separator: ":").compactMap { Int($0) }
+        guard !parts.isEmpty else { return nil }
+        return parts.reduce(0) { $0 * 60 + $1 }
+    }
+
     /// Settings → Servers → the server's connection: it ends up connected through one of its
     /// addresses (on a Jellyfin or own.audio server reached from its own network, the home
     /// address it named itself).

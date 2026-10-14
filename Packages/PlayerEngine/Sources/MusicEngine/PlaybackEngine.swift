@@ -681,12 +681,18 @@ public final class PlaybackEngine {
             return
         }
         applyGain(for: track, on: activeNode)
-        currentTrack = track
-        duration = Double(track.durationSecs ?? 0)
+        // A seek within the song playing keeps what is shown of it — its format, artwork and
+        // the length read from its file — so the player doesn't flash as it reloads; "loading"
+        // only while the file still has to arrive.
+        let seekingWithin = seekTo > 0 && currentTrack?.id == track.id
+        if !seekingWithin {
+            currentTrack = track
+            duration = Double(track.durationSecs ?? 0)
+            currentFormatSnapshot = nil
+            loadArtwork(track: track)
+        }
         currentTime = seekTo
-        isLoading = true
-        currentFormatSnapshot = nil
-        loadArtwork(track: track)
+        isLoading = seekingWithin ? await fileCache.existingLocalURL(trackId: track.id) == nil : true
         streamingTask?.cancel()
         streamingTask = nil
 

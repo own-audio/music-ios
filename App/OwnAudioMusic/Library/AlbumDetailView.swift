@@ -93,7 +93,7 @@ struct AlbumDetailView: View {
                                 }
                             }
                         }
-                        if IdentifyAccess.shared.server(model) != nil {
+                        if IdentifyAccess.shared.server(model) != nil, songs?.contains(where: { model.sharing(of: $0)?.isMine != false }) ?? true {
                             Button {
                                 identify = .album(id: album.id, label: album.displayName)
                             } label: {
