@@ -66,17 +66,21 @@ public struct FeedResult: Sendable {
 /// An own.audio server from 1.0.0-beta.7, through its own API (`/api/v2`): the library on the
 /// phone from its snapshot and change feed; browsing, favorites, ratings, plays, playlists,
 /// search, random songs and lyrics; and — signed per song — streams, downloads and covers.
-/// Its Subsonic API, which uses the same ids, answers only what v2 has no word for (the "now
-/// playing" report, music folders), and — offline, or when the API's sign-in was refused —
-/// whatever the API saved nothing for.
+/// Servers signed in before the app needed no Subsonic key keep one: its Subsonic API (the same
+/// ids) then also sends the "now playing" report, lists music folders, and answers whatever the
+/// API saved nothing for offline or while its sign-in is refused.
 public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEdits, LiveLibraryUpdates {
-    public let subsonic: SubsonicSource
+    /// The account's email.
+    public let username: String
+    /// The Subsonic API, for a server signed in with a key (before the app needed none).
+    public let subsonic: SubsonicSource?
     public let client: OwnAudioClient
     let listener: ListenerState
     let records: RecordIndex
     let paging: Paging
 
-    public init(subsonic: SubsonicSource, client: OwnAudioClient, listener: ListenerState = ListenerState(), records: RecordIndex = RecordIndex()) {
+    public init(username: String, subsonic: SubsonicSource?, client: OwnAudioClient, listener: ListenerState = ListenerState(), records: RecordIndex = RecordIndex()) {
+        self.username = username
         self.subsonic = subsonic
         self.client = client
         self.listener = listener
@@ -84,11 +88,10 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         paging = Paging()
     }
 
-    /// Instant mix is left out: the server has nothing to pick similar songs from (its Subsonic
-    /// answer is always empty), so the action would only ever do nothing.
-    public var capabilities: Capabilities { subsonic.capabilities.subtracting(.instantMix) }
-    public var albumSorts: [AlbumSort] { subsonic.albumSorts }
-    /// Both sign-ins: the API's tokens (gone after a refused refresh) and the Subsonic key.
+    /// No instant mix: the server has nothing to pick similar songs from.
+    public var capabilities: Capabilities { [.ratings, .lowerBitrate] }
+    public var albumSorts: [AlbumSort] { [.name, .artist, .newest, .recentlyPlayed, .mostPlayed, .random, .favorites, .highestRated] }
+    /// The API's sign-in (gone after a refused refresh), and the Subsonic key where there is one.
     public func checkConnection() async -> ConnectionStatus {
         guard await client.tokens.current != nil else { return .rejected }
         do {
@@ -100,7 +103,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         } catch {
             return .unreachable
         }
-        return await subsonic.checkConnection()
+        return await subsonic?.checkConnection() ?? .ok
     }
 
     // MARK: - Browsing
@@ -110,7 +113,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             let all = try await client.all { try await client.artists(cursor: $0, limit: Self.pageMax) }
             let mapper = mapper(nil)
             return all.map { mapper.artist($0) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.artists()
         }
     }
@@ -120,7 +123,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         try await throughAPI {
             try await allAlbums { try await client.albums(contributorId: artistId, include: ["contributors"], cursor: $0, limit: Self.pageMax) }
                 .sorted { ($0.year ?? 0, $0.name) < ($1.year ?? 0, $1.name) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.albums(artistId: artistId)
         }
     }
@@ -155,7 +158,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                     .sorted { ($0.rating, $0.updatedAt) > ($1.rating, $1.updatedAt) }
                 return try await albums(ids: Array(rated.dropFirst(offset).prefix(limit)).map(\.id))
             }
-        } else: {
+        } else: { subsonic in
             try await subsonic.albums(sort, limit: limit, offset: offset)
         }
     }
@@ -166,7 +169,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             let page = try await client.albums(genreId: genreId, include: ["contributors"], limit: min(max(limit, 1), Self.pageMax))
             let mapper = mapper(page.included)
             return page.items.map { mapper.album($0) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.albums(genre: genre, limit: limit)
         }
     }
@@ -179,7 +182,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             var mapper = mapper(album.included)
             mapper.albums[album.record.id] = album.record
             return (mapper.album(album.record), tracks)
-        } else: {
+        } else: { subsonic in
             try await subsonic.album(id: id)
         }
     }
@@ -188,7 +191,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         try await throughAPI {
             let answer = try await client.track(id: id, include: Self.trackIncludes)
             return mapper(answer.included).song(answer.record)
-        } else: {
+        } else: { subsonic in
             try await subsonic.song(id: id)
         }
     }
@@ -200,7 +203,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                 let mapper = mapper(page.included)
                 return (page.items.map { mapper.song($0) }, page.next)
             }
-        } else: {
+        } else: { subsonic in
             try await subsonic.songs(limit: limit, offset: offset)
         }
     }
@@ -215,7 +218,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             let page = try await client.randomTracks(genreId: genreId, limit: min(max(limit, 1), 500), include: Self.trackIncludes)
             let mapper = mapper(page.included)
             return page.items.map { mapper.song($0) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.randomSongs(limit: limit, genre: genre)
         }
     }
@@ -225,7 +228,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     public func genres() async throws -> [Genre] {
         try await throughAPI {
             try await client.all { try await client.genres(cursor: $0) }.map { Genre(id: $0.id, name: $0.name) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.genres()
         }
     }
@@ -243,11 +246,11 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                 albums: answer.albums.map { mapper.album($0) },
                 songs: answer.tracks.map { mapper.song($0) }
             )
-        } else: {
+        } else: { subsonic in
             try await subsonic.search(text)
         }
     }
-    public func instantMix(itemId: String) async throws -> [Song] { try await subsonic.instantMix(itemId: itemId) }
+    public func instantMix(itemId: String) async throws -> [Song] { throw SourceError.unsupported }
 
     // MARK: - Favorites and ratings
 
@@ -265,13 +268,13 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             let contributors = try await concurrently(try await artistIds) { try await client.contributor(id: $0) }
             let mapper = mapper(nil)
             return FavoritesResult(artists: contributors.map { mapper.artist($0) }, albums: albums, songs: songs)
-        } else: {
+        } else: { subsonic in
             try await subsonic.favorites()
         }
     }
 
     public func setFavorite(_ kind: FavoriteKind, id: String, _ isFavorite: Bool) async throws {
-        try await throughAPI { try await client.setFavourite(Self.itemKind(kind), id: id, isFavorite) } else: {
+        try await throughAPI { try await client.setFavourite(Self.itemKind(kind), id: id, isFavorite) } else: { subsonic in
             try await subsonic.setFavorite(kind, id: id, isFavorite)
         }
         listener.setFavourite(id, isFavorite)
@@ -291,7 +294,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                     try await client.setRating(.album, id: id, rating)
                 }
             }
-        } else: {
+        } else: { subsonic in
             try await subsonic.setRating(id: id, rating: rating)
         }
         listener.setRating(id, rating)
@@ -303,7 +306,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             // which only means none can be changed until the server is back.
             let mine = (try? await userId()) ?? ""
             return try await client.all { try await client.playlists(cursor: $0) }.map { playlist($0, mine: mine) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.playlists()
         }
     }
@@ -321,19 +324,19 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             } while cursor != nil
             let mine = (try? await userId()) ?? ""
             return (playlist(try await record, mine: mine), songs)
-        } else: {
+        } else: { subsonic in
             try await subsonic.playlist(id: id)
         }
     }
 
     public func createPlaylist(name: String, songIds: [String]) async throws {
-        try await throughAPI { _ = try await client.createPlaylist(name: name, trackIds: songIds) } else: {
+        try await throughAPI { _ = try await client.createPlaylist(name: name, trackIds: songIds) } else: { subsonic in
             try await subsonic.createPlaylist(name: name, songIds: songIds)
         }
     }
 
     public func addToPlaylist(id: String, songIds: [String]) async throws {
-        try await throughAPI { _ = try await client.addToPlaylist(id: id, trackIds: songIds) } else: {
+        try await throughAPI { _ = try await client.addToPlaylist(id: id, trackIds: songIds) } else: { subsonic in
             try await subsonic.addToPlaylist(id: id, songIds: songIds)
         }
     }
@@ -342,22 +345,25 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     /// Subsonic API (saved offline) goes back that way, by position.
     public func removeFromPlaylist(id: String, entries: [PlaylistEntry]) async throws {
         let entryIds = entries.compactMap(\.entryId)
-        guard entryIds.count == entries.count else { return try await subsonic.removeFromPlaylist(id: id, entries: entries) }
+        guard entryIds.count == entries.count else {
+            guard let subsonic else { throw SourceError.unsupported }
+            return try await subsonic.removeFromPlaylist(id: id, entries: entries)
+        }
         try await throughAPI {
             for entryId in entryIds { try await client.removeFromPlaylist(id: id, entryId: entryId) }
-        } else: {
+        } else: { subsonic in
             try await subsonic.removeFromPlaylist(id: id, entries: entries)
         }
     }
 
     public func renamePlaylist(id: String, to name: String) async throws {
-        try await throughAPI { _ = try await client.renamePlaylist(id: id, to: name) } else: {
+        try await throughAPI { _ = try await client.renamePlaylist(id: id, to: name) } else: { subsonic in
             try await subsonic.renamePlaylist(id: id, to: name)
         }
     }
 
     public func deletePlaylist(id: String) async throws {
-        try await throughAPI { try await client.deletePlaylist(id: id) } else: {
+        try await throughAPI { try await client.deletePlaylist(id: id) } else: { subsonic in
             try await subsonic.deletePlaylist(id: id)
         }
     }
@@ -367,7 +373,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             let answer = try await client.lyrics(trackId: song.id)
             guard answer.text != nil, !answer.lines.isEmpty else { return [] }
             return [Lyrics(lines: answer.lines.map { Lyrics.Line(startMs: $0.startMs, text: $0.text) }, isSynced: answer.synced)]
-        } else: {
+        } else: { subsonic in
             try await subsonic.lyrics(for: song)
         }
     }
@@ -376,7 +382,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
 
     /// v2 has no "now playing": the Subsonic API's report, which nothing depends on.
     public func reportNowPlaying(songId: String, positionSecs: Double) async throws {
-        try? await subsonic.reportNowPlaying(songId: songId, positionSecs: positionSecs)
+        try? await subsonic?.reportNowPlaying(songId: songId, positionSecs: positionSecs)
     }
     public func reportProgress(songId: String, positionSecs: Double, isPaused: Bool) async throws {}
     public func reportStopped(songId: String, positionSecs: Double) async throws {}
@@ -392,7 +398,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             if let refused = try await client.reportPlays([play]).first, refused.status != "ok", refused.status != "duplicate" {
                 throw SourceError.server(refused.status)
             }
-        } else: {
+        } else: { subsonic in
             try await subsonic.reportPlayed(songId: songId, at: date)
         }
     }
@@ -411,7 +417,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         try await throughAPI {
             let capabilities = PlaybackCapabilities(direct: Self.playable, transcode: ["aac", "mp3"], maxBitrateKbps: maxBitrate.map { $0 / 1000 })
             return try await client.playbackInfo(trackId: songId, capabilities: capabilities).url
-        } else: {
+        } else: { subsonic in
             subsonic.streamURL(songId: songId, maxBitrate: maxBitrate)
         }
     }
@@ -421,7 +427,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     public func downloadURL(songId: String) async throws -> URL {
         try await throughAPI {
             try await client.playbackInfo(trackId: songId, capabilities: PlaybackCapabilities(direct: [], transcode: [])).url
-        } else: {
+        } else: { subsonic in
             subsonic.downloadURL(songId: songId)
         }
     }
@@ -436,7 +442,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             link = try await throughAPI {
                 guard let fresh = try await imageLink(id) else { throw SourceError.notFound }
                 return fresh
-            } else: {
+            } else: { subsonic in
                 subsonic.coverURL(id: id, size: size)
             }
             guard link.path.contains("/api/v2/images/") else { return link }
@@ -469,12 +475,12 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         return nil
     }
 
-    public func musicLibraries() async throws -> [MusicLibraryInfo] { try await subsonic.musicLibraries() }
+    public func musicLibraries() async throws -> [MusicLibraryInfo] { try await subsonic?.musicLibraries() ?? [] }
 
     /// Ends both: the API's session (its refresh token) and the Subsonic one.
     public func signOut() async {
         await client.signOut()
-        await subsonic.signOut()
+        await subsonic?.signOut()
     }
 
     // MARK: - Through the API, or Subsonic
@@ -485,15 +491,22 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     static let pageMax = 500
 
     /// The API when it can answer — from its saved answers offline or when the server can't be
-    /// reached. The Subsonic API when the API's sign-in is gone, or when the API saved nothing
-    /// for this yet (an answer the Subsonic API saved before the app moved to v2 still helps).
-    func throughAPI<T>(_ api: () async throws -> T, else subsonicPath: () async throws -> T) async throws -> T {
-        guard await client.tokens.current != nil else { return try await subsonicPath() }
+    /// reached. With a Subsonic key, its API when the API's sign-in is gone, or when the API saved
+    /// nothing for this yet (an answer the Subsonic API saved before the app moved to v2 helps).
+    func throughAPI<T>(_ api: () async throws -> T, else subsonicPath: (SubsonicSource) async throws -> T) async throws -> T {
+        guard await client.tokens.current != nil else {
+            guard let subsonic else { throw SourceError.signInRejected }
+            return try await subsonicPath(subsonic)
+        }
         do {
             return try await api()
-        } catch OwnAudioError.network, OwnAudioError.offline {
-            return try await subsonicPath()
         } catch let error as OwnAudioError {
+            switch error {
+            case .network, .offline:
+                if let subsonic { return try await subsonicPath(subsonic) }
+            default:
+                break
+            }
             throw Self.sourceError(error)
         }
     }
@@ -591,7 +604,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     func playlist(_ p: OwnAudioKit.Playlist, mine: String) -> Playlist {
         records.learn(p.id, .playlist, image: p.image)
         return Playlist(
-            id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? subsonic.client.username : p.ownerId,
+            id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? username : p.ownerId,
             songCount: p.trackCount, duration: Int(p.durationMs / 1000), coverArt: p.image != nil ? p.id : nil
         )
     }

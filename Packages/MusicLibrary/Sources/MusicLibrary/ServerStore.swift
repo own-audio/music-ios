@@ -7,8 +7,8 @@ import os
 
 public enum ServerKind: String, Codable, Sendable, CaseIterable {
     case subsonic, jellyfin
-    /// An own.audio server: its library through Subsonic, and its own API for what Subsonic
-    /// lacks (its identity and addresses today).
+    /// An own.audio server: through its own API, or — added before the app spoke it, or on a
+    /// server older than 1.0.0-beta.7 — through its Subsonic API.
     case ownAudio
 }
 
@@ -19,10 +19,11 @@ public enum ServerAuth: Codable, Sendable, Equatable {
     /// Jellyfin hands out a token; the password is never kept.
     case jellyfin(session: Session)
     /// own.audio from 1.0.0-beta.7: its own API's tokens (rotated on every refresh, so they are
-    /// saved again each time) and the account's Subsonic key for what that API doesn't offer
-    /// yet. `tokens` is nil once the server has refused a refresh: the key still works, and
-    /// signing in again brings the rest back.
-    case ownAudio(username: String, key: String, tokens: Tokens?)
+    /// saved again each time). `key` is the account's Subsonic key, kept by servers signed in
+    /// before the app needed none; it still sends the "now playing" report and lists music
+    /// folders. `tokens` is nil once the server has refused a refresh: signing in again brings
+    /// them back (and with a key the Subsonic API goes on meanwhile).
+    case ownAudio(username: String, key: String?, tokens: Tokens?)
 
     public var username: String {
         switch self {
@@ -320,11 +321,13 @@ extension ServerRecord {
                 cacheIdentity: id.uuidString
             ))
         case .ownAudio(let username, let key, let tokens):
-            let subsonic = SubsonicSource(client: SubsonicClient(
-                host: url, username: username, password: key,
-                session: environment.urlSession, cache: environment.cache, offline: environment.offline,
-                cacheIdentity: id.uuidString
-            ))
+            let subsonic = key.map { key in
+                SubsonicSource(client: SubsonicClient(
+                    host: url, username: username, password: key,
+                    session: environment.urlSession, cache: environment.cache, offline: environment.offline,
+                    cacheIdentity: id.uuidString
+                ))
+            }
             let session = environment.ownAudioSessions.session(for: id, tokens: tokens)
             let offline = environment.offline
             let client = OwnAudioClient(
@@ -333,7 +336,7 @@ extension ServerRecord {
                 isOffline: { offline?.isOn == true }
             )
             return OwnAudioSource(
-                subsonic: subsonic, client: client,
+                username: username, subsonic: subsonic, client: client,
                 listener: environment.ownAudioSessions.listener(for: id), records: environment.ownAudioSessions.records(for: id)
             )
         }

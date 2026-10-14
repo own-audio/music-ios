@@ -75,7 +75,11 @@ package, merged into this repository — is in `docs/history/`.
   artist pictures** are the API's images at the nearest size it makes; their links run out after
   a week or two, so the app keeps covers by id and reads a record again for a fresh link. What
   the API answered is saved, so screens seen once open offline, as they did through the Subsonic
-  API. Only the "now playing" report and music folders still use the Subsonic API.
+  API.
+- **No Subsonic key for own.audio**: signing in to an own.audio server from 1.0.0-beta.7 keeps
+  only the API's tokens and the account's email. Servers signed in earlier keep their key, which
+  still sends the "now playing" report and lists music folders; without one there is neither,
+  as v2 has no word for them yet.
 - **A new icon**: the own.audio family figures around the note in their own colours, the
   note in red, and no `</>` at the bottom. The welcome screen and the server list show it too.
 - **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when

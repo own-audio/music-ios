@@ -399,8 +399,8 @@ final class AppModel {
     }
 
     /// An own.audio server added with Apple or Google: the server exchanges the provider's token
-    /// for a session, and the app fetches the account's Subsonic key with it, as it does after
-    /// an email-and-password sign-in. Only the key is kept.
+    /// for the API's tokens. A server older than 1.0.0-beta.7 gives a session instead, and the
+    /// app fetches the account's Subsonic key with it; only the key is kept then.
     func addOwnAudioServer(address: String, signIn: OwnAudioSignIn, name: String) async throws {
         let address = ServerSetup.ownAudioAPIAddress(address)
         guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
@@ -490,13 +490,11 @@ final class AppModel {
         case .twoFactor(let mfaToken):
             pendingTwoFactor = PendingTwoFactor(host: host, mfaToken: mfaToken, name: name, info: info)
             throw AddServerError.twoFactorNeeded
-        case .signedIn(let username, let key, let tokens):
-            guard await ServerSetup.subsonicCheck(host: host, username: username, password: key, urlSession: Self.session) == .ok else {
-                throw AddServerError.rejected
-            }
+        case .signedIn(let username, let tokens):
+            // Tokens only: the API answers everything the app needs, so no Subsonic key is fetched.
             var record = ServerRecord(
                 displayName: displayName(name, fallback: "own.audio"), kind: .ownAudio, host: host,
-                auth: .ownAudio(username: username, key: key, tokens: tokens), serverId: info.id
+                auth: .ownAudio(username: username, key: nil, tokens: tokens), serverId: info.id
             )
             record.learn(info.addresses)
             try await save(record)

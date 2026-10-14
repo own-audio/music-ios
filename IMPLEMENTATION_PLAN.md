@@ -65,7 +65,7 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   instant and complete offline; uses a server change feed where there is one.
 - [ ] **M7: Release.** Icon, App Store text, screenshots, privacy policy section, TestFlight
   under the new bundle id; Jellyfin's and Navidrome's client pages.
-- [ ] **M8: own.audio on its own API.** own.audio servers from 1.0.0-beta.7 speak `/api/v2`
+- [x] **M8: own.audio on its own API.** own.audio servers from 1.0.0-beta.7 speak `/api/v2`
   (draft until this app ships on it). In steps:
   - [x] **M8a — OwnAudioKit** (2026-10-11; unit tests and live tests against a beta.7 server): a client for `/api/v2`, Foundation only, beside SubsonicKit and
     JellyfinKit: discovery (`/.well-known/own-audio`), the token endpoint (password, refresh with
@@ -96,8 +96,11 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     each id's kind in a `RecordIndex` and read again once a link runs out. `OwnAudioClient`
     saves read answers (`AnswerCache`), so offline works from the API's own answers. Left on
     the Subsonic API: the "now playing" report and music folders, which v2 has no word for.
-  - **M8f**: own.audio without a Subsonic key — sign-in keeps only the API's tokens; no "now
-    playing" report and no music-folder choice for own.audio until v2 has them.
+  - [x] **M8f — no Subsonic key** (2026-10-14): a sign-in through the API keeps only its
+    tokens and the account's email (`ServerAuth.ownAudio`'s key is optional). Servers signed in
+    earlier keep their key for the "now playing" report, music folders, and as the fallback
+    while the API's sign-in is refused; without one there is no "now playing" report and no
+    music-folder choice for own.audio until v2 has them.
 - [x] **M9: Smart playlists.** Done 2026-10-13 (needs own.audio server 1.0.0-beta.13, the API's
   V11): on Playlists, the account's smart playlists and the server's ready-made ones (Forgotten
   Favorites, New in the Library, Back in Rotation, What the Family Plays, Genre Station with a

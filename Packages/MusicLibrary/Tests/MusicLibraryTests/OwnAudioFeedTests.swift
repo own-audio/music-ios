@@ -59,7 +59,7 @@ struct OwnAudioFeedTests {
             return .init(statusCode: 200, body: Data(body.utf8), headers: ["Content-Type": "application/json"])
         }
         let source = OwnAudioSource(
-            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: mock.urlSession)),
+            username: "me@example.com", subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: mock.urlSession)),
             client: OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
         )
         let result = try await source.syncCatalogue(state())
@@ -82,7 +82,7 @@ struct OwnAudioFeedTests {
             return .init(statusCode: 200, body: Data(lines.utf8), headers: ["Content-Type": "application/x-ndjson"])
         }
         let source = OwnAudioSource(
-            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: mock.urlSession)),
+            username: "me@example.com", subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: mock.urlSession)),
             client: OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
         )
         let result = try await source.syncCatalogue(state())
@@ -98,7 +98,7 @@ struct OwnAudioPushTests {
 
     private func source(_ session: URLSession, signedIn: Bool = true) -> OwnAudioSource {
         OwnAudioSource(
-            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: session)),
+            username: "me@example.com", subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "u", password: "k", session: session)),
             client: OwnAudioClient(host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil), session: session)
         )
     }
@@ -182,9 +182,9 @@ struct OwnAudioAPITests {
         try! JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
     }
 
-    private func source(_ session: URLSession, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil, cache: AnswerCache? = nil, signedIn: Bool = true) -> OwnAudioSource {
+    private func source(_ session: URLSession, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil, cache: AnswerCache? = nil, signedIn: Bool = true, key: Bool = true) -> OwnAudioSource {
         OwnAudioSource(
-            subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "me@example.com", password: "k", session: session)),
+            username: "me@example.com", subsonic: key ? SubsonicSource(client: SubsonicClient(host: host, username: "me@example.com", password: "k", session: session)) : nil,
             client: OwnAudioClient(
                 host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil),
                 session: session, cache: cache, isOffline: { offline?.isOn == true }
@@ -397,6 +397,37 @@ struct OwnAudioAPITests {
         let body = try JSONSerialization.jsonObject(with: Self.body(of: request)) as? [String: Any]
         let play = (body?["plays"] as? [[String: Any]])?.first
         #expect(play?["id"] as? String == "t1" && ((play?["listened_ms"] as? Int) ?? 0) >= 119_000)
+    }
+
+    @Test("with no Subsonic key: the API only — a refused sign-in says so, offline says so, nothing goes to /rest")
+    func noKey() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            request.url?.path == "/api/v2/me" ? json(Self.me) : .init(statusCode: 404, body: Data())
+        }
+        #expect(await source(mock.urlSession, key: false).checkConnection() == .ok)
+        await #expect(throws: SourceError.signInRejected) { try await source(mock.urlSession, signedIn: false, key: false).playlists() }
+        let offline = OfflineSwitch()
+        offline.isOn = true
+        await #expect(throws: SourceError.offline) { try await source(mock.urlSession, offline: offline, key: false).artists() }
+        #expect(try await source(mock.urlSession, key: false).musicLibraries().isEmpty)
+        try await source(mock.urlSession, key: false).reportNowPlaying(songId: "t1", positionSecs: 0)
+        let paths = await mock.requestLog().compactMap(\.url?.path)
+        #expect(paths.allSatisfy { !$0.hasPrefix("/rest/") }, "\(paths)")
+    }
+
+    @Test("a sign-in through the API keeps the tokens and the account's email, and fetches no Subsonic key")
+    func signInWithoutKey() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            switch request.url?.path {
+            case "/api/v2/auth/token": return json(#"{"access_token":"a","refresh_token":"r","token_type":"Bearer","expires_in":3600,"scope":"library:read"}"#)
+            case "/api/v2/me": return json(Self.me)
+            default: return .init(statusCode: 404, body: Data())
+            }
+        }
+        let result = try await ServerSetup.ownAudioSignIn(host: host, email: "Me@Example.com", password: "pw", deviceName: "test", urlSession: mock.urlSession)
+        guard case .signedIn(let username, let tokens) = result else { Issue.record("\(result)"); return }
+        #expect(username == "me@example.com" && tokens.refreshToken == "r")
+        #expect(await mock.requestLog().compactMap(\.url?.path) == ["/api/v2/auth/token", "/api/v2/me"])
     }
 
     static func body(of request: URLRequest) -> Data {

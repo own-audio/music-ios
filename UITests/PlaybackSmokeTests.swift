@@ -109,10 +109,7 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launchArguments = ["-uiTestReset"] + Self.english
         app.launch()
         addServer(app, screenshots: false)
-        app.buttons["home.settings"].tap()
-        let servers = app.buttons["settings.servers"]
-        XCTAssertTrue(servers.waitForExistence(timeout: 10))
-        servers.tap()
+        openServerSettings(app)
         let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
         XCTAssertTrue(info.waitForExistence(timeout: 10))
         screenshot(app, "16-servers")
@@ -380,10 +377,7 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launchArguments = ["-uiTestReset"] + Self.english
         app.launch()
         addServer(app, screenshots: false)
-        app.buttons["home.settings"].tap()
-        let servers = app.buttons["settings.servers"]
-        XCTAssertTrue(servers.waitForExistence(timeout: 10))
-        servers.tap()
+        openServerSettings(app)
         let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
         XCTAssertTrue(info.waitForExistence(timeout: 10))
         info.tap()
@@ -578,13 +572,26 @@ final class PlaybackSmokeTests: XCTestCase {
         }
     }
 
+    /// Settings → Servers. iOS's offer to save the password can come late and swallow the tap on
+    /// Settings, so the tap is tried again once the offer is out of the way.
+    private func openServerSettings(_ app: XCUIApplication) {
+        let servers = app.buttons["settings.servers"]
+        for _ in 0..<3 {
+            app.buttons["home.settings"].tap()
+            if servers.waitForExistence(timeout: 5) { break }
+            dismissSavePasswordPrompt(app, within: 3)
+        }
+        XCTAssertTrue(servers.exists, "Settings should open")
+        servers.tap()
+    }
+
     /// iOS offers to save the password after a sign-in form. It's the system's sheet, in the
     /// system's language, so it is found by position: "Not Now" is the first of its two buttons.
-    private func dismissSavePasswordPrompt(_ app: XCUIApplication) {
+    private func dismissSavePasswordPrompt(_ app: XCUIApplication, within seconds: TimeInterval = 10) {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let labels = ["Not Now", "Teď ne", "Jetzt nicht", "Plus tard", "Ahora no"]
         // Either may show it, and over the internet it can come several seconds after signing in.
-        let deadline = Date().addingTimeInterval(10)
+        let deadline = Date().addingTimeInterval(seconds)
         while Date() < deadline {
             for owner in [app, springboard] {
                 let notNow = owner.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch

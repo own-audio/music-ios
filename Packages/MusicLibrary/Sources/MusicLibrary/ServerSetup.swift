@@ -81,8 +81,8 @@ public typealias OwnAudioTokens = OwnAudioKit.Tokens
 
 /// How a sign-in to an own.audio server through its own API ended.
 public enum OwnAudioSignInResult: Sendable {
-    /// Signed in: the account's Subsonic login and key, and the API's tokens.
-    case signedIn(username: String, key: String, tokens: OwnAudioTokens)
+    /// Signed in: the account's email, and the API's tokens.
+    case signedIn(username: String, tokens: OwnAudioTokens)
     /// The account has two-factor sign-in: ask for the code and finish with
     /// `ServerSetup.ownAudioFinishTwoFactor`.
     case twoFactor(mfaToken: String)
@@ -121,7 +121,7 @@ extension ServerSetup {
         }
     }
 
-    /// Tokens, then the Subsonic key fetched with them.
+    /// Tokens, and the account they belong to.
     private static func finish(
         host: URL, urlSession: URLSession, _ signIn: () async throws -> OwnAudioTokens
     ) async throws -> OwnAudioSignInResult {
@@ -135,7 +135,11 @@ extension ServerSetup {
         } catch let error as OwnAudioError {
             throw OwnAudioSource.sourceError(error)
         }
-        let (username, key) = try await ownAudioSubsonicKey(host: host, token: tokens.accessToken, urlSession: urlSession)
-        return .signedIn(username: username, key: key, tokens: tokens)
+        do {
+            let me = try await OwnAudioClient(host: host, tokens: TokenSession(tokens), session: urlSession).me()
+            return .signedIn(username: me.email, tokens: tokens)
+        } catch let error as OwnAudioError {
+            throw OwnAudioSource.sourceError(error)
+        }
     }
 }
