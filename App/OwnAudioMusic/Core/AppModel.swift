@@ -916,6 +916,41 @@ final class AppModel {
         if isFavorite { favoriteIds.insert(compositeId) } else { favoriteIds.remove(compositeId) }
     }
 
+    // MARK: - Sharing with the household (own.audio)
+
+    /// Changes made here, until the library on the phone brings them back.
+    private(set) var sharingChanges: [String: Sharing] = [:]
+
+    /// own.audio signed in through its API; one signed in the old way (a Subsonic key only)
+    /// has no way to its household until signed in again.
+    var household: (any HouseholdSource)? {
+        guard case .ownAudio(_, _, .some) = activeServer?.auth else { return nil }
+        return activeSource as? any HouseholdSource
+    }
+
+    /// Whose the song is and who hears it, with any change made here.
+    func sharing(of song: Song) -> Sharing? {
+        sharingChanges[song.id] ?? song.sharing
+    }
+
+    /// The listener's own songs among `songs`, shared or kept to themselves at once; put back if
+    /// the server refuses.
+    func setShared(_ songs: [Song], _ shared: Bool) {
+        guard let household else { return }
+        let mine = songs.filter { sharing(of: $0)?.isMine == true }
+        guard !mine.isEmpty else { return }
+        let before = mine.map { ($0.id, sharingChanges[$0.id]) }
+        for song in mine { sharingChanges[song.id] = shared ? .shared : .mine }
+        Task {
+            do {
+                try await household.setShared(songIds: mine.map(\.id), shared)
+            } catch {
+                for (id, old) in before { sharingChanges[id] = old }
+                actionError = error.userMessage
+            }
+        }
+    }
+
     func isFavorite(_ compositeId: String) -> Bool {
         favoriteIds.contains(compositeId)
     }

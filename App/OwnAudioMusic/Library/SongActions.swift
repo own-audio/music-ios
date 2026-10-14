@@ -89,6 +89,22 @@ private struct SongActions: ViewModifier {
         } label: {
             Label("Add to Playlist…", systemImage: "text.badge.plus")
         }
+        // Only one's own songs; "private" means not shared, never locked.
+        if model.household != nil, !model.isOffline, let sharing = model.sharing(of: song), sharing.isMine {
+            if sharing == .shared {
+                Button {
+                    model.setShared([song], false)
+                } label: {
+                    Label("Stop Sharing", systemImage: "person")
+                }
+            } else {
+                Button {
+                    model.setShared([song], true)
+                } label: {
+                    Label("Share with the Household", systemImage: "person.2")
+                }
+            }
+        }
         if let identify = IdentifyAccess.shared.server(model) {
             if identify.searches {
                 Button {

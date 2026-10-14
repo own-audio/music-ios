@@ -305,7 +305,9 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
             // Offline the account's id may not be known: every list then reads as someone else's,
             // which only means none can be changed until the server is back.
             let mine = (try? await userId()) ?? ""
-            return try await client.all { try await client.playlists(cursor: $0) }.map { playlist($0, mine: mine) }
+            let lists = try await client.all { try await client.playlists(cursor: $0) }
+            let names = await memberNames()
+            return lists.map { playlist($0, mine: mine, names: names) }
         } else: { subsonic in
             try await subsonic.playlists()
         }
@@ -323,7 +325,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                 cursor = page.next
             } while cursor != nil
             let mine = (try? await userId()) ?? ""
-            return (playlist(try await record, mine: mine), songs)
+            return (playlist(try await record, mine: mine, names: await memberNames()), songs)
         } else: { subsonic in
             try await subsonic.playlist(id: id)
         }
@@ -614,12 +616,20 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         return id
     }
 
-    /// The app tells its own playlists by owner name: the account's username for its own, the
-    /// owner's id for anyone else's (which no username equals).
-    func playlist(_ p: OwnAudioKit.Playlist, mine: String) -> Playlist {
+    /// Household members' names by user id; empty when they can't be had (the playlists then
+    /// say no owner rather than an id).
+    func memberNames() async -> [String: String] {
+        guard let members = try? await client.members() else { return [:] }
+        return Dictionary(members.map { ($0.userId, $0.name) }) { a, _ in a }
+    }
+
+    /// The app tells its own playlists by owner: the account's username for its own, the
+    /// owner's id for anyone else's (which no username equals), shown by the member's name.
+    func playlist(_ p: OwnAudioKit.Playlist, mine: String, names: [String: String] = [:]) -> Playlist {
         records.learn(p.id, .playlist, image: p.image)
         return Playlist(
-            id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? username : p.ownerId,
+            id: p.id, name: p.name, comment: p.description, owner: p.ownerId == mine ? username : p.ownerId, ownerName: names[p.ownerId] ?? "",
+            isShared: p.visibility == "family",
             songCount: p.trackCount, duration: Int(p.durationMs / 1000), coverArt: OwnAudioSource.coverId(p.id, image: p.image)
         )
     }
@@ -653,7 +663,9 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
                 updated = try await snapshot()
             }
             records.update(from: updated)
-            let (artists, albums, songs) = Self.library(updated)
+            // Whose each song is: known from the account's id, asked once.
+            let me = try? await userId()
+            let (artists, albums, songs) = Self.library(updated, userId: me)
             return FeedResult(state: updated, artists: artists, albums: albums, songs: songs)
         } catch let error as OwnAudioError {
             throw Self.sourceError(error)
@@ -761,7 +773,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
 
     // MARK: - From the API's records to the app's
 
-    static func library(_ state: FeedState) -> (artists: [Artist], albums: [Album], songs: [Song]) {
+    static func library(_ state: FeedState, userId: String? = nil) -> (artists: [Artist], albums: [Album], songs: [Song]) {
         func decoded<T: Decodable>(_ kind: String, _ type: T.Type) -> [String: T] {
             var out: [String: T] = [:]
             for (id, record) in state.records[kind] ?? [:] {
@@ -776,7 +788,7 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         let tracks = decoded("track", OwnAudioKit.Track.self)
         let mapper = RecordMapper(
             contributors: contributors, albums: albums, genres: decoded("genre", OwnAudioKit.Genre.self),
-            listener: ListenerState.Values(state)
+            listener: { var values = ListenerState.Values(state); values.userId = userId; return values }()
         )
         // Artists are the contributors credited as one; authors, narrators and hosts are the
         // same records but not this app's.

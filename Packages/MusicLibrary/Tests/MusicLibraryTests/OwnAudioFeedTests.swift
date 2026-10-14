@@ -54,6 +54,8 @@ struct OwnAudioFeedTests {
     @Test("changes: upserts and deletes applied, other kinds left out, the cursor moved on")
     func applyingChanges() async throws {
         let mock = await MockURLProtocol.makeStubbedSession { request in
+            // The account's id, asked once to tell its own songs: not known here.
+            if request.url?.path == "/api/v2/me" { return .init(statusCode: 404, body: Data()) }
             #expect(request.url?.path == "/api/v2/sync/changes")
             let body = #"{"changes":[{"kind":"track","id":"t1","op":"upsert","record":{"id":"t1","title":"Song One (Live)","album_id":"al","recording_id":null,"credits":[],"genre_ids":[],"disc_number":1,"track_number":1,"duration_ms":200000,"visibility":"family","owner_id":"u","content_type":"audio/mpeg","size_bytes":1,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T13:00:00Z"}},{"kind":"favourite.track","id":"t1","op":"delete"},{"kind":"book","id":"b1","op":"upsert","record":{"id":"b1"}}],"cursor":"c1","has_more":false,"reset":false}"#
             return .init(statusCode: 200, body: Data(body.utf8), headers: ["Content-Type": "application/json"])
@@ -238,6 +240,7 @@ struct OwnAudioAPITests {
             case "/api/v2/me": return .init(statusCode: 200, body: Data(#"{"id":"u","email":"me@example.com","display_name":"Me","family":{"id":"f","role":"admin","can_upload":true}}"#.utf8), headers: ["Content-Type": "application/json"])
             case "/api/v2/playlists": return .init(statusCode: 200, body: Data(#"{"items":[{"id":"p1","name":"Mine","description":null,"visibility":"private","owner_id":"u","track_count":1,"duration_ms":200000,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"},{"id":"p2","name":"Theirs","description":"x","visibility":"family","owner_id":"other","track_count":0,"duration_ms":0,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}]}"#.utf8), headers: ["Content-Type": "application/json"])
             case "/api/v2/playlists/p1": return .init(statusCode: 200, body: Data(#"{"id":"p1","name":"Mine","description":null,"visibility":"private","owner_id":"u","track_count":1,"duration_ms":200000,"image":null,"created_at":"2026-10-11T12:00:00Z","updated_at":"2026-10-11T12:00:00Z"}"#.utf8), headers: ["Content-Type": "application/json"])
+            case "/api/v2/family/members": return .init(statusCode: 200, body: Data(#"[{"user_id":"u","display_name":"Me","label":null},{"user_id":"other","display_name":"Anna Nováková","label":"Mum"}]"#.utf8), headers: ["Content-Type": "application/json"])
             case "/api/v2/playlists/p1/entries": return .init(statusCode: 200, body: Data(#"{"items":[{"id":"e1","position":1,"added_at":"2026-10-11T12:00:00Z","track":\#(track)}]}"#.utf8), headers: ["Content-Type": "application/json"])
             default: return .init(statusCode: 404, body: Data())
             }
@@ -246,6 +249,7 @@ struct OwnAudioAPITests {
         let lists = try await src.playlists()
         #expect(lists.first { $0.id == "p1" }?.owner == "me@example.com", "the account's own: its username, so the app lets it edit")
         #expect(lists.first { $0.id == "p2" }?.owner == "other")
+        #expect(lists.first { $0.id == "p2" }?.ownerName == "Mum", "shown by the household's name for them, never the id")
         let (record, songs) = try await src.playlist(id: "p1")
         #expect(record.songCount == 1 && songs.first?.playlistEntryId == "e1")
     }

@@ -246,6 +246,8 @@ public struct OwnAudioClient: Sendable {
         switch first {
         case "artists", "contributors", "albums", "tracks", "genres", "playlists", "smart-playlists":
             return !path.hasSuffix("/random") && !path.hasSuffix("/resolve")
+        case "family":
+            return path == "family" || path == "family/members"
         case "me":
             // Not `me` itself: the connection check asks it, and must not be answered from here.
             return path.hasPrefix("me/favourites") || path.hasPrefix("me/ratings") || path.hasPrefix("me/played")

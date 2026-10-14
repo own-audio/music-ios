@@ -128,7 +128,9 @@ struct PlaylistsView: View {
     private func subtitle(_ playlist: Playlist) -> String {
         let songs = songCountText(playlist.songCount)
         guard let owner = playlist.owner, owner != model.activeServer?.auth.username else { return songs }
-        return String(localized: "\(songs) · by \(owner)")
+        let name = playlist.ownerName ?? owner
+        guard !name.isEmpty else { return songs }
+        return String(localized: "\(songs) · by \(name)")
     }
 
     private func load() async {
@@ -230,6 +232,17 @@ struct PlaylistDetailView: View {
                         } label: {
                             Label("Rename", systemImage: "pencil")
                         }
+                        if let shared = playlist.isShared, model.household != nil, !model.isOffline {
+                            Button {
+                                setShared(!shared)
+                            } label: {
+                                if shared {
+                                    Label("Stop Sharing", systemImage: "person")
+                                } else {
+                                    Label("Share with the Household", systemImage: "person.2")
+                                }
+                            }
+                        }
                         Button(role: .destructive) {
                             isConfirmingDelete = true
                         } label: {
@@ -306,6 +319,18 @@ struct PlaylistDetailView: View {
         model.perform {
             defer { Task { await load() } }
             try await client.removeFromPlaylist(id: playlist.id, entries: [entry])
+        }
+    }
+
+    private func setShared(_ shared: Bool) {
+        guard let household = model.household else { return }
+        let p = playlist
+        model.perform {
+            try await household.setShared(playlistId: p.id, shared)
+            playlist = Playlist(
+                id: p.id, name: p.name, comment: p.comment, owner: p.owner, ownerName: p.ownerName, isShared: shared,
+                songCount: p.songCount, duration: p.duration, coverArt: p.coverArt
+            )
         }
     }
 

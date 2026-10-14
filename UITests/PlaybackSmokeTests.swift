@@ -369,6 +369,26 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["miniPlayer"].label.contains(secondTitle), "playback should start at the downloaded song")
     }
 
+    /// An own.audio server's household: Settings → Household lists its members. Other servers
+    /// have no household, and no such row.
+    func testHousehold() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        let household = app.buttons["settings.household"]
+        for _ in 0..<3 {
+            app.buttons["home.settings"].tap()
+            if app.buttons["settings.servers"].waitForExistence(timeout: 5) { break }
+            dismissSavePasswordPrompt(app, within: 3)
+        }
+        guard household.waitForExistence(timeout: 5) else { throw XCTSkip("this server has no household") }
+        household.tap()
+        XCTAssertTrue(app.staticTexts["Members"].waitForExistence(timeout: 15), "the members should be listed")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label ENDSWITH '(you)'")).firstMatch.exists, "the listener should be among them")
+        screenshot(app, "22-household")
+    }
+
     /// The catalogue reaches the phone after adding a server; offline, with Whole Library on,
     /// the albums list shows albums that were never opened or downloaded, and one opens with
     /// its songs.

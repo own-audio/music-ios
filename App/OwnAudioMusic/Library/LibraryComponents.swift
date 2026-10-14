@@ -185,6 +185,12 @@ struct SongRow: View {
                 }
             }
             Spacer(minLength: 0)
+            if model.sharing(of: song) == .shared {
+                Image(systemName: "person.2.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Shared with the household")
+            }
             if let id = model.compositeId(song.id), model.downloads.isDownloaded(id) {
                 Image(systemName: "arrow.down.circle.fill")
                     .font(.caption2)

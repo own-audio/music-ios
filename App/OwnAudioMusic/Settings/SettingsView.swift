@@ -26,6 +26,14 @@ struct SettingsView: View {
                     LabeledContent("Servers", value: model.activeServer?.displayName ?? "")
                 }
                 .accessibilityIdentifier("settings.servers")
+                if model.household != nil {
+                    NavigationLink {
+                        HouseholdView()
+                    } label: {
+                        Label("Household", systemImage: "person.2")
+                    }
+                    .accessibilityIdentifier("settings.household")
+                }
             }
 
             Section {

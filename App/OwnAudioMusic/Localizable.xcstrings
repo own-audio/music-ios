@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ (you)" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (vy)"
+          }
+        }
+      }
+    },
     "%@ · %@" : {
       "shouldTranslate" : false
     },
@@ -91,6 +101,16 @@
         }
       }
     },
+    "%lld members" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Členů: %lld"
+          }
+        }
+      }
+    },
     "%lld min" : {
       "localizations" : {
         "cs" : {
@@ -171,6 +191,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 album"
+          }
+        }
+      }
+    },
+    "1 member" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 člen"
           }
         }
       }
@@ -410,6 +440,16 @@
         }
       }
     },
+    "Admin" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Správce"
+          }
+        }
+      }
+    },
     "AirPlay" : {
       "localizations" : {
         "cs" : {
@@ -456,6 +496,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Všechny hudební knihovny"
+          }
+        }
+      }
+    },
+    "An invitation is a code for one person. They sign in to this server and enter it, or open its link." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozvánka je kód pro jednoho člověka. Přihlásí se k tomuto serveru a zadá ho, nebo otevře její odkaz."
           }
         }
       }
@@ -1124,6 +1174,16 @@
         }
       }
     },
+    "Enter the code from the invitation." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadejte kód z pozvánky."
+          }
+        }
+      }
+    },
     "Enter the code from your authenticator app." : {
       "localizations" : {
         "cs" : {
@@ -1377,6 +1437,16 @@
         }
       }
     },
+    "Household" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domácnost"
+          }
+        }
+      }
+    },
     "Hz. Applies to everything played." : {
       "localizations" : {
         "cs" : {
@@ -1417,6 +1487,46 @@
         }
       }
     },
+    "Invitation" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozvánka"
+          }
+        }
+      }
+    },
+    "Invitations" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozvánky"
+          }
+        }
+      }
+    },
+    "Invite Someone" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozvat někoho"
+          }
+        }
+      }
+    },
+    "Invited" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Čeká na přihlášení"
+          }
+        }
+      }
+    },
     "It is shared with the household: it goes for everyone. Playlists made from it stay." : {
       "localizations" : {
         "cs" : {
@@ -1443,6 +1553,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jellyfin API"
+          }
+        }
+      }
+    },
+    "Join" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojit"
+          }
+        }
+      }
+    },
+    "Join Another Household" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojit se k jiné domácnosti"
+          }
+        }
+      }
+    },
+    "Join Another Household…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojit se k jiné domácnosti…"
+          }
+        }
+      }
+    },
+    "Leave this household and join the other one?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opustit tuto domácnost a připojit se k té druhé?"
           }
         }
       }
@@ -1554,6 +1704,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Měřit"
+          }
+        }
+      }
+    },
+    "Members" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Členové"
           }
         }
       }
@@ -1848,6 +2008,16 @@
         }
       }
     },
+    "QR code of the invitation" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR kód pozvánky"
+          }
+        }
+      }
+    },
     "Quick Connect" : {
       "localizations" : {
         "cs" : {
@@ -1958,6 +2128,36 @@
         }
       }
     },
+    "Scanned or typed in, it lets one person join your household." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naskenovaná nebo opsaná umožní jednomu člověku připojit se k vaší domácnosti."
+          }
+        }
+      }
+    },
+    "Share Invitation" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet pozvánku"
+          }
+        }
+      }
+    },
+    "Share My Songs with the Household" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet mé skladby s domácností"
+          }
+        }
+      }
+    },
     "Share with the Household" : {
       "localizations" : {
         "cs" : {
@@ -2054,6 +2254,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oblíbené skladby, které jste rok neposlouchali."
+          }
+        }
+      }
+    },
+    "Stop Sharing" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přestat sdílet"
+          }
+        }
+      }
+    },
+    "Stop Sharing My Songs" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přestat sdílet mé skladby"
           }
         }
       }
@@ -2328,6 +2548,16 @@
         }
       }
     },
+    "What its members share appears instead of what this household shares." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Místo toho, co sdílí tato domácnost, uvidíte, co sdílejí členové té druhé."
+          }
+        }
+      }
+    },
     "What others in the household play and you haven't yet." : {
       "localizations" : {
         "cs" : {
@@ -2348,12 +2578,42 @@
         }
       }
     },
+    "What you add to the library is yours. Share songs from their menu, or a whole album or playlist; everyone in the household can then play them. Smart playlists can be shared too: each member gets their own selection." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Co přidáte do knihovny, je vaše. Skladby sdílejte z jejich nabídky, nebo celé album či playlist; pak je může přehrát každý v domácnosti. Sdílet jdou i chytré playlisty: každý člen dostane vlastní výběr."
+          }
+        }
+      }
+    },
     "Winding Down" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zklidnění"
+          }
+        }
+      }
+    },
+    "With a code from that household's admin. You then leave this one." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "S kódem od správce té domácnosti. Z této pak odejdete."
+          }
+        }
+      }
+    },
+    "Withdraw" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zrušit"
           }
         }
       }

@@ -117,13 +117,16 @@ public struct Song: Codable, Identifiable, Sendable, Hashable {
     /// This entry's own id within a playlist, where the server has one (Jellyfin); removing an
     /// entry goes by it, since a song can be in a playlist twice.
     public let playlistEntryId: String?
+    /// Whose it is and who hears it, where the server keeps a household (own.audio); nil
+    /// elsewhere.
+    public let sharing: Sharing?
 
     public init(
         id: String, title: String, album: String? = nil, artist: String? = nil,
         albumId: String? = nil, artistId: String? = nil, track: Int? = nil, discNumber: Int? = nil,
         duration: Int? = nil, genre: String? = nil, coverArt: String? = nil, suffix: String? = nil,
         bitRate: Int? = nil, isFavorite: Bool = false, rating: Int? = nil, playCount: Int? = nil,
-        gain: Gain? = nil, playlistEntryId: String? = nil
+        gain: Gain? = nil, playlistEntryId: String? = nil, sharing: Sharing? = nil
     ) {
         self.id = id
         self.title = title
@@ -143,7 +146,21 @@ public struct Song: Codable, Identifiable, Sendable, Hashable {
         self.playCount = playCount
         self.gain = gain
         self.playlistEntryId = playlistEntryId
+        self.sharing = sharing
     }
+}
+
+/// Who a song or playlist is for, on a server with a household. "Private" means only that it
+/// isn't shared: nothing is locked.
+public enum Sharing: String, Codable, Sendable, Hashable {
+    /// The listener's own, kept to themselves.
+    case mine
+    /// The listener's own, shared with the household.
+    case shared
+    /// Someone else's in the household, shared with everyone.
+    case household
+
+    public var isMine: Bool { self != .household }
 }
 
 public struct Playlist: Codable, Identifiable, Sendable, Hashable {
@@ -152,19 +169,26 @@ public struct Playlist: Codable, Identifiable, Sendable, Hashable {
     public let comment: String?
     /// The owner's username where the server says; edits are offered on one's own.
     public let owner: String?
+    /// What to call the owner where `owner` is not a name (own.audio gives an id); empty when
+    /// the name is not known, which shows no owner.
+    public let ownerName: String?
+    /// Shared with the household, where the server keeps one (own.audio); nil elsewhere.
+    public let isShared: Bool?
     public let songCount: Int
     /// Seconds; some servers always send 0.
     public let duration: Int?
     public let coverArt: String?
 
     public init(
-        id: String, name: String, comment: String? = nil, owner: String? = nil, songCount: Int = 0,
-        duration: Int? = nil, coverArt: String? = nil
+        id: String, name: String, comment: String? = nil, owner: String? = nil, ownerName: String? = nil,
+        isShared: Bool? = nil, songCount: Int = 0, duration: Int? = nil, coverArt: String? = nil
     ) {
         self.id = id
         self.name = name
         self.comment = comment
         self.owner = owner
+        self.ownerName = ownerName
+        self.isShared = isShared
         self.songCount = songCount
         self.duration = duration
         self.coverArt = coverArt

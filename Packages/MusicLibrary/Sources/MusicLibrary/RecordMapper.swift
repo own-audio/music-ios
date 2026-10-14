@@ -51,8 +51,16 @@ struct RecordMapper {
             coverArt: OwnAudioSource.coverId(t.id, image: t.image) ?? t.albumId.flatMap { OwnAudioSource.coverId($0, image: album?.image) },
             suffix: OwnAudioSource.suffix(t.contentType),
             bitRate: (t.sizeBytes ?? 0) > 0 && (seconds ?? 0) > 0 ? Int((t.sizeBytes ?? 0) * 8 / Int64(seconds ?? 1)) : nil,
-            isFavorite: listener.favourites.contains(t.id), rating: listener.ratings[t.id], playlistEntryId: entryId
+            isFavorite: listener.favourites.contains(t.id), rating: listener.ratings[t.id], playlistEntryId: entryId,
+            sharing: sharing(t)
         )
+    }
+
+    /// Unknown until the account's id is (the change feed's first sync learns it).
+    func sharing(_ t: OwnAudioKit.Track) -> Sharing? {
+        guard let me = listener.userId else { return nil }
+        if t.ownerId != me { return .household }
+        return t.visibility == "family" ? .shared : .mine
     }
 
     func album(_ a: OwnAudioKit.Album, playCount: Int? = nil) -> Album {

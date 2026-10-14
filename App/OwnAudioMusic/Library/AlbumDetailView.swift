@@ -77,6 +77,22 @@ struct AlbumDetailView: View {
                             Label("Add Album to Playlist…", systemImage: "text.badge.plus")
                         }
                         .disabled(songs?.isEmpty ?? true)
+                        // The listener's own songs on it, shared or kept to themselves together.
+                        if model.household != nil, !model.isOffline, let mine = songs?.filter({ model.sharing(of: $0)?.isMine == true }), !mine.isEmpty {
+                            if mine.allSatisfy({ model.sharing(of: $0) == .shared }) {
+                                Button {
+                                    model.setShared(mine, false)
+                                } label: {
+                                    Label("Stop Sharing My Songs", systemImage: "person")
+                                }
+                            } else {
+                                Button {
+                                    model.setShared(mine, true)
+                                } label: {
+                                    Label("Share My Songs with the Household", systemImage: "person.2")
+                                }
+                            }
+                        }
                         if IdentifyAccess.shared.server(model) != nil {
                             Button {
                                 identify = .album(id: album.id, label: album.displayName)

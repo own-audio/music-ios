@@ -85,6 +85,16 @@ package, merged into this repository — is in `docs/history/`.
   only the API's tokens and the account's email. Servers signed in earlier keep their key, which
   still sends the "now playing" report and lists music folders; without one there is neither,
   as v2 has no word for them yet.
+- **The household on own.audio servers**: Settings → Household lists who is in it, with their
+  pictures; an admin invites someone with a code (a QR code, or the share sheet), and anyone can
+  join another household with one. Your own songs can be shared with the household or kept to
+  yourself from their menu, a whole album's at once, and your playlists from theirs; a shared
+  song of yours shows a small people icon. Nothing is shown locked: private only means not
+  shared.
+- The App Store listing (English and Czech) describes the app it is now — Subsonic, Jellyfin
+  and own.audio — and a privacy policy (`PRIVACY.md`) says what the app keeps and sends:
+  nothing collected, nothing sent beyond the servers you add and a sign-in you choose. The
+  screenshots add the Playlists tab.
 - **A new icon**: the own.audio family figures around the note in their own colours, the
   note in red, and no `</>` at the bottom. The welcome screen and the server list show it too.
 - **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when
@@ -178,6 +188,8 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Another household member's playlist on an own.audio server said "by" and a long id; it says
+  their name now, as the household calls them.
 - VoiceOver read an album's song rows and their ⋯ buttons under the same name, so the ⋯
   button could not be told from its row (UI tests downloaded the wrong song).
 - Playing a streamed song whose format differs from the player's — a 22 kHz mono FLAC — ended
