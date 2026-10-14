@@ -1,1 +1,1 @@
-Hudba z vašeho serveru
+Přehrávač pro hudební server

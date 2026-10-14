@@ -1,1 +1,1 @@
-Gapless player for Navidrome
+Player for your music server

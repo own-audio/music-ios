@@ -1,28 +1,37 @@
-Nativní přehrávač pro hudbu na vašem vlastním serveru. Funguje s Navidrome, Gonic, Airsonic, LMS, Ampache, own.audio a s každým dalším serverem Subsonic nebo OpenSubsonic.
+Nativní přehrávač pro hudbu na vašem vlastním serveru: Navidrome a další servery Subsonic nebo OpenSubsonic (Gonic, Airsonic a jiné), Jellyfin a own.audio.
 
 Hraje tak, jak má hudba hrát
 • Přehrávání bez mezer, takže živá a klasická alba plynou tak, jak byla nahrána, nebo prolínání, chcete-li
 • Bezeztrátové FLAC a ALAC, s formátem zobrazeným v přehrávači
 • Začne hrát, ještě než skladba celá dorazí
-• Vyrovnání hlasitosti podle hodnot ReplayGain ve vašich souborech
+• Vyrovnání hlasitosti podle hodnot ReplayGain ve vašich souborech nebo podle hlasitosti změřené Jellyfinem
 • Šestipásmový ekvalizér s předvolbami
 • Časovaný text, který sleduje skladbu, pokud ho váš server má
+• Časovač vypnutí
 
 Celá vaše knihovna
-• Interpreti, alba, playlisty a hledání
-• Nedávno přidané, nedávno hrané, nejhranější, oblíbené
-• Oblíbené skladby, alba a interpreti; hodnocení skladeb a alb
+• Interpreti, alba, skladby, žánry, playlisty a hledání
+• Nedávno přidané, nedávno hrané, nejhranější, oblíbené, nejlépe hodnocené
+• Oblíbené skladby, alba a interpreti; hodnocení skladeb a alb, kde server hodnocení uchovává
 • Vytváření a úpravy playlistů
-• Přehrání se hlásí vašemu serveru, který je může předávat na Last.fm nebo ListenBrainz
+• Přehrání se hlásí vašemu serveru
 
 Offline
-• Stáhněte si alba, playlisty nebo jednotlivé skladby a poslouchejte je i bez signálu
+• Stáhněte si alba, playlisty nebo jednotlivé skladby
+• Celá knihovna v iPhonu, k procházení i bez signálu
+• Na mobilních datech originál, menší stream, nebo jen stažené
 
-Všude
+Doma i venku
 • Několik serverů najednou
+• Domácí i venkovní adresy serveru: aplikace použije tu, která odpoví, a jen pokud je to tentýž server
 • AirPlay, zamčená obrazovka a Ovládací centrum
 • iPhone a iPad, česky a anglicky
 
-Soukromí od základu: aplikace mluví jen se servery, které přidáte. Heslo zůstává v klíčence iPhonu; posílá se jen jednorázový token z něj vytvořený. Žádný účet, žádná analytika, žádné reklamy.
+Se serverem own.audio
+• Chytré playlisty, vybírané pokaždé znovu z toho, co posloucháte; sdílené s domácností, každý dostane svůj výběr
+• Identifikace knihovny podle MusicBrainz: projděte, co navrhne, a cokoli vraťte zpět
+• Knihovna v iPhonu se srovná do pár vteřin od změny
+
+Soukromí od základu: aplikace mluví jen se servery, které přidáte, a s Applem nebo Googlem, pokud se přes ně přihlásíte. Žádný účet u nás, žádná analytika, žádné reklamy. Heslo k Subsonicu zůstává v klíčence iPhonu a posílá se jen jednorázový token z něj vytvořený; Jellyfin a own.audio si nechávají jen token přihlášení.
 
 Zdarma a s otevřeným kódem pod licencí MPL-2.0. Vytvořilo own.audio.

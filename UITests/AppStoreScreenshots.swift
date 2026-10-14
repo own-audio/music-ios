@@ -47,9 +47,13 @@ final class AppStoreScreenshots: XCTestCase {
         save(app, "1-home")
 
         // Library, then albums.
-        tab(app, czech ? "Knihovna" : "Library").tap()
         let albums = app.buttons["library.albums"]
-        XCTAssertTrue(albums.waitForExistence(timeout: 15))
+        // Right after signing in, a tap can land before the tab bar takes it (iPad especially).
+        for _ in 0..<4 where !albums.exists {
+            tab(app, czech ? "Knihovna" : "Library").tap()
+            _ = albums.waitForExistence(timeout: 5)
+        }
+        XCTAssertTrue(albums.exists)
         albums.tap()
         let album = env["SCREENSHOT_ALBUM"].map {
             app.buttons.containing(NSPredicate(format: "label CONTAINS %@", $0)).firstMatch
@@ -92,11 +96,16 @@ final class AppStoreScreenshots: XCTestCase {
         app.buttons[czech ? "Hotovo" : "Done"].tap()
         app.buttons["player.close"].tap()
 
+        // Playlists, with an own.audio server's smart playlists at the top.
+        tab(app, czech ? "Playlisty" : "Playlists").tap()
+        sleep(4)
+        save(app, "7-playlists")
+
         // Settings, from Home's gear.
         tab(app, czech ? "Domů" : "Home").tap()
         app.buttons["home.settings"].tap()
         sleep(1)
-        save(app, "7-settings")
+        save(app, "8-settings")
     }
 
     private func tab(_ app: XCUIApplication, _ label: String) -> XCUIElement {

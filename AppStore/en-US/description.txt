@@ -1,28 +1,37 @@
-A native player for the music on your own server. It works with Navidrome, Gonic, Airsonic, LMS, Ampache, own.audio and any other Subsonic or OpenSubsonic server.
+A native player for the music on your own server: Navidrome and other Subsonic or OpenSubsonic servers (Gonic, Airsonic and more), Jellyfin, and own.audio.
 
 Plays the way music should
 • Gapless playback, so live and classical albums flow as recorded, or crossfade if you prefer
 • Lossless FLAC and ALAC, with the format shown in the player
 • Starts playing while the song is still arriving
-• Volume leveling from your files' ReplayGain values
+• Volume leveling from your files' ReplayGain values, or Jellyfin's measured loudness
 • Six-band equalizer with presets
 • Synced lyrics that follow the song, where your server has them
+• Sleep timer
 
 Your whole library
-• Artists, albums, playlists and search
-• Recently added, recently played, most played, favorites
-• Star songs, albums and artists; rate songs and albums
+• Artists, albums, songs, genres, playlists and search
+• Recently added, recently played, most played, favorites, highest rated
+• Favorite songs, albums and artists; rate songs and albums where the server keeps ratings
 • Create and edit playlists
-• Plays are reported to your server, which can pass them on to Last.fm or ListenBrainz
+• Plays are reported to your server
 
 Offline
-• Download albums, playlists or single songs and play them with no signal
+• Download albums, playlists or single songs
+• Keep the whole library on the iPhone, to browse it with no signal
+• On mobile data: the original, a smaller stream, or downloads only
 
-Everywhere
+At home and away
 • Several servers at once
+• A server's home and outside addresses: the app uses whichever answers, and only if it is the same server
 • AirPlay, lock screen and Control Center
 • iPhone and iPad, in English and Czech
 
-Private by design: the app talks only to the servers you add. Your password stays in the iPhone's Keychain; only a one-time token made from it is sent. No account, no analytics, no ads.
+With an own.audio server
+• Smart playlists, chosen anew each time from what you have listened to; shared with the household, everyone gets their own selection
+• Identify your library with MusicBrainz, review what it proposes, undo anything
+• The library on the iPhone catches up within seconds of a change
+
+Private by design: the app talks only to the servers you add, and to Apple or Google if you sign in with them. No account with us, no analytics, no ads. A Subsonic password stays in the iPhone's Keychain and only a one-time token made from it is sent; Jellyfin and own.audio keep just a sign-in token.
 
 Free and open source under the MPL-2.0. Made by own.audio.

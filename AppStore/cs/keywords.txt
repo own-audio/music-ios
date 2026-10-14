@@ -1,1 +1,1 @@
-navidrome,subsonic,opensubsonic,gonic,airsonic,ampache,vlastní server,flac,hudba,přehrávač
+navidrome,jellyfin,subsonic,opensubsonic,gonic,airsonic,vlastní server,flac,bez mezer,přehrávač
