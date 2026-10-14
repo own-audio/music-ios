@@ -95,18 +95,27 @@ func compose(shot: NSImage, headline: String, line: String, size: CGSize, seed: 
 
     drawBackground(size, seed: seed)
 
-    // The caption: headline, and a line under it.
-    let margin = size.width * 0.08
-    let headlineSize = size.width * 0.074
-    let lineSize = size.width * 0.036
-    let top = size.height - size.height * 0.045
-    drawText(headline, font: .systemFont(ofSize: headlineSize, weight: .heavy), colour: .white,
-             in: NSRect(x: margin, y: top - headlineSize * 1.3, width: size.width - 2 * margin, height: headlineSize * 1.3))
-    drawText(line, font: .systemFont(ofSize: lineSize, weight: .medium), colour: colour(0xB9B9C0),
-             in: NSRect(x: margin, y: top - headlineSize * 1.45 - lineSize * 2.6, width: size.width - 2 * margin, height: lineSize * 2.6))
+    // The caption: a headline on one line (smaller when long), and a line or two under it.
+    let margin = size.width * 0.07
+    let textWidth = size.width - 2 * margin
+    var headlineSize = size.width * 0.074
+    func headlineFont() -> NSFont { .systemFont(ofSize: headlineSize, weight: .heavy) }
+    while (headline as NSString).size(withAttributes: [.font: headlineFont()]).width > textWidth, headlineSize > size.width * 0.045 {
+        headlineSize -= 2
+    }
+    let lineFont = NSFont.systemFont(ofSize: size.width * 0.036, weight: .medium)
+    let lineHeight = NSAttributedString(string: line, attributes: [.font: lineFont])
+        .boundingRect(with: NSSize(width: textWidth, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin]).height
+    let top = size.height - size.height * 0.04
+    let headlineBox = headlineSize * 1.25
+    drawText(headline, font: headlineFont(), colour: .white,
+             in: NSRect(x: margin, y: top - headlineBox, width: textWidth, height: headlineBox))
+    let lineTop = top - headlineBox - size.height * 0.006
+    drawText(line, font: lineFont, colour: colour(0xC9C9D0),
+             in: NSRect(x: margin, y: lineTop - lineHeight - 4, width: textWidth, height: lineHeight + 4))
 
     // The screenshot, rounded like the screen it came from, with a soft shadow.
-    let captionBottom = top - headlineSize * 1.45 - lineSize * 2.7
+    let captionBottom = lineTop - lineHeight - size.height * 0.022
     let available = captionBottom - size.height * 0.03
     let aspect = shot.size.height / shot.size.width
     var width = size.width * 0.8
