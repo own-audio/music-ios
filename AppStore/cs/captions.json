@@ -1,0 +1,34 @@
+{
+  "1-albums": [
+    "Vaše hudba, váš server",
+    "Alba, playlisty a oblíbené ze serveru, který provozujete"
+  ],
+  "2-player": [
+    "Bez mezer a bezeztrátově",
+    "FLAC a ALAC, vyrovnání hlasitosti, časovaný text"
+  ],
+  "3-album": [
+    "Každé album naplno",
+    "Hraje už během stahování, stažené i offline"
+  ],
+  "4-playlists": [
+    "Chytré playlisty",
+    "Pokaždé znovu vybrané z toho, co posloucháte"
+  ],
+  "5-servers": [
+    "Jedna aplikace, tři servery",
+    "own.audio, Navidrome a další servery Subsonic, Jellyfin"
+  ],
+  "6-identify": [
+    "Štítky v pořádku",
+    "Knihovna porovnaná s MusicBrainz, na own.audio"
+  ],
+  "7-family": [
+    "Hudba pro celou rodinu",
+    "Sdílejte, co chcete; každý má i to svoje"
+  ],
+  "8-equalizer": [
+    "Zvuk podle vás",
+    "Šestipásmový ekvalizér s předvolbami"
+  ]
+}

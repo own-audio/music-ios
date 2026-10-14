@@ -28,7 +28,7 @@ Doma i venku
 • iPhone a iPad, česky a anglicky
 
 Se serverem own.audio
-• Chytré playlisty, vybírané pokaždé znovu z toho, co posloucháte; sdílené s domácností, každý dostane svůj výběr
+• Chytré playlisty, vybírané pokaždé znovu z toho, co posloucháte; sdílené s rodinou, každý dostane svůj výběr
 • Identifikace knihovny podle MusicBrainz: projděte, co navrhne, a cokoli vraťte zpět
 • Knihovna v iPhonu se srovná do pár vteřin od změny
 

@@ -4,7 +4,7 @@ import XCTest
 /// purpose, on the device sizes the store wants, with a clean status bar (see
 /// `scripts/app-store-screenshots.sh`). Use an own.audio server whose music may be shown
 /// publicly, signed in as an account that owns it (identifying runs over one's own songs) and
-/// is the household's admin.
+/// is the family's admin.
 ///
 /// `TEST_RUNNER_SCREENSHOT_LANGUAGE` is `en` or `cs`; `TEST_RUNNER_SCREENSHOT_DIR` is where the
 /// PNGs go; `TEST_RUNNER_SCREENSHOT_ALBUM` is the album shown and played,
@@ -50,15 +50,10 @@ final class AppStoreScreenshots: XCTestCase {
         let serverMenu = app.buttons["home.serverMenu"]
         sleep(6)
 
-        // Home, or on iPad the albums, which fill the screen.
-        if iPad {
-            openLibraryAlbums(app)
-            sleep(3)
-            save(app, "1-albums")
-        } else {
-            save(app, "1-home")
-            openLibraryAlbums(app)
-        }
+        // The library's albums, with their covers; Home shows up later, behind the server menu.
+        openLibraryAlbums(app)
+        sleep(4)
+        save(app, "1-albums")
 
         // The album, then the player a little way into its first song.
         let album = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", env["SCREENSHOT_ALBUM"] ?? "The Run")).firstMatch
@@ -108,55 +103,54 @@ final class AppStoreScreenshots: XCTestCase {
 
         identifyAlbum(app)
 
-        // The household.
+        // The family.
         openSettings(app)
         let household = app.buttons["settings.household"]
-        XCTAssertTrue(household.waitForExistence(timeout: 10), "an own.audio server signed in through its API has a household")
+        XCTAssertTrue(household.waitForExistence(timeout: 10), "an own.audio server signed in through its API has a family")
         household.tap()
         XCTAssertTrue(app.staticTexts[t("Members", "Členové")].waitForExistence(timeout: 15))
         sleep(2)
-        save(app, "7-household")
+        sleep(2)
+        save(app, "7-family")
     }
 
-    /// Music identification on one album: what the server found, ready to accept. Nothing is
-    /// accepted, and the run is deleted, so the library stays as it was.
+    /// Music identification of one song, searched for in your own words: a well-known recording,
+    /// whose many releases come with their covers. Cancelled, so the library stays as it was.
     private func identifyAlbum(_ app: XCUIApplication) {
         guard let name = env["SCREENSHOT_IDENTIFY_ALBUM"] else { return }
         openLibraryAlbums(app)
         let album = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
         XCTAssertTrue(album.waitForExistence(timeout: 15))
         album.tap()
-        let more = app.navigationBars.buttons[t("More", "Další")]
-        XCTAssertTrue(more.waitForExistence(timeout: 15))
+        let more = app.buttons["song.more"].firstMatch
+        XCTAssertTrue(more.waitForExistence(timeout: 15), "a song row should have a More button")
         more.tap()
-        let identify = app.buttons[t("Identify Album", "Identifikovat album")]
-        XCTAssertTrue(identify.waitForExistence(timeout: 5), "the album menu should offer identify")
+        let identify = app.buttons[t("Identify…", "Identifikovat…")]
+        XCTAssertTrue(identify.waitForExistence(timeout: 5), "a song of one's own should offer identify")
         identify.tap()
-        let start = app.buttons[t("Start", "Spustit")]
-        if start.waitForExistence(timeout: 3) { start.tap() }
-        let status = app.staticTexts["identify.status"]
-        XCTAssertTrue(status.waitForExistence(timeout: 15), "the run should open")
-        XCTAssertTrue(waitUntil(timeout: 240) { status.label == t("Ready", "Hotovo") || status.label == "Ready" }, "the run should finish, is \(status.label)")
-        // The tab with the most to show: sure matches if there are any, else those to review.
-        for tab in [t("Sure", "Jisté"), t("To Review", "Ke kontrole")] {
-            let segment = app.segmentedControls.buttons[tab]
-            guard segment.waitForExistence(timeout: 5) else { continue }
-            segment.tap()
-            sleep(2)
-            if app.descendants(matching: .any)["identify.proposal"].firstMatch.exists { break }
+        let words = [
+            ("picker.title", env["SCREENSHOT_SEARCH_TITLE"] ?? "Bohemian Rhapsody"),
+            ("picker.artist", env["SCREENSHOT_SEARCH_ARTIST"] ?? "Queen"),
+            ("picker.album", env["SCREENSHOT_SEARCH_ALBUM"] ?? "A Night at the Opera"),
+        ]
+        XCTAssertTrue(app.textFields["picker.title"].waitForExistence(timeout: 10))
+        for (id, text) in words {
+            let clear = app.buttons["\(id).clear"]
+            if clear.exists { clear.tap() }
+            let field = app.textFields[id]
+            field.tap()
+            field.typeText(text)
         }
+        // Return puts the keyboard away, so the matches fill the screen.
+        app.textFields["picker.album"].typeText("\n")
+        app.buttons["picker.search"].tap()
+        let result = app.buttons["picker.result"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 40), "MusicBrainz should find the song")
+        // The covers in.
+        sleep(6)
         save(app, "6-identify")
-        let runMore = app.navigationBars.buttons[t("More", "Další")].firstMatch
-        if runMore.waitForExistence(timeout: 5) {
-            runMore.tap()
-            let delete = app.buttons[t("Delete Run", "Smazat běh")].firstMatch
-            if delete.waitForExistence(timeout: 5) {
-                delete.tap()
-                let confirm = app.buttons.matching(NSPredicate(format: "label == %@", t("Delete Run", "Smazat běh"))).element(boundBy: 0)
-                if confirm.waitForExistence(timeout: 5) { confirm.tap() }
-            }
-        }
-        sleep(2)
+        app.buttons[t("Cancel", "Zrušit")].firstMatch.tap()
+        sleep(1)
     }
 
     // MARK: - Steps
@@ -198,12 +192,12 @@ final class AppStoreScreenshots: XCTestCase {
         add.tap()
     }
 
+    /// Back out of Settings → Servers and close Settings. Only while inside Settings: once it is
+    /// closed, the top-left button is Home's server menu.
     private func closeSettings(_ app: XCUIApplication) {
         let done = app.buttons["settings.done"]
-        for _ in 0..<3 where !done.isHittable {
-            let back = app.navigationBars.buttons.element(boundBy: 0)
-            guard back.exists else { break }
-            back.tap()
+        for _ in 0..<3 where !done.isHittable && app.buttons["servers.add"].exists {
+            app.navigationBars.buttons.element(boundBy: 0).tap()
             sleep(1)
         }
         if done.waitForExistence(timeout: 5) { done.tap() }

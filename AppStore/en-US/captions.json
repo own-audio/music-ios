@@ -1,0 +1,34 @@
+{
+  "1-albums": [
+    "Your music, your server",
+    "Albums, playlists and favorites from the server you run"
+  ],
+  "2-player": [
+    "Gapless and lossless",
+    "FLAC and ALAC, volume leveling, synced lyrics"
+  ],
+  "3-album": [
+    "Every album, at its best",
+    "Plays while it streams, or offline once downloaded"
+  ],
+  "4-playlists": [
+    "Smart playlists",
+    "Chosen anew from what you listen to"
+  ],
+  "5-servers": [
+    "One app, three servers",
+    "own.audio, Navidrome and other Subsonic servers, Jellyfin"
+  ],
+  "6-identify": [
+    "Tags put right",
+    "Your library matched with MusicBrainz, on own.audio"
+  ],
+  "7-family": [
+    "Music for the whole family",
+    "Share what you choose; everyone keeps their own"
+  ],
+  "8-equalizer": [
+    "Tuned to your ears",
+    "Six-band equalizer with presets"
+  ]
+}
