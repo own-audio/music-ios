@@ -158,19 +158,25 @@ final class AppStoreScreenshots: XCTestCase {
     private func fillServerForm(_ app: XCUIApplication, host: String, user: String, password: String, name: String) {
         let address = app.textFields["addServer.address"]
         XCTAssertTrue(address.waitForExistence(timeout: 15))
-        address.tap()
-        address.typeText(host)
-        app.textFields["addServer.username"].tap()
-        app.textFields["addServer.username"].typeText(user)
-        app.secureTextFields["addServer.password"].tap()
-        app.secureTextFields["addServer.password"].typeText(password)
+        type(host, into: address)
+        type(user, into: app.textFields["addServer.username"])
+        type(password, into: app.secureTextFields["addServer.password"])
         // The library's title is the server's name; a plain one reads better than an address.
-        let field = app.textFields["addServer.name"]
-        field.tap()
-        field.typeText(name)
+        type(name, into: app.textFields["addServer.name"])
         app.buttons["addServer.connect"].tap()
         sleep(4)
         dismissSavePasswordPrompt(app)
+    }
+
+    /// Taps until the field has the keyboard (on iPad a form sheet's field can miss the first
+    /// tap), then types.
+    private func type(_ text: String, into field: XCUIElement) {
+        for _ in 0..<4 {
+            field.tap()
+            if (field.value(forKey: "hasKeyboardFocus") as? Bool) == true { break }
+            sleep(1)
+        }
+        field.typeText(text)
     }
 
     private func openSettings(_ app: XCUIApplication) {
@@ -205,7 +211,8 @@ final class AppStoreScreenshots: XCTestCase {
 
     /// Library → Albums. Right after signing in, a tap can land before the tab bar takes it.
     private func openLibraryAlbums(_ app: XCUIApplication) {
-        let albums = app.buttons["library.albums"]
+        // A button in the iPhone's grid, a sidebar row on iPad.
+        let albums = app.descendants(matching: .any)["library.albums"].firstMatch
         for _ in 0..<4 where !albums.exists {
             tab(app, t("Library", "Knihovna")).tap()
             _ = albums.waitForExistence(timeout: 5)

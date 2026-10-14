@@ -120,3 +120,21 @@ extension AppModel {
         return downloads.isDownloaded(id)
     }
 }
+
+extension AppModel {
+    /// The server's count, or the library on the phone's where the server gives none (own.audio's
+    /// API doesn't count); nil when neither knows.
+    func albumCount(of artist: Artist) -> Int? {
+        if let count = artist.albumCount { return count }
+        guard let catalogue = activeCatalogue else { return nil }
+        return catalogue.albums(artist: artist).count
+    }
+
+    /// Albums and songs in a genre, the same way.
+    func counts(of genre: Genre) -> (albums: Int, songs: Int)? {
+        if let albums = genre.albumCount, let songs = genre.songCount { return (albums, songs) }
+        guard let known = activeCatalogue?.genres.first(where: { $0.name.caseInsensitiveCompare(genre.name) == .orderedSame }),
+              let albums = known.albumCount, let songs = known.songCount else { return nil }
+        return (albums, songs)
+    }
+}

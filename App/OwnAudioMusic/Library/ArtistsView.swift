@@ -18,9 +18,11 @@ struct ArtistsView: View {
                             ArtistImage(artist: artist, size: 44)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(artist.name).lineLimit(1)
-                                Text(albumCountText(artist.albumCount ?? 0))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                if let count = model.albumCount(of: artist) {
+                                    Text(albumCountText(count))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }

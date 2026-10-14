@@ -202,6 +202,8 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Artists on an own.audio server all said "0 albums": its API gives no count. The count comes
+  from the library on the phone now, and isn't shown where that isn't there; genres the same.
 - Moving the position in the player made it flash: the format, the cover and the times reset
   while the song reloaded, and the bar jumped back before jumping forward. They now stay, and
   the bar holds where it was dropped. Only the position and times redraw as the song plays, not

@@ -191,7 +191,7 @@ struct GenresView: View {
                     NavigationLink(value: Route.genre(genre)) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(genre.name)
-                            if let albums = genre.albumCount, let songs = genre.songCount {
+                            if let (albums, songs) = model.counts(of: genre) {
                                 Text("\(albumCountText(albums)) · \(songCountText(songs))")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
