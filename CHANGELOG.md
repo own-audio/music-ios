@@ -101,6 +101,10 @@ package, merged into this repository — is in `docs/history/`.
   yourself from their menu, a whole album's at once, and your playlists from theirs; a shared
   song of yours shows a small people icon. Nothing is shown locked: private only means not
   shared.
+- `scripts/app-store-upload.swift` puts the listing on App Store Connect through its API (a key
+  in `release.local.env`): name, subtitle, privacy policy, description, keywords, promotional
+  text and links per language, and the captioned screenshots for iPhone and iPad, replacing
+  what was there. `--dry-run` says what it would do, `--status` how the screenshots were taken.
 - App Store screenshots are taken from a server holding only the demo library (as its admin,
   with Navidrome and Jellyfin beside it), and `scripts/marketing-screenshots.swift` puts each on
   the own.audio background with a caption from `AppStore/<language>/captions.json`, at the
