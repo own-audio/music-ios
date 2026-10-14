@@ -47,7 +47,8 @@ struct OwnAudioFeedTests {
         let album = try! #require(albums.first)
         #expect(album.artist == "The Band" && album.year == 2001 && album.rating == 4 && album.coverArt == "al")
         #expect(Set(artists.map(\.id)) == ["band"], "a featured guest on a track, and a narrator, are not artists")
-        #expect(artists.first?.imageURL?.absoluteString.hasSuffix("&w=512") == true)
+        #expect(artists.first?.coverArt == "band", "a picture by id, like a cover: its link runs out")
+        #expect(artists.first?.imageURL == nil)
     }
 
     @Test("changes: upserts and deletes applied, other kinds left out, the cursor moved on")
@@ -181,11 +182,14 @@ struct OwnAudioAPITests {
         try! JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
     }
 
-    private func source(_ session: URLSession, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil, signedIn: Bool = true) -> OwnAudioSource {
+    private func source(_ session: URLSession, listener: ListenerState = ListenerState(), offline: OfflineSwitch? = nil, cache: AnswerCache? = nil, signedIn: Bool = true) -> OwnAudioSource {
         OwnAudioSource(
             subsonic: SubsonicSource(client: SubsonicClient(host: host, username: "me@example.com", password: "k", session: session)),
-            client: OwnAudioClient(host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil), session: session),
-            listener: listener, offline: offline
+            client: OwnAudioClient(
+                host: host, tokens: TokenSession(signedIn ? Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "") : nil),
+                session: session, cache: cache, isOffline: { offline?.isOn == true }
+            ),
+            listener: listener
         )
     }
 
@@ -264,4 +268,156 @@ struct OwnAudioAPITests {
         let mock = await MockURLProtocol.makeStubbedSession { _ in .init(statusCode: 404, body: Data()) }
         #expect(!source(mock.urlSession).capabilities.contains(.instantMix))
     }
+
+    private static let me = #"{"id":"u","email":"me@example.com","display_name":"Me","family":{"id":"f","role":"admin","can_upload":true}}"#
+
+    private func page(_ items: [String], next: String? = nil, included: String? = nil) -> MockURLProtocol.StubbedResponse {
+        let nextJSON = next.map { "\"\($0)\"" } ?? "null"
+        return json(#"{"items":[\#(items.joined(separator: ","))],"next":\#(nextJSON)\#(included.map { #","included":\#($0)"# } ?? "")}"#)
+    }
+
+    private func album(_ id: String, title: String, image: String? = nil) -> String {
+        let imageJSON = image.map { "\"\($0)\"" } ?? "null"
+        return #"{"id":"\#(id)","title":"\#(title)","credits":[{"contributor_id":"band","role":"artist","position":0,"join_phrase":""}],"release_group_id":null,"release_date":"2001","is_compilation":false,"track_count":1,"duration_ms":200000,"disc_count":1,"image":\#(imageJSON),"created_at":"2026-10-11T12:00:00Z"}"#
+    }
+
+    @Test("albums by name: the app's offsets over the API's cursors, one request per page")
+    func pagingByOffset() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            let cursor = items.first { $0.name == "cursor" }?.value
+            let limit = items.first { $0.name == "limit" }?.value
+            switch (cursor, limit) {
+            case (nil, "2"): return page([album("a", title: "A"), album("b", title: "B")], next: "after-b", included: "{\"contributors\":[\(band)]}")
+            case ("after-b", "2"): return page([album("c", title: "C")], next: nil)
+            default: return .init(statusCode: 400, body: Data())
+            }
+        }
+        let src = source(mock.urlSession)
+        let first = try await src.albums(.name, limit: 2, offset: 0)
+        #expect(first.map(\.id) == ["a", "b"] && first.first?.artist == "The Band")
+        let second = try await src.albums(.name, limit: 2, offset: 2)
+        #expect(second.map(\.id) == ["c"])
+        #expect(try await src.albums(.name, limit: 2, offset: 4).isEmpty, "past the end: no request")
+        #expect(await mock.requestLog().count == 2)
+    }
+
+    @Test("a jump to an offset not reached yet skips there from the start")
+    func pagingJump() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            switch (items.first { $0.name == "cursor" }?.value, items.first { $0.name == "limit" }?.value) {
+            case (nil, "3"): return page([album("a", title: "A"), album("b", title: "B"), album("c", title: "C")], next: "after-c")
+            case ("after-c", "2"): return page([album("d", title: "D"), album("e", title: "E")], next: "after-e")
+            default: return .init(statusCode: 400, body: Data())
+            }
+        }
+        let albums = try await source(mock.urlSession).albums(.name, limit: 2, offset: 3)
+        #expect(albums.map(\.id) == ["d", "e"])
+    }
+
+    @Test("a cover: the record's signed link at the nearest size made; an unknown id is read again")
+    func covers() async throws {
+        let future = Int(Date().timeIntervalSince1970) + 7 * 86_400
+        let link = "https://music.example.com/api/v2/images/o9?e=\(future)&s=sig"
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            switch request.url?.path {
+            case "/api/v2/albums/t9": return .init(statusCode: 404, body: Data(#"{"status":404,"code":"not_found","title":"Not Found"}"#.utf8), headers: ["Content-Type": "application/problem+json"])
+            case "/api/v2/tracks/t9": return json(track.replacingOccurrences(of: #""id":"t1""#, with: #""id":"t9""#).replacingOccurrences(of: #""image":null"#, with: "\"image\":\"\(link)\""))
+            default: return .init(statusCode: 404, body: Data())
+            }
+        }
+        let src = source(mock.urlSession)
+        let url = try await src.coverURL(id: "t9", size: 300)
+        #expect(url.absoluteString == link + "&w=512")
+        _ = try await src.coverURL(id: "t9", size: 100)
+        #expect(await mock.requestLog().count == 2, "known now: no third request")
+        #expect(src.records.kind(of: "t9") == .track)
+    }
+
+    @Test("a link about to run out is not used")
+    func expiredCover() {
+        let index = RecordIndex()
+        index.learn("x", .album, image: "https://h/api/v2/images/o?e=\(Int(Date().timeIntervalSince1970) + 60)&s=s")
+        #expect(index.image(of: "x") == nil)
+        index.learn("y", .album, image: "https://h/api/v2/images/o?e=\(Int(Date().timeIntervalSince1970) + 86_400)&s=s")
+        #expect(index.image(of: "y") != nil)
+    }
+
+    @Test("a stream: playback-info says what the player can decode and the bitrate wanted")
+    func stream() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            guard request.url?.path == "/api/v2/playback-info" else { return .init(statusCode: 404, body: Data()) }
+            return json(#"{"decision":"transcode","url":"https://music.example.com/api/v2/stream?i=track:t1&s=x","expires_at":"2030-01-01T00:00:00Z","content_type":"audio/aac","bitrate_kbps":128,"reasons":["over_bitrate_limit"]}"#)
+        }
+        let url = try await source(mock.urlSession).streamURL(songId: "t1", maxBitrate: 128_000)
+        #expect(url.path == "/api/v2/stream")
+        let request = try #require(await mock.requestLog().first)
+        let body = try JSONSerialization.jsonObject(with: Self.body(of: request)) as? [String: Any]
+        let capabilities = body?["capabilities"] as? [String: Any]
+        #expect(body?["kind"] as? String == "track" && body?["id"] as? String == "t1")
+        #expect(capabilities?["max_bitrate_kbps"] as? Int == 128)
+        #expect((capabilities?["direct"] as? [String])?.contains("audio/flac") == true)
+        #expect((capabilities?["direct"] as? [String])?.contains("audio/ogg") == false)
+    }
+
+    @Test("an album seen once opens offline from what the API saved, with no request")
+    func savedAnswers() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] request in
+            switch request.url?.path {
+            case "/api/v2/albums/al": return json(album("al", title: "First Album").dropLast() + #","included":{"contributors":[\#(band)]}}"#)
+            case "/api/v2/tracks": return page([track], included: "{\"albums\":[\(album("al", title: "First Album"))],\"contributors\":[\(band)]}")
+            default: return .init(statusCode: 404, body: Data())
+            }
+        }
+        let cache = MemoryAnswers()
+        let offline = OfflineSwitch()
+        let online = try await source(mock.urlSession, offline: offline, cache: cache).album(id: "al")
+        offline.isOn = true
+        let saved = try await source(mock.urlSession, offline: offline, cache: cache).album(id: "al")
+        #expect(saved.album.name == online.album.name && saved.songs.map(\.id) == ["t1"])
+        #expect(await mock.requestLog().count == 2, "both requests online, none offline")
+    }
+
+    @Test("a rating goes to the kind the record was shown as")
+    func ratingKind() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { _ in .init(statusCode: 204, body: Data()) }
+        let src = source(mock.urlSession)
+        src.records.learn("al", .album, image: nil)
+        try await src.setRating(id: "al", rating: 4)
+        #expect(await mock.requestLog().first?.url?.path == "/api/v2/me/ratings/album/al")
+    }
+
+    @Test("a play counted goes to the API, with how long it was heard")
+    func play() async throws {
+        let mock = await MockURLProtocol.makeStubbedSession { [self] _ in json(#"[{"client_id":"x","status":"ok"}]"#) }
+        try await source(mock.urlSession).reportPlayed(songId: "t1", at: Date().addingTimeInterval(-120))
+        let request = try #require(await mock.requestLog().first)
+        #expect(request.url?.path == "/api/v2/me/plays")
+        let body = try JSONSerialization.jsonObject(with: Self.body(of: request)) as? [String: Any]
+        let play = (body?["plays"] as? [[String: Any]])?.first
+        #expect(play?["id"] as? String == "t1" && ((play?["listened_ms"] as? Int) ?? 0) >= 119_000)
+    }
+
+    static func body(of request: URLRequest) -> Data {
+        if let body = request.httpBody { return body }
+        guard let stream = request.httpBodyStream else { return Data() }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            if read <= 0 { break }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
+}
+
+final class MemoryAnswers: AnswerCache, @unchecked Sendable {
+    private var saved: [String: Data] = [:]
+    private let lock = NSLock()
+    func data(forKey key: String) -> Data? { lock.withLock { saved[key] } }
+    func store(_ data: Data, forKey key: String) { lock.withLock { saved[key] = data } }
 }

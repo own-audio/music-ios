@@ -87,9 +87,17 @@ Their histories are merged here; their plans and changelogs are in `docs/history
     records don't carry them. Instant mix is hidden for own.audio: the server has nothing to pick
     similar songs from. Offline, or with the API's sign-in refused, the Subsonic API answers (its
     saved answers keep the screens working).
-  - **M8e**: browsing (artists, albums, songs) through v2 — cursor pages behind the app's offset
-    paging — and media through `playback-info` and v2 images (stream URLs become async). Then
-    own.audio needs no Subsonic key at all.
+  - [x] **M8e — browsing and media** (2026-10-14; live tests against a beta.18 server): artists,
+    albums (all eight orders: name and newest as cursor pages behind the app's offsets, by
+    artist and random from the whole list, favorites and highest rated from the listener's
+    state), an album's and artist's songs, all songs, genres, favorites, ratings and counted
+    plays through v2. Streams and downloads through `playback-info` (the source's URL methods
+    became async); covers and artist pictures from the records' signed image links, kept with
+    each id's kind in a `RecordIndex` and read again once a link runs out. `OwnAudioClient`
+    saves read answers (`AnswerCache`), so offline works from the API's own answers. Left on
+    the Subsonic API: the "now playing" report and music folders, which v2 has no word for.
+  - **M8f**: own.audio without a Subsonic key — sign-in keeps only the API's tokens; no "now
+    playing" report and no music-folder choice for own.audio until v2 has them.
 - [x] **M9: Smart playlists.** Done 2026-10-13 (needs own.audio server 1.0.0-beta.13, the API's
   V11): on Playlists, the account's smart playlists and the server's ready-made ones (Forgotten
   Favorites, New in the Library, Back in Rotation, What the Family Plays, Genre Station with a

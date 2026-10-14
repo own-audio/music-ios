@@ -67,6 +67,15 @@ package, merged into this repository — is in `docs/history/`.
   Subsonic one. Removing a song from a playlist goes by its entry, so the right one goes when a
   song is in it twice. Instant Mix is no longer offered for own.audio (the server never had
   songs to pick for it). Offline, the screens work from saved answers as before.
+- own.audio servers now go through their own API for **everything the app browses and plays**:
+  artists, albums in all eight orders, an album's and artist's songs, all songs, genres,
+  favorites, ratings and counted plays. **Streams and downloads** are links the server signs per
+  song, asked for when a song starts — the original where the player can decode it, AAC made by
+  the server otherwise (Ogg, Opus) or when a lower bitrate is set for mobile data. **Covers and
+  artist pictures** are the API's images at the nearest size it makes; their links run out after
+  a week or two, so the app keeps covers by id and reads a record again for a fresh link. What
+  the API answered is saved, so screens seen once open offline, as they did through the Subsonic
+  API. Only the "now playing" report and music folders still use the Subsonic API.
 - **A new icon**: the own.audio family figures around the note in their own colours, the
   note in red, and no `</>` at the bottom. The welcome screen and the server list show it too.
 - **Sign In Again** on a server's detail screen (Settings → Servers → ⓘ), with a warning when
@@ -160,5 +169,7 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- VoiceOver read an album's song rows and their ⋯ buttons under the same name, so the ⋯
+  button could not be told from its row (UI tests downloaded the wrong song).
 - Playing a streamed song whose format differs from the player's — a 22 kHz mono FLAC — ended
   the app; the stream is now converted, as a downloaded file already was.

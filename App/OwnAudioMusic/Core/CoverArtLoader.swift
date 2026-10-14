@@ -4,8 +4,9 @@ import UIKit
 
 /// Cover art, cached in memory and on disk.
 ///
-/// `URLCache` can't do this job: every Subsonic URL carries a fresh salt and token, so the same
-/// image never has the same URL twice. The cache key is the server, the cover id and the size.
+/// `URLCache` can't do this job: every Subsonic URL carries a fresh salt and token, and
+/// own.audio's signed links change every week, so the same image rarely has the same URL twice.
+/// The cache key is the server, the cover id and the size.
 actor CoverArtLoader {
     private let registry: ClientRegistry
     private let offline: OfflineSwitch?
@@ -54,7 +55,8 @@ actor CoverArtLoader {
         guard offline?.isOn != true,
               let (serverId, coverId) = TrackID.parse(artworkId),
               let source = await registry.source(for: serverId),
-              let (data, response) = try? await URLSession.shared.data(from: source.coverURL(id: coverId, size: size)),
+              let url = try? await source.coverURL(id: coverId, size: size),
+              let (data, response) = try? await URLSession.shared.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let image = UIImage(data: data)
         else {

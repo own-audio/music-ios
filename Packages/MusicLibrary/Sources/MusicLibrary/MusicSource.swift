@@ -97,12 +97,13 @@ public protocol MusicSource: Sendable {
     /// A counted play; `at` is when listening began, for plays reported late.
     func reportPlayed(songId: String, at date: Date) async throws
 
-    // URLs
+    // URLs. A server may have to be asked for them (own.audio signs a link per song), so they
+    // are async; servers that build them on the phone answer at once.
     /// The audio; with `maxBitrate` (bits per second) a smaller stream where the server makes one.
-    func streamURL(songId: String, maxBitrate: Int?) -> URL
+    func streamURL(songId: String, maxBitrate: Int?) async throws -> URL
     /// The original file, for keeping on the phone.
-    func downloadURL(songId: String) -> URL
-    func coverURL(id: String, size: Int) -> URL
+    func downloadURL(songId: String) async throws -> URL
+    func coverURL(id: String, size: Int) async throws -> URL
 
     // Several music libraries
     func musicLibraries() async throws -> [MusicLibraryInfo]

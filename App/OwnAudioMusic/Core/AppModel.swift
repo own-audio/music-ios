@@ -1204,9 +1204,13 @@ final class AppModel {
 
 extension AppModel {
     /// own.audio's answers outside the library on the phone don't say what is a favorite; the
-    /// change feed does, and the source takes it from here.
+    /// change feed does, and the source takes it from here — with each record's kind and
+    /// image link, which its covers are drawn from.
     private func noteListenerState(_ id: UUID, _ catalogue: Catalogue) {
-        if let feed = catalogue.snapshot.feed { ownAudioSessions.listener(for: id).update(from: feed) }
+        if let feed = catalogue.snapshot.feed {
+            ownAudioSessions.listener(for: id).update(from: feed)
+            ownAudioSessions.records(for: id).update(from: feed)
+        }
     }
 
     private func loadCatalogues() async {

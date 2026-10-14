@@ -20,19 +20,19 @@ actor ClientRegistry {
         sources[serverId]
     }
 
-    /// What the player streams for one of our composite track ids.
-    func streamURL(trackId: String) throws -> URL {
+    /// What the player streams for one of our composite track ids; some servers are asked.
+    func streamURL(trackId: String) async throws -> URL {
         guard let (serverId, songId) = TrackID.parse(trackId), let source = sources[serverId] else {
             throw URLError(.badURL)
         }
-        return source.streamURL(songId: songId, maxBitrate: maxBitrate)
+        return try await source.streamURL(songId: songId, maxBitrate: maxBitrate)
     }
 
     /// Downloads are kept, so they are always the original file.
-    func downloadURL(trackId: String) throws -> URL {
+    func downloadURL(trackId: String) async throws -> URL {
         guard let (serverId, songId) = TrackID.parse(trackId), let source = sources[serverId] else {
             throw URLError(.badURL)
         }
-        return source.downloadURL(songId: songId)
+        return try await source.downloadURL(songId: songId)
     }
 }

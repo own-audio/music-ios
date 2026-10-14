@@ -67,7 +67,6 @@ public protocol SmartPlaylistSource: MusicSource {
 
 extension OwnAudioSource: SmartPlaylistSource {
     private func api<T>(_ work: () async throws -> T) async throws -> T {
-        if offline?.isOn == true { throw SourceError.offline }
         guard await client.tokens.current != nil else { throw SourceError.unsupported }
         do {
             return try await work()
@@ -81,7 +80,7 @@ extension OwnAudioSource: SmartPlaylistSource {
     }
 
     private func result(_ r: ResolvedRule) -> SmartResult {
-        let mapper = RecordMapper(r.included, listener: listener.current)
+        let mapper = mapper(r.included)
         return SmartResult(songs: r.items.map { mapper.song($0) }, candidates: r.candidates, duration: Int(r.durationMs / 1000))
     }
 

@@ -235,6 +235,7 @@ public final class OwnAudioSessions: @unchecked Sendable {
     private let lock = NSLock()
     private var sessions: [UUID: TokenSession] = [:]
     private var listeners: [UUID: ListenerState] = [:]
+    private var records: [UUID: RecordIndex] = [:]
     private let store: ServerStore?
 
     public init(store: ServerStore?) {
@@ -261,13 +262,33 @@ public final class OwnAudioSessions: @unchecked Sendable {
         return made
     }
 
+    /// The server's record kinds and image links (see `RecordIndex`).
+    public func records(for serverId: UUID) -> RecordIndex {
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = records[serverId] { return existing }
+        let made = RecordIndex()
+        records[serverId] = made
+        return made
+    }
+
     /// Forgets a server's session, when it is removed or signed in again.
     public func forget(_ serverId: UUID) {
         lock.lock()
         sessions[serverId] = nil
         listeners[serverId] = nil
+        records[serverId] = nil
         lock.unlock()
     }
+}
+
+/// The app's saved answers, for own.audio's client (which keeps its own protocol so it needs
+/// nothing beyond Foundation).
+struct SavedAnswers: AnswerCache {
+    let cache: ResponseCache
+
+    func data(forKey key: String) -> Data? { cache.data(forKey: key) }
+    func store(_ data: Data, forKey key: String) { cache.store(data, forKey: key) }
 }
 
 /// Saves rotated tokens into the server's record in the Keychain.
@@ -305,9 +326,15 @@ extension ServerRecord {
                 cacheIdentity: id.uuidString
             ))
             let session = environment.ownAudioSessions.session(for: id, tokens: tokens)
+            let offline = environment.offline
+            let client = OwnAudioClient(
+                host: url, tokens: session, session: environment.urlSession,
+                cache: environment.cache.map(SavedAnswers.init), cacheIdentity: id.uuidString,
+                isOffline: { offline?.isOn == true }
+            )
             return OwnAudioSource(
-                subsonic: subsonic, client: OwnAudioClient(host: url, tokens: session, session: environment.urlSession),
-                listener: environment.ownAudioSessions.listener(for: id), offline: environment.offline
+                subsonic: subsonic, client: client,
+                listener: environment.ownAudioSessions.listener(for: id), records: environment.ownAudioSessions.records(for: id)
             )
         }
     }

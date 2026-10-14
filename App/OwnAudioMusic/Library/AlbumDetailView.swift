@@ -154,8 +154,9 @@ struct AlbumDetailView: View {
                 SongRow(song: song)
             }
             .buttonStyle(.plain)
-            .songActions(song)
+            // On the row itself: after `songActions` it would name the row's ⋯ button too.
             .accessibilityIdentifier("album.song.\(song.title)")
+            .songActions(song)
         }
     }
 

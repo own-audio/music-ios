@@ -11,6 +11,15 @@ public enum OwnAudioError: Error, Sendable, Equatable {
     case http(Int)
     case decoding
     case network
+    /// Offline, and this wasn't saved from an earlier visit.
+    case offline
+}
+
+/// Where answers to reads are kept, so a screen seen once opens again with no network. The
+/// app's disk cache; the key names the server, the path and the query, never a token.
+public protocol AnswerCache: Sendable {
+    func data(forKey key: String) -> Data?
+    func store(_ data: Data, forKey key: String)
 }
 
 /// Where the tokens live between launches (the app keeps them in the Keychain). Called
@@ -80,6 +89,10 @@ public struct OwnAudioClient: Sendable {
     public let host: URL
     public let tokens: TokenSession
     let session: URLSession
+    let cache: AnswerCache?
+    /// What answers are filed under: the server, whichever address it is reached at.
+    let cacheIdentity: String?
+    let isOffline: @Sendable () -> Bool
 
     /// What the session list shows for this device.
     public struct Device: Sendable {
@@ -91,10 +104,18 @@ public struct OwnAudioClient: Sendable {
         }
     }
 
-    public init(host: URL, tokens: TokenSession, session: URLSession = .shared) {
+    /// With `cache`, reads of the library are kept and answer again offline (`isOffline`) or
+    /// when the server can't be reached.
+    public init(
+        host: URL, tokens: TokenSession, session: URLSession = .shared,
+        cache: AnswerCache? = nil, cacheIdentity: String? = nil, isOffline: @escaping @Sendable () -> Bool = { false }
+    ) {
         self.host = host
         self.tokens = tokens
         self.session = session
+        self.cache = cache
+        self.cacheIdentity = cacheIdentity
+        self.isOffline = isOffline
     }
 
     // MARK: - Before signing in
@@ -198,7 +219,47 @@ public struct OwnAudioClient: Sendable {
     }
 
     /// The bytes of a request, with the access token; a `401` is answered once with a refresh.
+    /// Offline, a saved answer to a read or `.offline` without touching the network; online, a
+    /// network failure falls back to the saved answer.
     func raw<B: Encodable>(_ method: String, _ path: String, query: [String: String?], body: B?, idempotencyKey: String?, api: String = "api/v2") async throws -> Data {
+        let key = method == "GET" && Self.keeps(path) ? cacheKey(path, query: query, api: api) : nil
+        let saved = { key.flatMap { cache?.data(forKey: $0) } }
+        if isOffline() {
+            guard let data = saved() else { throw OwnAudioError.offline }
+            return data
+        }
+        do {
+            let data = try await fetch(method, path, query: query, body: body, idempotencyKey: idempotencyKey, api: api)
+            if let key { cache?.store(data, forKey: key) }
+            return data
+        } catch OwnAudioError.network {
+            if let data = saved() { return data }
+            throw OwnAudioError.network
+        }
+    }
+
+    /// Reads whose answers are kept. Search and random picks are left out: an old answer to
+    /// those would mislead rather than help.
+    static func keeps(_ path: String) -> Bool {
+        let path = path.hasPrefix("/") ? String(path.dropFirst()) : path
+        let first = path.split(separator: "/").first.map(String.init) ?? path
+        switch first {
+        case "artists", "contributors", "albums", "tracks", "genres", "playlists", "smart-playlists":
+            return !path.hasSuffix("/random") && !path.hasSuffix("/resolve")
+        case "me":
+            // Not `me` itself: the connection check asks it, and must not be answered from here.
+            return path.hasPrefix("me/favourites") || path.hasPrefix("me/ratings") || path.hasPrefix("me/played")
+        default:
+            return false
+        }
+    }
+
+    func cacheKey(_ path: String, query: [String: String?], api: String) -> String {
+        let params = query.compactMap { k, v in v.map { "\(k)=\($0)" } }.sorted().joined(separator: "&")
+        return "\(cacheIdentity ?? host.absoluteString)|\(api)/\(path)?\(params)"
+    }
+
+    private func fetch<B: Encodable>(_ method: String, _ path: String, query: [String: String?], body: B?, idempotencyKey: String?, api: String) async throws -> Data {
         let build = { (token: String) throws -> URLRequest in
             var request = URLRequest(url: try url(path, query: query, api: api))
             request.httpMethod = method
