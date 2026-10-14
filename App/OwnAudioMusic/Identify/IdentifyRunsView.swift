@@ -65,7 +65,7 @@ struct IdentifyRunsView: View {
         // appears in some of them.
         .sheet(item: Binding(get: { opened.map(OpenedRun.init) }, set: { opened = $0?.id })) { run in
             NavigationStack {
-                IdentifyRunView(client: client, runId: run.id)
+                IdentifyRunView(client: client, runId: run.id, onDeleted: { opened = nil })
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Done") { opened = nil }

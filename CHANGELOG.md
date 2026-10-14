@@ -49,6 +49,8 @@ package, merged into this repository — is in `docs/history/`.
 - **Covers of the matches** in identify: a proposal's release, each edition and each recording
   show their cover from Cover Art Archive (the release group's when the release has none), so the
   right one is seen at a glance.
+- Deleting an identify run started from an album or the Library closes it; before, the sheet
+  stayed open on "This run is gone".
 - A cover changed on an own.audio server — an identify now brings the release's — shows in the
   app: covers are cached by the image, not only by the album or song, so a new one is fetched.
 - Every song row has a **⋯ button** with the same actions as a long press (favorite, rating,

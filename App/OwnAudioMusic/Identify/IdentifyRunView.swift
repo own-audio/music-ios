@@ -5,6 +5,8 @@ import SwiftUI
 struct IdentifyRunView: View {
     let client: OwnAudioClient
     let runId: String
+    /// Closes the run once it is deleted, where `dismiss` cannot: a sheet's root.
+    var onDeleted: (() -> Void)?
 
     enum Tab: String, CaseIterable, Identifiable {
         case review, sure, none, decided
@@ -138,7 +140,7 @@ struct IdentifyRunView: View {
                 Task {
                     do {
                         try await client.deleteIdentifyRun(runId)
-                        dismiss()
+                        if let onDeleted { onDeleted() } else { dismiss() }
                     } catch {
                         errorMessage = identifyMessage(error)
                     }

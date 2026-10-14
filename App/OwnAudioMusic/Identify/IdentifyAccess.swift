@@ -116,7 +116,7 @@ private struct IdentifyStarter: ViewModifier {
             }
             .sheet(item: $started) { run in
                 NavigationStack {
-                    IdentifyRunView(client: run.client, runId: run.id)
+                    IdentifyRunView(client: run.client, runId: run.id, onDeleted: { started = nil })
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("Done") { started = nil }

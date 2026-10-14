@@ -38,9 +38,13 @@ final class IdentifyTests: XCTestCase {
 
         // Identify one album from its menu: a run of seconds rather than a whole library.
         albums.tap()
-        let named = env["IDENTIFY_ALBUM"].map { app.buttons.containing(NSPredicate(format: "label CONTAINS %@", $0)).firstMatch }
-        let album = named ?? app.scrollViews.buttons.firstMatch
-        XCTAssertTrue(album.waitForExistence(timeout: 20))
+        let album = findAlbum(app)
+        if !album.exists {
+            screenshot(app, "identify-00-album-missing")
+            print("MARKER album-missing")
+            RunLoop.current.run(until: Date().addingTimeInterval(20))
+        }
+        XCTAssertTrue(album.exists, "The album should be in the Library; shown: \(app.buttons.allElementsBoundByIndex.prefix(40).map { $0.label })")
         album.tap()
         let more = app.navigationBars.buttons["More"]
         XCTAssertTrue(more.waitForExistence(timeout: 15))
@@ -141,9 +145,8 @@ final class IdentifyTests: XCTestCase {
         let albums = app.buttons["library.albums"]
         XCTAssertTrue(albums.waitForExistence(timeout: 20))
         albums.tap()
-        let named = env["IDENTIFY_ALBUM"].map { app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", $0)).firstMatch }
-        let album = named ?? app.scrollViews.buttons.firstMatch
-        XCTAssertTrue(album.waitForExistence(timeout: 20))
+        let album = findAlbum(app)
+        XCTAssertTrue(album.exists, "The album should be in the Library")
         album.tap()
         let song = app.cells.firstMatch
         XCTAssertTrue(song.waitForExistence(timeout: 15))
@@ -216,6 +219,24 @@ final class IdentifyTests: XCTestCase {
         item.tap()
         sleep(4)
         screenshot(app, "more-03-after")
+    }
+
+    /// `IDENTIFY_ALBUM` in the albums grid, scrolling to it: the grid is lazy, so an album off
+    /// screen is not there yet. Without the variable, the first album.
+    private func findAlbum(_ app: XCUIApplication) -> XCUIElement {
+        guard let name = env["IDENTIFY_ALBUM"] else {
+            let first = app.scrollViews.buttons.firstMatch
+            _ = first.waitForExistence(timeout: 20)
+            return first
+        }
+        // A tile combines its cover and texts into one element, a button or not.
+        let album = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
+        if album.waitForExistence(timeout: 10) { return album }
+        for _ in 0..<15 {
+            app.swipeUp()
+            if album.waitForExistence(timeout: 2) { return album }
+        }
+        return album
     }
 
     private func waitUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
