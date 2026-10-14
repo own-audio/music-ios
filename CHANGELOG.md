@@ -96,6 +96,10 @@ package, merged into this repository — is in `docs/history/`.
   yourself from their menu, a whole album's at once, and your playlists from theirs; a shared
   song of yours shows a small people icon. Nothing is shown locked: private only means not
   shared.
+- App Store screenshots are taken from a server holding only the demo library (as its admin,
+  with Navidrome and Jellyfin beside it), and `scripts/marketing-screenshots.swift` puts each on
+  the own.audio background with a caption from `AppStore/<language>/captions.json`, at the
+  store's sizes. The song search shown is a real one, with its releases' covers.
 - The App Store listing (English and Czech) describes the app it is now — Subsonic, Jellyfin
   and own.audio — and a privacy policy (`PRIVACY.md`) says what the app keeps and sends:
   nothing collected, nothing sent beyond the servers you add and a sign-in you choose. The
