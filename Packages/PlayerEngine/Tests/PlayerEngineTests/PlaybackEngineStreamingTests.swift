@@ -27,13 +27,35 @@ struct PlaybackEngineStreamingTests {
         let fileCache: TrackFileCache
     }
 
-    /// `failingTrackIds` answer 404.
+    /// Requests seen per track id, so a test can slow down only the first one.
+    private final class RequestCounts: @unchecked Sendable {
+        private var counts: [String: Int] = [:]
+        private let lock = NSLock()
+        func next(_ id: String) -> Int { lock.withLock { counts[id, default: 0] += 1; return counts[id]! } }
+    }
+
+    /// `failingTrackIds` answer 404. For each of `slowFirstRequest`, the first request (the
+    /// fetch ahead of time) answers after `slowSeconds`, and later ones (the stream) arrive in
+    /// pieces over about three seconds — a real song still streaming when the fetch is done.
     private func makeHarness(
-        suffix: String, audioData: Data, failingTrackIds: Set<String> = []
+        suffix: String, audioData: Data, failingTrackIds: Set<String> = [],
+        slowFirstRequest: Set<String> = [], slowSeconds: Double = 0, trickle: Set<String> = []
     ) async throws -> Harness {
+        let counts = RequestCounts()
         let mock = await MockURLProtocol.makeStubbedSession { request in
             let id = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems }?
                 .first { $0.name == "id" }?.value ?? ""
+            if slowFirstRequest.contains(id) {
+                if counts.next(id) == 1 {
+                    try? await Task.sleep(nanoseconds: UInt64(slowSeconds * 1_000_000_000))
+                } else {
+                    return .init(statusCode: 200, body: audioData, headers: ["Content-Type": "audio/mpeg"], pieces: 12, pieceDelay: 0.25)
+                }
+            }
+            if trickle.contains(id) {
+                // Slower than it plays: three seconds of audio over six.
+                return .init(statusCode: 200, body: audioData, headers: ["Content-Type": "audio/mpeg"], pieces: 12, pieceDelay: 0.5)
+            }
             if failingTrackIds.contains(id) { return .init(statusCode: 404, body: Data()) }
             return .init(statusCode: 200, body: audioData, headers: ["Content-Type": "audio/mpeg"])
         }
@@ -226,6 +248,58 @@ struct PlaybackEngineStreamingTests {
         #expect(started == ["first", "second"])
         #expect(completed == ["first", "second"])
         #expect(harness.engine.currentTrack == nil)
+    }
+
+    /// A skip while the next track is still being fetched to follow the current one: the fetch
+    /// belongs to the old schedule and must not chain anything onto the new one.
+    @Test("a skip while the next track is still downloading: each track plays once, in order")
+    func skipDuringPrefetch() async throws {
+        let harness = try await makeHarness(
+            suffix: "skip-prefetch", audioData: try fixtureData("test-tone.mp3"),
+            slowFirstRequest: ["second"], slowSeconds: 1
+        )
+        var started: [String] = []
+        var completed: [String] = []
+        harness.engine.onPlaybackStarted = { track, _ in started.append(track.id) }
+        harness.engine.onPlaybackStopped = { track, _, reason in
+            if reason == .completed { completed.append(track.id) }
+        }
+
+        await harness.engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "second"), makeTrack(id: "third")])
+        try await waitUntil(timeout: 5) { harness.engine.isPlaying }
+        // The first has arrived and the second's fetch ahead is under way: skip now. The
+        // second then streams for about three seconds, and the fetch is done after one.
+        try await Task.sleep(nanoseconds: 300_000_000)
+        harness.engine.next()
+        try await waitUntil(timeout: 20) { completed.contains("third") }
+
+        #expect(started == ["first", "second", "third"])
+        #expect(completed.filter { $0 == "second" }.count == 1, "the skipped-to track plays once, to its end: \(completed)")
+        harness.engine.stop()
+    }
+
+    /// With crossfade on, a track still streaming used to fade out once playback caught up with
+    /// what had arrived — "the end of the data so far" taken for the end of the track. A song
+    /// skipped to (so streamed, not fetched ahead) on a slow connection played ten seconds or
+    /// so and gave way to the next.
+    @Test("crossfade waits for a streaming track's real end, not the end of what has arrived")
+    func crossfadeWaitsForTheRealEnd() async throws {
+        let harness = try await makeHarness(suffix: "crossfade-stream", audioData: try fixtureData("test-tone.mp3"), trickle: ["slow"])
+        harness.settings.setCrossfadeEnabled(true)
+        harness.settings.setFadeDurationSecs(2)
+        var nextStartedAt: Double?
+        let begun = Date()
+        harness.engine.onPlaybackStarted = { track, _ in
+            if track.id == "next", nextStartedAt == nil { nextStartedAt = Date().timeIntervalSince(begun) }
+        }
+
+        await harness.engine.play(tracks: [makeTrack(id: "slow"), makeTrack(id: "next")])
+        try await waitUntil(timeout: 20) { nextStartedAt != nil }
+
+        // Its last piece arrives after about 5.5 s; only then is its end known and the fade due.
+        let at = nextStartedAt ?? 0
+        #expect(at >= 4.5, "the next track should start once the slow one has all arrived, not at \(at) s")
+        harness.engine.stop()
     }
 
     /// The second track is chained gaplessly onto the same node, so its gain has to switch at

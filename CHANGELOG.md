@@ -206,6 +206,11 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- With crossfade on, a song skipped to played ten seconds or so and gave way to the next: it
+  streams (only songs in sequence are fetched ahead), and once playback caught up with what had
+  arrived, the end of the data so far was taken for the end of the song. The fade now waits
+  until the whole song has arrived. A fetch of the next song still running at a skip no longer
+  chains anything onto the new song, and a song played from a file fetches its successor too.
 - Artists on an own.audio server all said "0 albums": its API gives no count. The count comes
   from the library on the phone now, and isn't shown where that isn't there; genres the same.
 - Moving the position in the player made it flash: the format, the cover and the times reset

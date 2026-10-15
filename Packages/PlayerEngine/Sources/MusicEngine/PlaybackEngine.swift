@@ -224,6 +224,9 @@ public final class PlaybackEngine {
     /// of a file's `scheduleFile` completion.
     private var streamingBuffersPending = 0
     private var streamingFinishedReceiving = false
+    /// The current track is streaming and not all of it has arrived: its boundary ends where the
+    /// data so far does, not where the track does.
+    private var streamStillArriving = false
     /// The active source's own encoded format — a streamed track's decoder-reported format
     /// (`StreamingTrackSource.currentFormatInfo()`, via `onFormatKnown`) or a local file's
     /// `AVAudioFile.fileFormat`. Reset to `nil` at the top of every `loadAndPlay`, since it
@@ -676,6 +679,10 @@ public final class PlaybackEngine {
     // MARK: - File loading
 
     private func loadAndPlay(track: Track, seekTo: Double = 0) async {
+        // Whatever was being fetched to follow the previous schedule no longer follows anything.
+        prefetchNextTask?.cancel()
+        prefetchNextTask = nil
+        streamStillArriving = false
         if requiresLocalFiles, await fileCache.existingLocalURL(trackId: track.id) == nil {
             await playNextLocalTrack()
             return
@@ -761,6 +768,13 @@ public final class PlaybackEngine {
             ))
 
             beginPlaybackAfterLoad(seekTo: startSecs)
+            // The whole file is scheduled: the next one can be fetched to follow it, as the
+            // streaming path does once its last byte arrives (a load cancels any earlier fetch).
+            if settingsStore.crossfadeEnabled {
+                prefetchNextTrackForCrossfade()
+            } else {
+                schedulePrefetchAndChainNext()
+            }
         } catch {
             handleLoadFailure(loc("Could not load this track."))
         }
@@ -844,6 +858,7 @@ public final class PlaybackEngine {
         streamingFrameCursor = 0
         streamingBuffersPending = 0
         streamingFinishedReceiving = false
+        streamStillArriving = true
         streamConverter = nil
 
         if !engine.isRunning { try? engine.start() }
@@ -958,6 +973,7 @@ public final class PlaybackEngine {
     /// what starts next-track prefetching, exactly as the file path already did at that point.
     private func finishStreamingReceiving(generation: UInt64) {
         streamingFinishedReceiving = true
+        streamStillArriving = false
         adoptDurationFromStream()
         if streamingBuffersPending <= 0 {
             // Every scheduled buffer already finished playing before the network finished
@@ -1014,6 +1030,7 @@ public final class PlaybackEngine {
     /// the same one-`scheduleFile`-call shape `loadAndPlay`'s own file branch uses, just entered
     /// from a different starting point.
     private func switchToLocalFile(_ url: URL, track: Track, generation: UInt64) {
+        streamStillArriving = false
         guard let file = try? AVAudioFile(forReading: url) else {
             handleLoadFailure(loc("Could not load this track."))
             return
@@ -1071,11 +1088,18 @@ public final class PlaybackEngine {
     private func schedulePrefetchAndChainNext() {
         prefetchNextTask?.cancel()
         guard let next = queue?.trackAfterCurrent(repeatMode: repeatMode) else { return }
+        // The schedule this chains onto. A skip, a seek or a new queue while the next track is
+        // still downloading starts a newer one; chaining onto that would add a stray copy of a
+        // track whose end then advances the queue early (a skipped-to song cut off after a few
+        // seconds). The track id alone can't tell them apart: after a skip, the song now playing
+        // is often the very one being fetched.
+        let chainedOnto = schedulingGeneration
         prefetchNextTask = Task { [weak self] in
             guard let self, await shouldPrefetch(next) else { return }
             guard let url = try? await fileCache.localURL(trackId: next.id) else { return }
             guard let file = try? AVAudioFile(forReading: url) else { return }
-            guard !Task.isCancelled, let lastBoundary = boundaries.last, lastBoundary.trackId == currentTrack?.id else { return }
+            guard !Task.isCancelled, schedulingGeneration == chainedOnto,
+                  let lastBoundary = boundaries.last, lastBoundary.trackId == currentTrack?.id else { return }
 
             let generation = schedulingGeneration
             activeNode.scheduleFile(file, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
@@ -1288,7 +1312,10 @@ public final class PlaybackEngine {
         // outgoing track went silent before the fade-out finished ramping — audible as "no real
         // fade," exactly the live report this fixes.
         let remainingRealSecs = Double(boundary.endFrame - nodeElapsedFrames) / boundary.sampleRate
-        if settingsStore.crossfadeEnabled, !isCrossfading, hasNextTrack,
+        // Not while the track is still arriving: its boundary then ends with the data so far,
+        // and a playback that caught up with the network would be taken for the track's end —
+        // a song skipped to faded out after its first ten seconds or so.
+        if settingsStore.crossfadeEnabled, !isCrossfading, hasNextTrack, !streamStillArriving,
            remainingRealSecs <= settingsStore.fadeDurationSecs {
             beginCrossfade()
         }

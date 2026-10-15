@@ -8,6 +8,10 @@ final class MockURLProtocol: URLProtocol, @unchecked Sendable {
         let statusCode: Int
         let body: Data
         var headers: [String: String] = [:]
+        /// The body in this many pieces with `pieceDelay` seconds between them: a download
+        /// that takes a while, as a real song's does.
+        var pieces = 1
+        var pieceDelay: Double = 0
     }
 
     typealias Handler = @Sendable (URLRequest) async throws -> StubbedResponse
@@ -81,7 +85,18 @@ final class MockURLProtocol: URLProtocol, @unchecked Sendable {
                     httpVersion: "HTTP/1.1", headerFields: stub.headers
                 )!
                 client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-                client?.urlProtocol(self, didLoad: stub.body)
+                if stub.pieces > 1 {
+                    let size = (stub.body.count + stub.pieces - 1) / stub.pieces
+                    var offset = 0
+                    while offset < stub.body.count {
+                        let end = min(offset + size, stub.body.count)
+                        client?.urlProtocol(self, didLoad: stub.body.subdata(in: offset..<end))
+                        offset = end
+                        if offset < stub.body.count { try await Task.sleep(nanoseconds: UInt64(stub.pieceDelay * 1_000_000_000)) }
+                    }
+                } else {
+                    client?.urlProtocol(self, didLoad: stub.body)
+                }
                 client?.urlProtocolDidFinishLoading(self)
             } catch {
                 client?.urlProtocol(self, didFailWithError: error)
