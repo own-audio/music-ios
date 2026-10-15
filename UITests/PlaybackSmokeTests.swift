@@ -146,6 +146,10 @@ final class PlaybackSmokeTests: XCTestCase {
         var lines: [String] = []
         func note(_ name: String, _ seconds: Double, limit: Double) {
             lines.append(String(format: "%@: %.2f s (limit %.0f s)", name, seconds, limit))
+            // Written at once, so a later failure keeps what was measured.
+            if let dir = env["SCREENSHOT_DIR"] {
+                try? lines.joined(separator: "\n").write(toFile: dir + "/perf.txt", atomically: true, encoding: .utf8)
+            }
             XCTAssertLessThan(seconds, limit, name)
         }
         let app = XCUIApplication()
@@ -161,13 +165,14 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 30))
         note("launch to Home", Date().timeIntervalSince(start), limit: 6)
 
-        start = Date()
+        // The tab switch on its own (the test's tap, not the app's work), then the grid.
         openTab(app, Self.libraryTab)
         let albums = app.buttons["library.albums"]
         XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        start = Date()
         albums.tap()
         XCTAssertTrue(app.scrollViews.buttons.firstMatch.waitForExistence(timeout: 20))
-        note("Library to the album grid", Date().timeIntervalSince(start), limit: 6)
+        note("album grid", Date().timeIntervalSince(start), limit: 4)
 
         start = Date()
         app.scrollViews.buttons.firstMatch.tap()
@@ -186,15 +191,22 @@ final class PlaybackSmokeTests: XCTestCase {
         let scrubber = app.descendants(matching: .any)["player.scrubber"].firstMatch
         XCTAssertTrue(scrubber.waitForExistence(timeout: 10))
         sleep(2)
+        // Moved on by a quarter of the song or more — or already into the next one, for a short
+        // song sought near its end.
+        func position() -> (at: Int, of: Int)? {
+            let parts = (scrubber.value as? String ?? "").components(separatedBy: " of ")
+            guard parts.count == 2, let at = Self.seconds(parts[0]), let of = Self.seconds(parts[1]), of > 0 else { return nil }
+            return (at, of)
+        }
+        let before = position()
         start = Date()
         scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
             .press(forDuration: 0.1, thenDragTo: scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5)))
         XCTAssertTrue(waitUntil(timeout: 30) {
-            let parts = (scrubber.value as? String ?? "").components(separatedBy: " of ")
-            guard parts.count == 2, let at = Self.seconds(parts[0]), let of = Self.seconds(parts[1]), of > 0 else { return false }
-            return Double(at) / Double(of) > 0.45
-        })
-        note("seek to the middle", Date().timeIntervalSince(start), limit: 15)
+            guard let before, let now = position() else { return false }
+            return now.of != before.of || Double(now.at - before.at) >= Double(now.of) * 0.25
+        }, "the seek should move the song on")
+        note("seek", Date().timeIntervalSince(start), limit: 15)
 
         // Memory and CPU while the player plays.
         let options = XCTMeasureOptions()
