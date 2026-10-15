@@ -125,8 +125,15 @@ struct PlayerView: View {
         .gesture(
             DragGesture(minimumDistance: 24).onEnded { value in
                 guard engine.currentTrack != nil, abs(value.translation.width) > abs(value.translation.height) else { return }
-                Haptics.impact(.light)
-                value.translation.width < 0 ? engine.next() : engine.previous()
+                if value.translation.width < 0 {
+                    guard engine.hasNextTrack else { return }
+                    Haptics.impact(.light)
+                    engine.next()
+                } else {
+                    guard engine.canGoBack else { return }
+                    Haptics.impact(.light)
+                    engine.previous()
+                }
             }
         )
         .accessibilityIdentifier("player.cover")
@@ -194,6 +201,8 @@ struct PlayerView: View {
                     .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
                     .contentShape(Rectangle())
             }
+            .disabled(!engine.canGoBack)
+            .opacity(engine.canGoBack ? 1 : 0.35)
             .accessibilityIdentifier("player.previous")
             .accessibilityLabel("Previous")
 
@@ -224,6 +233,7 @@ struct PlayerView: View {
                     .contentShape(Rectangle())
             }
             .disabled(!engine.hasNextTrack)
+            .opacity(engine.hasNextTrack ? 1 : 0.35)
             .accessibilityIdentifier("player.next")
             .accessibilityLabel("Next")
         }

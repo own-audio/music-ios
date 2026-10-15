@@ -57,6 +57,7 @@ final class PlaybackSmokeTests: XCTestCase {
 
         app.buttons["player.next"].tap()
         XCTAssertTrue(waitUntil(timeout: 30) { title.exists && title.label != firstTitle }, "next should change the track")
+        XCTAssertTrue(app.buttons["player.previous"].isEnabled, "with a track before this one, previous is available")
         sleep(1)
         screenshot(app, "07-next-track")
 

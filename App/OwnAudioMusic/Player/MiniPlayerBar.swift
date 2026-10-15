@@ -51,20 +51,20 @@ struct MiniPlayerBar: View {
                             .accessibilityLabel(engine.isPlaying ? "Pause" : "Play")
                         }
 
-                        if engine.hasNextTrack {
-                            Button {
-                                Haptics.impact(.light)
-                                engine.next()
-                            } label: {
-                                Image(systemName: "forward.fill")
-                                    .font(.subheadline)
-                                    .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("miniPlayer.next")
-                            .accessibilityLabel("Next")
+                        Button {
+                            Haptics.impact(.light)
+                            engine.next()
+                        } label: {
+                            Image(systemName: "forward.fill")
+                                .font(.subheadline)
+                                .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .disabled(!engine.hasNextTrack)
+                        .opacity(engine.hasNextTrack ? 1 : 0.3)
+                        .accessibilityIdentifier("miniPlayer.next")
+                        .accessibilityLabel("Next")
                     }
                     .padding(.horizontal, Theme.Spacing.sm)
                     .padding(.vertical, Theme.Spacing.xs)

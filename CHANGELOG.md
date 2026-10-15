@@ -26,6 +26,11 @@ package, merged into this repository — is in `docs/history/`.
 - One Keychain store for every kind of server, with a server's kind, address, sign-in and
   chosen music library.
 
+- Next and previous grey out where the queue ends, as in Apple Music: next on the last song
+  (in the mini player too, which used to hide it), previous on the first song until it is
+  three seconds in, from when it restarts the song. A swipe on the cover does nothing there
+  either, and the lock screen follows.
+
 ### Added
 
 - Identify Library, on an own.audio server's page when the server offers it: the server compares

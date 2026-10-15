@@ -53,6 +53,12 @@ public final class PlaybackEngine {
     public var hasNextTrack: Bool { queue?.nextTrack != nil }
     public var hasPreviousTrack: Bool { queue?.previousTrack != nil }
 
+    /// How far into a track "previous" restarts it instead of going back a track.
+    public static let restartThreshold: Double = 3
+
+    /// Whether "previous" would do anything: go back a track, or restart this one.
+    public var canGoBack: Bool { hasPreviousTrack || currentTime > Self.restartThreshold }
+
     /// Every track after the current one, in play order — the queue sheet's list. Empty once
     /// the queue is exhausted or nothing is loaded.
     public var upcomingTracks: [Track] { queue?.upcoming ?? [] }
@@ -539,7 +545,7 @@ public final class PlaybackEngine {
         // convention (same reasoning a CD player's "previous" button has always used) — a
         // listener hitting previous three seconds into a song wants the *previous* song, not to
         // restart this one, but ten seconds in they usually want this one restarted.
-        if currentTime > 3 {
+        if currentTime > Self.restartThreshold {
             Task { await seek(to: 0) }
             return
         }
@@ -1402,7 +1408,9 @@ public final class PlaybackEngine {
             rate: isPlaying ? 1 : 0,
             artwork: currentArtwork,
             hasNextTrack: hasNextTrack,
-            hasPreviousTrack: hasPreviousTrack
+            // The lock screen is refreshed now and then, not every tick, so it cannot follow the
+            // restart threshold: there "previous" stays available for any track long enough to restart.
+            hasPreviousTrack: hasPreviousTrack || duration > Self.restartThreshold
         )
     }
 

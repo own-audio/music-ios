@@ -278,6 +278,24 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    @Test("next and previous are available only where the queue goes on")
+    func skipButtonsFollowTheQueue() async throws {
+        let harness = try await makeHarness(suffix: "skip-buttons", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        await engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "last")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(engine.hasNextTrack)
+        #expect(!engine.canGoBack, "nothing before the first track at its start")
+
+        engine.next()
+        try await waitUntil(timeout: 5) { engine.currentTrack?.id == "last" && engine.isPlaying }
+        #expect(!engine.hasNextTrack, "nothing after the last track")
+        #expect(engine.canGoBack)
+        engine.next()
+        #expect(engine.currentTrack?.id == "last", "next at the end does nothing")
+        engine.stop()
+    }
+
     /// With crossfade on, a track still streaming used to fade out once playback caught up with
     /// what had arrived — "the end of the data so far" taken for the end of the track. A song
     /// skipped to (so streamed, not fetched ahead) on a slow connection played ten seconds or
