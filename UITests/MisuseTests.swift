@@ -147,8 +147,11 @@ final class MisuseTests: XCTestCase {
             XCTAssertEqual(app.state, .runningForeground, "searching for “\(text)” should not end the app")
             if index == 3 { screenshot(app, "misuse-search") }
         }
-        let cancel = app.buttons["Cancel"]
-        if cancel.exists { cancel.tap() }
+        // While searching, the keyboard covers the tab bar; iOS 26 leaves search by its Close
+        // button beside the field (Cancel before it).
+        let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel", "Zavřít", "Zrušit"])).firstMatch
+        if close.exists { close.tap() }
+        XCTAssertTrue(waitUntil(timeout: 5) { !app.keyboards.firstMatch.exists }, "closing search should put the keyboard away")
 
         openTab(app, Self.libraryTab)
         startAlbum(app)
@@ -205,7 +208,7 @@ final class MisuseTests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 20))
         XCTAssertTrue(waitUntil(timeout: 20) { start.isEnabled })
         start.tap()
-        sleep(1)
+        // At once: a small album on a fast server is down in about a second.
         app.terminate()
 
         app = launch(reset: false)
@@ -218,9 +221,10 @@ final class MisuseTests: XCTestCase {
         if again.exists, again.isEnabled { again.tap() }
         XCTAssertTrue(done.waitForExistence(timeout: 300), "the download should finish after the restart")
         let play = app.buttons["detail.play"]
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled }, "Play should enable once the songs load")
         play.tap()
         let miniPlayPause = app.buttons["miniPlayer.playPause"]
-        XCTAssertTrue(waitUntil(timeout: 20) { miniPlayPause.exists && miniPlayPause.label == "Pause" })
+        XCTAssertTrue(waitUntil(timeout: 20) { miniPlayPause.exists && miniPlayPause.label == "Pause" }, "the downloaded album should play")
     }
 
     // MARK: - Helpers
