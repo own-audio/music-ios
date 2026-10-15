@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// What can go wrong talking to an own.audio server.
 public enum OwnAudioError: Error, Sendable, Equatable {
@@ -198,6 +199,7 @@ public struct OwnAudioClient: Sendable {
         do {
             return try JSONDecoder.ownAudio.decode(T.self, from: data)
         } catch {
+            networkLog.error("GET /api/v1\(path, privacy: .public): unreadable answer: \(String(describing: error), privacy: .public)")
             throw OwnAudioError.decoding
         }
     }
@@ -209,6 +211,7 @@ public struct OwnAudioClient: Sendable {
         do {
             return try JSONDecoder.ownAudio.decode(T.self, from: data)
         } catch {
+            networkLog.error("\(method, privacy: .public) /api/v2\(path, privacy: .public): unreadable answer: \(String(describing: error), privacy: .public)")
             throw OwnAudioError.decoding
         }
     }
@@ -308,6 +311,7 @@ public struct OwnAudioClient: Sendable {
         do {
             return try JSONDecoder.ownAudio.decode(T.self, from: data)
         } catch {
+            networkLog.error("\(request.httpMethod ?? "GET", privacy: .public) \(request.url?.path ?? "", privacy: .public): unreadable answer: \(String(describing: error), privacy: .public)")
             throw OwnAudioError.decoding
         }
     }
@@ -318,10 +322,12 @@ public struct OwnAudioClient: Sendable {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
+            networkLog.error("\(request.httpMethod ?? "GET", privacy: .public) \(request.url?.path ?? "", privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             throw OwnAudioError.network
         }
         guard let http = response as? HTTPURLResponse else { throw OwnAudioError.network }
         guard (200..<300).contains(http.statusCode) else {
+            networkLog.error("\(request.httpMethod ?? "GET", privacy: .public) \(request.url?.path ?? "", privacy: .public): HTTP \(http.statusCode) \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
             if let problem = try? JSONDecoder.ownAudio.decode(Problem.self, from: data) {
                 throw OwnAudioError.problem(problem)
             }
@@ -344,3 +350,7 @@ public struct OwnAudioClient: Sendable {
 public struct Empty: Codable, Sendable {
     public init() {}
 }
+
+/// Requests that fail, and why: the errors thrown say only "network" or "decoding". The path
+/// alone is logged, never the query, which can carry a sign-in.
+let networkLog = Logger(subsystem: "audio.own.musicplayer", category: "network")

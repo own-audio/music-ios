@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import OSLog
 
 /// A client for any Subsonic or OpenSubsonic server (Navidrome, Gonic, Airsonic, LMS, …).
 ///
@@ -346,11 +347,15 @@ public struct SubsonicClient: Sendable {
         do {
             (data, response) = try await session.data(for: URLRequest(url: url))
         } catch {
+            networkLog.error("\(path, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             if let data = saved() { return try decode(data) }
             throw SubsonicError.network
         }
         guard let http = response as? HTTPURLResponse else { throw SubsonicError.network }
-        guard (200..<300).contains(http.statusCode) else { throw SubsonicError.http(http.statusCode) }
+        guard (200..<300).contains(http.statusCode) else {
+            networkLog.error("\(path, privacy: .public): HTTP \(http.statusCode)")
+            throw SubsonicError.http(http.statusCode)
+        }
 
         let decoded: T = try decode(data)
         if let key { cache?.store(data, forKey: key) }
@@ -360,6 +365,7 @@ public struct SubsonicClient: Sendable {
     private func decode<T: Decodable>(_ data: Data) throws -> T {
         let decoder = JSONDecoder()
         guard let envelope = try? decoder.decode(SubsonicEnvelope<SubsonicStatus>.self, from: data) else {
+            networkLog.error("unreadable answer: \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
             throw SubsonicError.decoding
         }
         // Subsonic reports failures, including bad credentials, as HTTP 200 with
@@ -373,10 +379,12 @@ public struct SubsonicClient: Sendable {
             default: throw SubsonicError.server(code: code, message: failure?.response.error.message ?? "")
             }
         }
-        guard let decoded = try? decoder.decode(SubsonicEnvelope<T>.self, from: data) else {
+        do {
+            return try decoder.decode(SubsonicEnvelope<T>.self, from: data).response
+        } catch {
+            networkLog.error("unreadable answer as \(String(describing: T.self), privacy: .public): \(String(describing: error), privacy: .public)")
             throw SubsonicError.decoding
         }
-        return decoded.response
     }
 
     private func buildURL(path: String, query: [URLQueryItem]) -> URL {
@@ -417,3 +425,7 @@ private struct SubsonicFailure: Decodable {
     }
     let error: Failure
 }
+
+/// Requests that fail, and why: the errors thrown say only "network" or "decoding". The path
+/// alone is logged, never the query, which can carry a sign-in.
+let networkLog = Logger(subsystem: "audio.own.musicplayer", category: "network")

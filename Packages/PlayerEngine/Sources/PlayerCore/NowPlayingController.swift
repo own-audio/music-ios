@@ -33,13 +33,17 @@ public final class NowPlayingController {
 
     private func configureAudioSession() {
         #if os(iOS)
-        do {
-            // `.default`, not `.spokenAudio`: the latter applies speech processing music doesn't want.
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            // Playback still works; only background and lock-screen integration would suffer.
-        }
+        // `.default`, not `.spokenAudio`: the latter applies speech processing music doesn't want.
+        // Playback still works without it; only background and lock-screen integration would suffer.
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        #endif
+    }
+
+    /// Takes the audio over from other apps. Called when playback starts, not at launch: opening
+    /// the app to browse must not stop what another app is playing.
+    public func activateSession() {
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(true)
         #endif
     }
 

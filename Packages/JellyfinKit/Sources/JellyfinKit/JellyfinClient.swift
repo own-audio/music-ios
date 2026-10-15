@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// How this app introduces itself. Jellyfin lists sessions by device, so the id has to stay the
 /// same across launches; the app keeps one.
@@ -566,9 +567,13 @@ enum Transport {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
+            networkLog.error("\(request.httpMethod ?? "GET", privacy: .public) \(request.url?.path ?? "", privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             throw JellyfinError.network
         }
         guard let http = response as? HTTPURLResponse else { throw JellyfinError.network }
+        if !(200..<300).contains(http.statusCode) {
+            networkLog.error("\(request.httpMethod ?? "GET", privacy: .public) \(request.url?.path ?? "", privacy: .public): HTTP \(http.statusCode)")
+        }
         switch http.statusCode {
         case 200..<300: return data
         case 401: throw JellyfinError.unauthorized
@@ -582,6 +587,7 @@ enum Transport {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
+            networkLog.error("unreadable answer as \(String(describing: T.self), privacy: .public): \(String(describing: error), privacy: .public)")
             throw JellyfinError.decoding
         }
     }
@@ -613,3 +619,7 @@ enum Transport {
         return formatter.date(from: raw)
     }
 }
+
+/// Requests that fail, and why: the errors thrown say only "network" or "decoding". The path
+/// alone is logged, never the query, which can carry a sign-in.
+let networkLog = Logger(subsystem: "audio.own.musicplayer", category: "network")

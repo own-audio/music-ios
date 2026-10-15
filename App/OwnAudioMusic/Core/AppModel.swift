@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import Observation
 import UIKit
 import MusicEngine
@@ -64,6 +65,7 @@ final class AppModel {
             do {
                 try await action()
             } catch {
+                Logger.app.error("action failed: \(String(describing: error), privacy: .public)")
                 actionError = error.userMessage
                 // The address in use may have stopped working (left home, VPN down).
                 if case SourceError.network = error { Task { await chooseAddresses() } }
@@ -1433,6 +1435,8 @@ enum AddServerError: LocalizedError {
 extension Error {
     /// A short sentence for a failed request.
     var userMessage: String {
+        // Every failure a screen shows passes through here, so this is where it is logged.
+        Logger.app.error("shown to the listener: \(String(describing: self), privacy: .public)")
         guard let error = self as? SourceError else {
             return String(localized: "Something went wrong.")
         }
@@ -1461,4 +1465,9 @@ extension Error {
 
 private extension Int {
     var nonZero: Int? { self == 0 ? nil : self }
+}
+
+extension Logger {
+    /// What went wrong in the app; read with Console or `log stream`, and kept by the UI tests.
+    static let app = Logger(subsystem: "audio.own.musicplayer", category: "app")
 }

@@ -28,7 +28,9 @@ public final class PlaybackEngine {
     public private(set) var isPlaying = false
     public private(set) var currentTime: Double = 0
     public private(set) var duration: Double = 0
-    public private(set) var errorMessage: String?
+    public private(set) var errorMessage: String? {
+        didSet { if let errorMessage { Logger.playback.error("shown: \(errorMessage, privacy: .public)") } }
+    }
     public private(set) var isShuffled = false
     /// Sticky across track/album changes within a session, same as `isShuffled` -- deliberately
     /// not persisted to `UserDefaults` (unlike `PlaybackSettingsStore.crossfadeEnabled`,
@@ -477,7 +479,7 @@ public final class PlaybackEngine {
         guard currentTrack != nil, !isPlaying else { return }
         wireRemoteCommands()
         onWillStartPlaying?()
-        if !engine.isRunning { try? engine.start() }
+        if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
         activeNode.play()
         if isCrossfading { idleNode.play() }
         isPlaying = true
@@ -487,6 +489,7 @@ public final class PlaybackEngine {
     }
 
     public func stop() {
+        Logger.playback.info("stop at \(self.currentTime, format: .fixed(precision: 1), privacy: .public)")
         stopEngineAndClearSchedule()
         saveProgressNow()
         closeSpan(atPositionSecs: currentTime, reason: .stopped)
@@ -532,7 +535,10 @@ public final class PlaybackEngine {
     /// crossfade lookaheads that prepare for it); letting `.one` hijack a deliberate Next would
     /// trap a listener on the current track until they changed the mode first.
     public func next() {
-        guard var queue, let nextTrack = queue.nextTrack else { return }
+        guard var queue, let nextTrack = queue.nextTrack else {
+            Logger.playback.info("next: nothing after this")
+            return
+        }
         cancelInFlightCrossfade()
         closeSpan(atPositionSecs: currentTime, reason: .skipped)
         queue.advance()
@@ -549,7 +555,10 @@ public final class PlaybackEngine {
             Task { await seek(to: 0) }
             return
         }
-        guard var queue, let previousTrack = queue.previousTrack else { return }
+        guard var queue, let previousTrack = queue.previousTrack else {
+            Logger.playback.info("previous: nothing before this")
+            return
+        }
         cancelInFlightCrossfade()
         closeSpan(atPositionSecs: currentTime, reason: .skipped)
         queue.goToPrevious()
@@ -685,6 +694,7 @@ public final class PlaybackEngine {
     // MARK: - File loading
 
     private func loadAndPlay(track: Track, seekTo: Double = 0) async {
+        Logger.playback.info("load \(track.id, privacy: .public) at \(seekTo, format: .fixed(precision: 1), privacy: .public)")
         // Whatever was being fetched to follow the previous schedule no longer follows anything.
         prefetchNextTask?.cancel()
         prefetchNextTask = nil
@@ -725,7 +735,7 @@ public final class PlaybackEngine {
             updateFormatSnapshot(Self.formatInfo(from: file.fileFormat))
             adoptDurationFromFile(file)
 
-            if !engine.isRunning { try engine.start() }
+            if !engine.isRunning { nowPlayingController.activateSession(); try engine.start() }
 
             // A fresh load (not a seek) always restarts the active node's own schedule —
             // `scheduleFile`'s `at: nil` only chains cleanly onto a schedule this engine itself
@@ -867,7 +877,7 @@ public final class PlaybackEngine {
         streamStillArriving = true
         streamConverter = nil
 
-        if !engine.isRunning { try? engine.start() }
+        if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
 
         streamingTask = Task { [weak self] in
             guard let self else { return }
