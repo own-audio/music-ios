@@ -49,6 +49,9 @@ public actor AudioStreamDecoder {
         /// — a truncated response, a non-audio body (an error page),
         /// or a format Core Audio's parser doesn't recognise.
         case neverReadyToProducePackets
+        /// Bytes went in and no audio came out: Core Audio's FLAC decoder, having lost sync,
+        /// can go on taking packets and producing nothing, without ever reporting an error.
+        case producedNothing
     }
 
     /// Boxes the state Core Audio's C callbacks need, so a raw pointer to *this* — not to the
@@ -105,6 +108,11 @@ public actor AudioStreamDecoder {
 
     private let typeHint: AudioFileTypeID?
 
+    /// FLAC's frames are cut here, not by Core Audio's parser (see `FLACFramer`); the parser
+    /// still reads the format and the cookie. Decided by the first bytes.
+    private var flacFramer: FLACFramer?
+    private var sawFirstBytes = false
+
     /// `typeHint` narrows Core Audio's format sniffing when the container is ambiguous from
     /// bytes alone (rare with normal MP3/FLAC/M4A, kept as an escape hatch); `nil` lets it infer.
     public init(typeHint: AudioFileTypeID? = nil) {
@@ -126,22 +134,47 @@ public actor AudioStreamDecoder {
     /// far smaller than a single packet — Core Audio's parser buffers internally across calls;
     /// this decoder adds no chunking assumptions of its own.
     public func ingest(_ data: Data) throws {
-        if audioFileStreamID == nil {
+        if !sawFirstBytes {
+            sawFirstBytes = true
+            if Self.isFLAC(data) { flacFramer = FLACFramer() }
+        }
+        if audioFileStreamID == nil, !(flacFramer != nil && context.isReady) {
             try openStream()
         }
-        guard let audioFileStreamID else { return }
-
-        let status = data.withUnsafeBytes { buffer -> OSStatus in
-            AudioFileStreamParseBytes(audioFileStreamID, UInt32(buffer.count), buffer.baseAddress, [])
-        }
-        guard status == noErr else {
-            throw DecoderError.streamParseFailed(status)
+        // For FLAC the parser is only needed until it has read the format.
+        if let audioFileStreamID, !(flacFramer != nil && context.isReady) {
+            let status = data.withUnsafeBytes { buffer -> OSStatus in
+                AudioFileStreamParseBytes(audioFileStreamID, UInt32(buffer.count), buffer.baseAddress, [])
+            }
+            guard status == noErr else {
+                throw DecoderError.streamParseFailed(status)
+            }
         }
 
         if context.isReady, converter == nil {
             try buildConverterIfNeeded()
         }
+        if flacFramer != nil {
+            context.packets.removeAll()
+            for frame in flacFramer!.append(data) { queueFrame(frame) }
+        }
         drainNewPackets()
+    }
+
+    private func queueFrame(_ frame: Data) {
+        pendingPackets.append((frame, AudioStreamPacketDescription(
+            mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(frame.count)
+        )))
+    }
+
+    /// "fLaC", or an ID3 tag with "fLaC" after it.
+    static func isFLAC(_ data: Data) -> Bool {
+        let bytes = [UInt8](data.prefix(10))
+        if bytes.starts(with: Array("fLaC".utf8)) { return true }
+        guard bytes.count == 10, bytes.starts(with: Array("ID3".utf8)) else { return false }
+        let size = Int(bytes[6]) << 21 | Int(bytes[7]) << 14 | Int(bytes[8]) << 7 | Int(bytes[9])
+        let start = data.startIndex + 10 + size
+        return data.count >= 14 + size && data[start ..< start + 4] == Data("fLaC".utf8)
     }
 
     /// Called once no more bytes are coming (the HTTP response finished normally). A stream
@@ -156,6 +189,7 @@ public actor AudioStreamDecoder {
         guard context.isReady else {
             throw DecoderError.neverReadyToProducePackets
         }
+        if let last = flacFramer?.finish() { queueFrame(last) }
     }
 
     // MARK: - Reading decoded audio out
@@ -185,6 +219,17 @@ public actor AudioStreamDecoder {
         let status = AudioConverterFillComplexBuffer(
             converter, audioConverterInputProc, selfPointer, &packetCount, buffer.mutableAudioBufferList, nil
         )
+        // Core Audio's FLAC decoder takes a frame of digital silence in FLAC's shortest form
+        // (every subframe CONSTANT, 14 bytes) for bad data. Such frames open and close many
+        // tracks; that one frame becomes the silence it is, and decoding goes on.
+        if status == Self.badDataStatus, flacFramer != nil, let frames = lastSuppliedFrames {
+            AudioConverterReset(converter)
+            buffer.frameLength = min(frames, frameCapacity)
+            for channel in 0..<Int(outputFormat.channelCount) {
+                buffer.floatChannelData?[channel].update(repeating: 0, count: Int(buffer.frameLength))
+            }
+            return DecodedBuffer(buffer: buffer)
+        }
         guard status == noErr || status == Self.noMorePacketsStatus else {
             throw DecoderError.converterFailed(status)
         }
@@ -198,6 +243,13 @@ public actor AudioStreamDecoder {
     /// caller of `AudioConverterFillComplexBuffer` picks its own sentinel, and the converter
     /// only cares that it is non-`noErr`.
     fileprivate static let noMorePacketsStatus: OSStatus = 1_935_763_568 // 'nomo', chosen for readability in a debugger
+
+    /// `'bada'`, the converter's "bad data".
+    static let badDataStatus: OSStatus = 1_650_549_857
+
+    /// How many samples the packet last handed to the converter holds, where that can be read
+    /// (a FLAC frame header says it).
+    private nonisolated(unsafe) var lastSuppliedFrames: AVAudioFrameCount?
 
     /// Whether the parser has seen enough of the stream to describe its format and start
     /// producing packets. Exposed mainly for tests measuring *when* that happens relative to
@@ -310,6 +362,7 @@ public actor AudioStreamDecoder {
 
         let (data, description) = pendingPackets[packetsConsumed]
         packetsConsumed += 1
+        lastSuppliedFrames = FLACFramer.blockSize(of: data)
         inputCallbackDataHolder = data
         // `description.mStartOffset` was captured relative to the *original* parse buffer the
         // packets callback received, not to `data` — `data` is this one packet's bytes copied

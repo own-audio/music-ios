@@ -1,5 +1,7 @@
+import AVFoundation
 import AudioToolbox
 import Foundation
+import OSLog
 
 /// Streams one track from its URL, decoding it progressively via `AudioStreamDecoder`
 /// and handing PCM buffers to a caller as they become available — the piece that lets
@@ -31,6 +33,13 @@ public actor StreamingTrackSource {
     /// receive-buffer growth means real reads from `URLSession.bytes` arrive in chunks close to
     /// this size anyway.
     private static let ingestChunkSize = 16 * 1024
+
+    /// How much may go into the decoder with no audio coming out before it is given up for the
+    /// whole file: a few seconds of even the richest FLAC, far more than any header.
+    static let silentDecoderLimit = 512 * 1024
+
+    private var bytesIngested = 0
+    private var framesDecoded: AVAudioFramePosition = 0
 
     public init(fileCache: TrackFileCache, session: URLSession = .shared) {
         self.fileCache = fileCache
@@ -87,9 +96,12 @@ public actor StreamingTrackSource {
                     formatReported = true
                     await onFormatKnown(format)
                 }
+                framesDecoded += AVAudioFramePosition(decoded.buffer.frameLength)
                 await onBuffer(decoded)
             }
+            if framesDecoded == 0 { throw AudioStreamDecoder.DecoderError.producedNothing }
         } catch let error as AudioStreamDecoder.DecoderError {
+            Logger.playback.error("decoding \(trackId, privacy: .public) in pieces failed (\(String(describing: error), privacy: .public)); playing the whole file instead")
             // *Any* decoding failure falls back to the file, not only the one known
             // trailing-`moov` case this started as. A track in this library reproduced the
             // point exactly: a perfectly ordinary 44.1 kHz/16-bit FLAC that `AVAudioFile` reads
@@ -112,12 +124,17 @@ public actor StreamingTrackSource {
         formatReported: inout Bool, onFormatKnown: @Sendable (AudioStreamDecoder.FormatInfo) async -> Void
     ) async throws {
         try await decoder.ingest(chunk)
+        bytesIngested += chunk.count
         while let decoded = try await decoder.nextBuffer() {
             if !formatReported, let format = await decoder.currentFormatInfo() {
                 formatReported = true
                 await onFormatKnown(format)
             }
+            framesDecoded += AVAudioFramePosition(decoded.buffer.frameLength)
             await onBuffer(decoded)
+        }
+        if framesDecoded == 0, bytesIngested >= Self.silentDecoderLimit {
+            throw AudioStreamDecoder.DecoderError.producedNothing
         }
     }
 }

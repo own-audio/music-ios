@@ -68,6 +68,40 @@ struct StreamingTrackSourceTests {
         #expect((2.9...3.2).contains(seconds), "decoded \(seconds)s from a 3.0s source")
     }
 
+    /// Taggers put the cover in the FLAC itself, often a hundred kilobytes or more before the
+    /// first frame, so the header arrives over several pieces. That must stream like any other.
+    @Test("streams a FLAC with a large embedded cover, without falling back")
+    func streamsFLACWithEmbeddedCover() async throws {
+        let source = makeSource(await serving(try fixtureData("test-tone-cover.flac"), contentType: "audio/flac"))
+
+        let counter = FrameCounter()
+        try await source.stream(trackId: "track-cover") { decoded in
+            counter.total += AVAudioFramePosition(decoded.buffer.frameLength)
+        }
+
+        let format = try #require(await source.currentFormatInfo())
+        let seconds = Double(counter.total) / format.sampleRate
+        #expect((2.9...3.2).contains(seconds), "decoded \(seconds)s from a 3.0s source")
+    }
+
+    /// Core Audio's FLAC decoder rejects a frame of digital silence in FLAC's shortest form
+    /// (14 bytes, every subframe CONSTANT) as bad data, and its stream parser cuts real music at
+    /// stray sync codes. A track opening with silence never played while it arrived. The frame
+    /// here is the first of such a track.
+    @Test("streams a FLAC that opens with a frame of digital silence")
+    func streamsFLACOpeningWithSilence() async throws {
+        let source = makeSource(await serving(try fixtureData("test-tone-silent-start.flac"), contentType: "audio/flac"))
+
+        let counter = FrameCounter()
+        try await source.stream(trackId: "track-silent-start") { decoded in
+            counter.total += AVAudioFramePosition(decoded.buffer.frameLength)
+        }
+
+        let format = try #require(await source.currentFormatInfo())
+        let seconds = Double(counter.total) / format.sampleRate
+        #expect((2.9...3.3).contains(seconds), "decoded \(seconds)s from 3.0s of tone after a silent frame")
+    }
+
     /// An M4A/ALAC with its `moov` atom after the audio can't be parsed in pieces. That must
     /// turn into a playable local file, not a failure.
     @Test("falls back to a full local download for the trailing-moov M4A")
@@ -82,6 +116,25 @@ struct StreamingTrackSourceTests {
             let seconds = Double(file.length) / file.fileFormat.sampleRate
             #expect((2.9...3.2).contains(seconds))
             #expect(fallback.localURL.pathExtension == "m4a")
+        }
+    }
+
+    /// Core Audio's FLAC decoder, once it loses sync, can take packet after packet and give
+    /// nothing back, without an error. That used to read the whole track and play none of it;
+    /// it now hands over to the whole file, as for any other decoding failure.
+    @Test("a decoder that takes bytes and gives no audio hands over to the whole file")
+    func silentDecoderFallsBack() async throws {
+        let flac = try fixtureData("test-tone.flac")
+        let unplayable = flac.prefix(4096) + Data(count: StreamingTrackSource.silentDecoderLimit + 64 * 1024)
+        let source = makeSource(await serving(unplayable, contentType: "audio/flac"))
+
+        let counter = FrameCounter()
+        do {
+            try await source.stream(trackId: "track-silent") { decoded in
+                counter.total += AVAudioFramePosition(decoded.buffer.frameLength)
+            }
+            Issue.record("expected FallbackToLocalPlaybackRequired, decoded \(counter.total) frames")
+        } catch is StreamingTrackSource.FallbackToLocalPlaybackRequired {
         }
     }
 
