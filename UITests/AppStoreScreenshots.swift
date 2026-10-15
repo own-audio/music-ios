@@ -218,6 +218,12 @@ final class AppStoreScreenshots: XCTestCase {
             _ = albums.waitForExistence(timeout: 5)
         }
         XCTAssertTrue(albums.exists)
+        // On iPad, Albums may already be chosen with an album open beside it: another section
+        // first, so Albums starts at its grid again.
+        if iPad {
+            app.descendants(matching: .any)["library.artists"].firstMatch.tap()
+            sleep(1)
+        }
         albums.tap()
     }
 

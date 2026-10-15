@@ -139,6 +139,77 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertFalse(app.buttons["miniPlayer"].exists, "nothing should be left playing")
     }
 
+    /// What a listener feels, timed: from launch to the library, from Play to sound, a seek,
+    /// opening an album — and memory and CPU while playing. Written to perf.txt beside the
+    /// screenshots; the limits are generous, to catch something gone wrong, not to rank.
+    func testPerformance() throws {
+        var lines: [String] = []
+        func note(_ name: String, _ seconds: Double, limit: Double) {
+            lines.append(String(format: "%@: %.2f s (limit %.0f s)", name, seconds, limit))
+            XCTAssertLessThan(seconds, limit, name)
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+
+        // A cold launch with a server set up, to a library that can be used.
+        app.terminate()
+        app.launchArguments = Self.english
+        var start = Date()
+        app.launch()
+        XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 30))
+        note("launch to Home", Date().timeIntervalSince(start), limit: 6)
+
+        start = Date()
+        openTab(app, Self.libraryTab)
+        let albums = app.buttons["library.albums"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        albums.tap()
+        XCTAssertTrue(app.scrollViews.buttons.firstMatch.waitForExistence(timeout: 20))
+        note("Library to the album grid", Date().timeIntervalSince(start), limit: 6)
+
+        start = Date()
+        app.scrollViews.buttons.firstMatch.tap()
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        note("open an album", Date().timeIntervalSince(start), limit: 6)
+
+        start = Date()
+        play.tap()
+        let pause = app.buttons["miniPlayer.playPause"]
+        XCTAssertTrue(waitUntil(timeout: 30) { pause.exists && pause.label == "Pause" })
+        note("Play to sound", Date().timeIntervalSince(start), limit: 8)
+
+        app.buttons["miniPlayer"].tap()
+        let scrubber = app.descendants(matching: .any)["player.scrubber"].firstMatch
+        XCTAssertTrue(scrubber.waitForExistence(timeout: 10))
+        sleep(2)
+        start = Date()
+        scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: scrubber.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5)))
+        XCTAssertTrue(waitUntil(timeout: 30) {
+            let parts = (scrubber.value as? String ?? "").components(separatedBy: " of ")
+            guard parts.count == 2, let at = Self.seconds(parts[0]), let of = Self.seconds(parts[1]), of > 0 else { return false }
+            return Double(at) / Double(of) > 0.45
+        })
+        note("seek to the middle", Date().timeIntervalSince(start), limit: 15)
+
+        // Memory and CPU while the player plays.
+        let options = XCTMeasureOptions()
+        options.iterationCount = 1
+        measure(metrics: [XCTMemoryMetric(application: app), XCTCPUMetric(application: app)], options: options) {
+            sleep(8)
+        }
+
+        let report = lines.joined(separator: "\n")
+        print("PERF\n" + report)
+        if let dir = env["SCREENSHOT_DIR"] {
+            try? report.write(toFile: dir + "/perf.txt", atomically: true, encoding: .utf8)
+        }
+    }
+
     /// "1:23" or "1:02:03" as seconds.
     static func seconds(_ text: String) -> Int? {
         let parts = text.trimmingCharacters(in: .whitespaces).split(separator: ":").compactMap { Int($0) }
