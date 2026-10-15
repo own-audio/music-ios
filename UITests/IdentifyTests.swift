@@ -272,12 +272,20 @@ final class IdentifyTests: XCTestCase {
         sleep(2)
     }
 
+    /// The tab bar's button for one of `labels`. Other buttons can carry the same label and
+    /// sit first in the list off screen, where a tap goes nowhere: the one that can be hit.
+    private func tabButton(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement {
+        let matches = app.buttons.matching(NSPredicate(format: "label IN %@", labels))
+        _ = matches.firstMatch.waitForExistence(timeout: 10)
+        return matches.allElementsBoundByIndex.first { $0.isHittable } ?? matches.firstMatch
+    }
+
     private func openTab(_ app: XCUIApplication, _ labels: [String]) {
-        let tab = app.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch
-        XCTAssertTrue(tab.waitForExistence(timeout: 10))
         // Right after Home appears a tap can land before the tab bar takes it; try until the
         // tab says it is selected.
         for _ in 0..<5 {
+            let tab = tabButton(app, labels)
+            XCTAssertTrue(tab.exists)
             tab.tap()
             let deadline = Date().addingTimeInterval(2)
             while Date() < deadline, !tab.isSelected { RunLoop.current.run(until: Date().addingTimeInterval(0.25)) }

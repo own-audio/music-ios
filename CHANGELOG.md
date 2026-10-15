@@ -31,7 +31,21 @@ package, merged into this repository — is in `docs/history/`.
   three seconds in, from when it restarts the song. A swipe on the cover does nothing there
   either, and the lock screen follows.
 
+- What goes wrong is logged with its cause (Console, or the UI tests' app log): failed
+  requests with their path and status or error, never the query, which can carry a sign-in;
+  answers that couldn't be read and why; every error shown on screen; and each load, skip and
+  stop of the player. The server clients used to reduce all of it to "network" or "decoding".
+
 ### Added
+
+- Misuse UI tests (`UITests/MisuseTests.swift`), against every kind of server: wrong
+  sign-ins, the player hammered, ✕ while a song loads, screens left before they load and odd
+  searches, background, no network, relaunch and the server removed mid-song, the app killed
+  mid-download.
+- `scripts/test-servers.sh` keeps everything a run leaves: the whole xcodebuild log, a result
+  bundle per run, the app's own log, crash reports and screenshots of failures, with each test
+  shown as it runs and a summary with the failure messages. It tests a copy of the code taken
+  at its start, builds once before any server, and a failing server no longer ends the run.
 
 - Identify Library, on an own.audio server's page when the server offers it: the server compares
   the songs with MusicBrainz in the background, and the app shows what it proposes by album — to
@@ -210,6 +224,17 @@ package, merged into this repository — is in `docs/history/`.
   network: the home address the server named).
 
 ### Fixed
+
+- FLAC that opens with digital silence wouldn't play while it streamed: it sat on "loading"
+  until the whole file had come down, half a minute or more. Two Core Audio limits met there:
+  its stream parser cuts FLAC at the sync code alone, which real music also holds inside its
+  frames (57 times in the first 3 MB of one album track), and its decoder takes a frame of
+  silence in FLAC's shortest form for bad data. FLAC frames are now cut by our own framer, a
+  frame ending only where its CRC-16 holds, and a rejected frame plays as the silence it is.
+  A decoder that takes half a megabyte and gives no audio is given up for the whole file, as
+  any other decoding failure already was, instead of the player waiting for good.
+- Opening the app stopped what another app was playing, before anything was played: the
+  audio session became active at launch. It does so now when playback starts.
 
 - With crossfade on, a song skipped to played ten seconds or so and gave way to the next: it
   streams (only songs in sequence are fetched ahead), and once playback caught up with what had
