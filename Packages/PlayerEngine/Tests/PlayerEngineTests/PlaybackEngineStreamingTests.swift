@@ -278,6 +278,26 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    /// A seek restarts the song from its file and cancels the stream; the cancelled stream
+    /// used to report itself as a failure, "Could not play this track", and the next song
+    /// started instead of the one being sought in.
+    @Test("a seek while the song still streams stays on that song")
+    func seekWhileStreamingStaysOnTheSong() async throws {
+        let harness = try await makeHarness(suffix: "seek-streaming", audioData: try fixtureData("test-tone.mp3"), trickle: ["slow"])
+        let engine = harness.engine
+        var started: [String] = []
+        engine.onPlaybackStarted = { track, _ in started.append(track.id) }
+
+        await engine.play(tracks: [makeTrack(id: "slow"), makeTrack(id: "next")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        await engine.seek(to: 1.5)
+        try await Task.sleep(nanoseconds: 500_000_000)
+
+        #expect(engine.currentTrack?.id == "slow", "still on the song sought in, started: \(started)")
+        #expect(engine.errorMessage == nil, "no error: \(engine.errorMessage ?? "")")
+        engine.stop()
+    }
+
     @Test("next and previous are available only where the queue goes on")
     func skipButtonsFollowTheQueue() async throws {
         let harness = try await makeHarness(suffix: "skip-buttons", audioData: try fixtureData("test-tone.mp3"))

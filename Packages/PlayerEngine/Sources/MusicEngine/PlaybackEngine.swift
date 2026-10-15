@@ -718,6 +718,8 @@ public final class PlaybackEngine {
         isLoading = seekingWithin ? await fileCache.existingLocalURL(trackId: track.id) == nil : true
         streamingTask?.cancel()
         streamingTask = nil
+        // Whatever the cancelled stream still reports belongs to a schedule that is gone.
+        schedulingGeneration += 1
 
         // A track with no local copy yet streams instead of waiting on a full download.
         // Seeking always uses the file path below: `StreamingTrackSource` can't seek yet, so
@@ -905,6 +907,10 @@ public final class PlaybackEngine {
                 // own work could still make is already behind the same generation check, so
                 // there is nothing left to undo here.
             } catch {
+                // Cancelled mid-download, URLSession says so with its own error, not a
+                // CancellationError. Taken for a failure, a seek (which cancels the stream to
+                // play from the file) skipped to the next song.
+                if Task.isCancelled || (error as? URLError)?.code == .cancelled { return }
                 guard self.schedulingGeneration == generation else { return }
                 // The cause goes to the log, not only to the sofa. Swallowing it meant a track
                 // that would not play left no trace at all, and finding out why took pulling

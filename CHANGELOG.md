@@ -225,6 +225,9 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- A seek in a song still streaming played the next song instead, after "Could not play this
+  track": the seek cancels the stream to play from the file, and the cancelled download was
+  taken for a failure.
 - FLAC that opens with digital silence wouldn't play while it streamed: it sat on "loading"
   until the whole file had come down, half a minute or more. Two Core Audio limits met there:
   its stream parser cuts FLAC at the sync code alone, which real music also holds inside its
