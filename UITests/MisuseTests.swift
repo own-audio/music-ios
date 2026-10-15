@@ -292,8 +292,9 @@ final class MisuseTests: XCTestCase {
     /// Waits for loading to settle and presses play if it ended up paused.
     private func ensurePlaying(_ app: XCUIApplication) -> Bool {
         let playPause = app.buttons["player.playPause"]
+        // Not `isHittable`: asked mid-animation, XCTest fails the test instead of answering no.
         return waitUntil(timeout: 40) {
-            guard playPause.exists, playPause.isHittable else { return false }
+            guard playPause.exists, playPause.isEnabled else { return false }
             if playPause.label == "Pause" { return true }
             if playPause.label == "Play" { playPause.tap(); sleep(2) }
             return playPause.label == "Pause"
