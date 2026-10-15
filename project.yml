@@ -63,6 +63,8 @@ targets:
       properties:
         # Sign in with Apple for own.audio servers (AUTH__APPLE__CLIENT_IDS must list this app).
         com.apple.developer.applesignin: [Default]
+        # CarPlay audio app (granted by Apple for audio.own.musicplayer, 2026-10-16).
+        com.apple.developer.carplay-audio: true
     dependencies:
       - package: MusicLibrary
       - package: OwnAudioKit

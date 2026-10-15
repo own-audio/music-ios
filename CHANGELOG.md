@@ -38,6 +38,10 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- CarPlay: the app carries Apple's CarPlay audio entitlement (granted 2026-10-16), so the
+  CarPlay screens built earlier show in a car: Recently Played, Recently Added, Playlists,
+  Artists, Favorites and Downloads, and Now Playing.
+
 - Misuse UI tests (`UITests/MisuseTests.swift`), against every kind of server: wrong
   sign-ins, the player hammered, ✕ while a song loads, screens left before they load and odd
   searches, background, no network, relaunch and the server removed mid-song, the app killed
