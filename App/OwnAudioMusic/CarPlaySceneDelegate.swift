@@ -14,8 +14,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private var interfaceController: CPInterfaceController?
     private var model: AppModel { AppModel.shared }
 
-    /// CarPlay's guidelines ask for short lists; the system also caps them.
-    private static let maxItems = 100
+    /// CarPlay's guidelines ask for short lists, and each car sets its own cap.
+    private static var maxItems: Int { min(100, CPListTemplate.maximumItemCount) }
 
     func templateApplicationScene(
         _ templateApplicationScene: CPTemplateApplicationScene,
@@ -27,6 +27,21 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             // CarPlay can start the app without the phone UI ever appearing.
             if !model.hasLoaded { await model.load() }
             showRoot()
+            followServer()
+        }
+    }
+
+    /// A server added or chosen on the phone while the car is connected shows here too.
+    private func followServer() {
+        withObservationTracking {
+            _ = model.activeServerId
+            _ = model.servers.count
+        } onChange: {
+            Task { @MainActor [weak self] in
+                guard let self, self.interfaceController != nil else { return }
+                self.showRoot()
+                self.followServer()
+            }
         }
     }
 
@@ -37,7 +52,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         self.interfaceController = nil
     }
 
-    private static let title = "subsonic"
+    private static let title = "own.music"
 
     // MARK: - Root
 
@@ -76,8 +91,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     // MARK: - Lists
 
     private func pushAlbums(_ type: AlbumSort, title: String) async {
-        guard let client = model.activeSource else { return }
-        let albums = (try? await client.albums(type, limit: Self.maxItems)) ?? []
+        guard let client = model.activeSource,
+              let albums = await loading({ try await client.albums(type, limit: Self.maxItems) }) else { return }
         push(title: title, items: albums.map { album in
             listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
@@ -86,19 +101,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushPlaylists() async {
-        guard let client = model.activeSource else { return }
-        let playlists = (try? await client.playlists()) ?? []
+        guard let client = model.activeSource, let playlists = await loading({ try await client.playlists() }) else { return }
         push(title: String(localized: "Playlists"), items: playlists.prefix(Self.maxItems).map { playlist in
             listItem(playlist.name, detail: songCountText(playlist.songCount), artwork: playlist.coverArt) { [weak self] in
-                guard let songs = try? await client.playlist(id: playlist.id).songs else { return }
+                guard let songs = await self?.loading({ try await client.playlist(id: playlist.id).songs }) else { return }
                 self?.play(songs, containerId: "playlist:\(playlist.id)")
             }
         }, emptyText: String(localized: "No playlists"))
     }
 
     private func pushArtists() async {
-        guard let client = model.activeSource else { return }
-        let artists = (try? await client.artists()) ?? []
+        guard let client = model.activeSource, let artists = await loading({ try await client.artists() }) else { return }
         push(title: String(localized: "Artists"), items: artists.prefix(Self.maxItems).map { artist in
             let item = CPListItem(text: artist.name, detailText: nil)
             item.accessoryType = .disclosureIndicator
@@ -113,9 +126,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushArtist(_ artist: Artist) async {
-        guard let client = model.activeSource else { return }
-        let albums = (try? await client.albums(artistId: artist.id)) ?? []
-        push(title: artist.name, items: albums.map { album in
+        guard let client = model.activeSource, let albums = await loading({ try await client.albums(artistId: artist.id) }) else { return }
+        push(title: artist.name, items: albums.prefix(Self.maxItems).map { album in
             listItem(album.displayName, detail: album.year.map(String.init), artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
             }
@@ -123,7 +135,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushFavorites() async {
-        guard let client = model.activeSource, let starred = try? await client.favorites() else { return }
+        guard let client = model.activeSource, let starred = await loading({ try await client.favorites() }) else { return }
         let songs = starred.songs
         var items: [CPListItem] = []
         if !songs.isEmpty {
@@ -131,7 +143,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 self?.play(songs, containerId: "favorites")
             })
         }
-        items += starred.albums.map { album in
+        items += starred.albums.prefix(Self.maxItems - items.count).map { album in
             listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
                 await self?.playAlbum(album)
             }
@@ -143,7 +155,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func pushDownloads() {
         let downloads = model.downloads
         let collections = downloads.collections.values.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        var items = collections.map { collection in
+        var items = collections.prefix(Self.maxItems - 1).map { collection in
             let item = CPListItem(text: collection.name, detailText: collection.artist)
             item.handler = { [weak self] _, completion in
                 let songs = downloads.songs(in: collection)
@@ -169,8 +181,25 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     // MARK: - Helpers
 
+    /// The answer, or `nil` after saying on the car's screen why there is none: an empty list
+    /// or a tap that does nothing can't tell a driver "no signal" from "nothing there".
+    private func loading<T>(_ work: () async throws -> T) async -> T? {
+        do {
+            return try await work()
+        } catch {
+            let alert = CPAlertTemplate(
+                titleVariants: [error.userMessage],
+                actions: [CPAlertAction(title: String(localized: "OK"), style: .cancel) { [weak self] _ in
+                    self?.interfaceController?.dismissTemplate(animated: true) { _, _ in }
+                }]
+            )
+            interfaceController?.presentTemplate(alert, animated: true) { _, _ in }
+            return nil
+        }
+    }
+
     private func playAlbum(_ album: Album) async {
-        guard let client = model.activeSource, let songs = try? await client.album(id: album.id).songs else { return }
+        guard let client = model.activeSource, let songs = await loading({ try await client.album(id: album.id).songs }) else { return }
         play(songs, containerId: "album:\(album.id)")
     }
 

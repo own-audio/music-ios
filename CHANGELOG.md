@@ -229,6 +229,10 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- CarPlay said why a list didn't load (no signal, server error) instead of showing it empty,
+  and a tap on an album with no signal no longer does nothing; lists keep to the car's own
+  limit; a server added or chosen on the phone shows in the car at once; the title is the
+  app's name, not "subsonic".
 - A seek in a song still streaming played the next song instead, after "Could not play this
   track": the seek cancels the stream to play from the file, and the cancelled download was
   taken for a failure.
