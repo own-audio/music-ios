@@ -668,24 +668,6 @@ final class PlaybackSmokeTests: XCTestCase {
         app.buttons["settings.done"].tap()
     }
 
-    /// Offline Mode from the Downloads tab: on, the banner says so; off again, it goes.
-    func testDownloadsTabSwitchesOfflineMode() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
-        addServer(app, screenshots: false)
-        openTab(app, Self.downloadsTab)
-        let toggle = app.buttons["downloads.offlineMode"].firstMatch
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        let banner = app.descendants(matching: .any)["offline.banner"].firstMatch
-        XCTAssertFalse(banner.exists)
-        toggle.tap()
-        XCTAssertTrue(banner.waitForExistence(timeout: 5), "Offline Mode on: the banner says so")
-        screenshot(app, "12b-offline-mode-button")
-        toggle.tap()
-        XCTAssertTrue(waitUntil(timeout: 5) { !banner.exists }, "and off again")
-    }
-
     private func addServer(_ app: XCUIApplication, screenshots: Bool = true) {
         let address = app.textFields["addServer.address"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))

@@ -78,15 +78,6 @@ struct DownloadsView: View {
         }
         .navigationTitle("Downloads")
         .toolbar {
-            // Offline Mode where the offline library is: one tap and the app shows and plays
-            // only what is downloaded. The same switch as in Settings.
-            ToolbarItem(placement: .topBarLeading) {
-                Toggle(isOn: Binding(get: { model.downloadedOnly }, set: { model.downloadedOnly = $0 })) {
-                    Label("Offline Mode", systemImage: model.downloadedOnly ? "wifi.slash" : "wifi")
-                }
-                .toggleStyle(.button)
-                .accessibilityIdentifier("downloads.offlineMode")
-            }
             if !downloads.tracks.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Remove All", role: .destructive) { isConfirmingRemoveAll = true }
