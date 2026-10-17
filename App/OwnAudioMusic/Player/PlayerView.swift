@@ -211,7 +211,7 @@ struct PlayerView: View {
                 engine.togglePlayPause()
             } label: {
                 Group {
-                    if engine.isLoading {
+                    if engine.isLoading || engine.isBuffering {
                         ProgressView().tint(.white).controlSize(.large)
                     } else {
                         Image(systemName: engine.isPlaying ? "pause.circle.fill" : "play.circle.fill")

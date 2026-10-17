@@ -79,7 +79,41 @@ public actor TrackFileCache {
     private func existingCachedFile(trackId: String) -> URL? {
         let name = cacheFileName(trackId: trackId)
         return try? FileManager.default.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: nil)
-            .first { $0.deletingPathExtension().lastPathComponent == name }
+            .first { $0.deletingPathExtension().lastPathComponent == name && $0.pathExtension != "part" }
+    }
+
+    // MARK: - A stream kept as it passes
+
+    /// A fresh, empty file the streaming source writes into as the bytes arrive. Not a cached
+    /// track until `commitPartial`; `existingLocalURL` never returns it.
+    public func partialURL(trackId: String) -> URL {
+        let url = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).part")
+        try? FileManager.default.removeItem(at: url)
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        return url
+    }
+
+    /// The stream arrived whole: the partial file becomes the cached track, named by what the
+    /// bytes say it is, as a download would be.
+    public func commitPartial(trackId: String, mimeType: String?) {
+        let partial = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).part")
+        guard FileManager.default.fileExists(atPath: partial.path) else { return }
+        let head = (try? FileHandle(forReadingFrom: partial)).flatMap { handle in
+            defer { try? handle.close() }
+            return try? handle.read(upToCount: 12)
+        } ?? Data()
+        guard AudioPayloadCheck.looksLikeAudio(contentType: mimeType, prefix: head) else {
+            try? FileManager.default.removeItem(at: partial)
+            return
+        }
+        let ext = Self.fileExtension(prefix: head) ?? Self.fileExtension(mimeType: mimeType) ?? "audio"
+        let destination = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).\(ext)")
+        try? FileManager.default.removeItem(at: destination)
+        try? FileManager.default.moveItem(at: partial, to: destination)
+    }
+
+    public func discardPartial(trackId: String) {
+        try? FileManager.default.removeItem(at: cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).part"))
     }
 
     private func download(trackId: String) async throws -> URL {

@@ -229,6 +229,12 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Streaming a long track — an audiobook on a Subsonic server, say — stuttered and could end
+  the app: every decoded second was kept in memory (a stereo hour is over a gigabyte) and a
+  network that fell behind played gaps. The engine now keeps about two minutes decoded ahead
+  and fetches as playback makes room; when the network falls behind it holds, shown as loading,
+  until eight seconds are in hand; and the bytes streamed are kept in the cache as they pass,
+  so a seek within the track or a second listen plays from disk.
 - CarPlay said why a list didn't load (no signal, server error) instead of showing it empty,
   and a tap on an album with no signal no longer does nothing; lists keep to the car's own
   limit; a server added or chosen on the phone shows in the car at once; the title is the

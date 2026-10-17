@@ -87,3 +87,31 @@ struct EqualizerStoreTests {
         #expect(EqualizerStore(defaults: defaults).bandGainsDb.first == 5)
     }
 }
+
+@Suite("TrackFileCache — a stream kept as it passes")
+struct TrackFileCachePartialTests {
+    @Test("a partial file is invisible until committed, then found by its real type")
+    func partialThenCommitted() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("cache-partial-\(UUID().uuidString)", isDirectory: true)
+        let cache = TrackFileCache(remoteURL: { _ in URL(string: "https://example.com/x")! }, cacheDirectory: directory)
+        let partial = await cache.partialURL(trackId: "t/1")
+        let handle = try FileHandle(forWritingTo: partial)
+        try handle.write(contentsOf: Data("ID3".utf8) + Data(count: 64))
+        try handle.close()
+        #expect(await cache.existingLocalURL(trackId: "t/1") == nil, "half a file is not a track")
+        await cache.commitPartial(trackId: "t/1", mimeType: "application/octet-stream")
+        let committed = try #require(await cache.existingLocalURL(trackId: "t/1"))
+        #expect(committed.pathExtension == "mp3", "named by its bytes, not the content type")
+        #expect(!FileManager.default.fileExists(atPath: partial.path))
+    }
+
+    @Test("a partial that is not audio is thrown away on commit")
+    func junkIsNotKept() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("cache-partial-\(UUID().uuidString)", isDirectory: true)
+        let cache = TrackFileCache(remoteURL: { _ in URL(string: "https://example.com/x")! }, cacheDirectory: directory)
+        let partial = await cache.partialURL(trackId: "t/2")
+        try Data("{\"subsonic-response\":{\"status\":\"failed\"}}".utf8).write(to: partial)
+        await cache.commitPartial(trackId: "t/2", mimeType: "application/json")
+        #expect(await cache.existingLocalURL(trackId: "t/2") == nil)
+    }
+}

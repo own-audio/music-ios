@@ -63,6 +63,12 @@ public actor StreamingTrackSource {
             throw PlaybackError.network("Could not stream track \(trackId) (status \((response as? HTTPURLResponse)?.statusCode ?? -1))")
         }
 
+        // Every byte also goes to the cache as it passes, so a seek within the track or a
+        // second listen comes from disk rather than from the server again.
+        let partialURL = await fileCache.partialURL(trackId: trackId)
+        let partial = try? FileHandle(forWritingTo: partialURL)
+        var partialIntact = partial != nil
+        defer { try? partial?.close() }
         var pending = Data()
         pending.reserveCapacity(Self.ingestChunkSize)
         var formatReported = false
@@ -83,12 +89,20 @@ public actor StreamingTrackSource {
                     }
                 }
                 if pending.count >= Self.ingestChunkSize {
+                    if partialIntact { partialIntact = Self.append(pending, to: partial) }
                     try await ingestAndDrain(pending, onBuffer: onBuffer, formatReported: &formatReported, onFormatKnown: onFormatKnown)
                     pending.removeAll(keepingCapacity: true)
                 }
             }
             if !pending.isEmpty {
+                if partialIntact { partialIntact = Self.append(pending, to: partial) }
                 try await ingestAndDrain(pending, onBuffer: onBuffer, formatReported: &formatReported, onFormatKnown: onFormatKnown)
+            }
+            if partialIntact {
+                try? partial?.close()
+                await fileCache.commitPartial(trackId: trackId, mimeType: http.mimeType)
+            } else {
+                await fileCache.discardPartial(trackId: trackId)
             }
             try await decoder.finish()
             while let decoded = try await decoder.nextBuffer() {
@@ -101,6 +115,7 @@ public actor StreamingTrackSource {
             }
             if framesDecoded == 0 { throw AudioStreamDecoder.DecoderError.producedNothing }
         } catch let error as AudioStreamDecoder.DecoderError {
+            await fileCache.discardPartial(trackId: trackId)
             Logger.playback.error("decoding \(trackId, privacy: .public) in pieces failed (\(String(describing: error), privacy: .public)); playing the whole file instead")
             // *Any* decoding failure falls back to the file, not only the one known
             // trailing-`moov` case this started as. A track in this library reproduced the
@@ -110,6 +125,22 @@ public actor StreamingTrackSource {
             // "could not play this track" was a lie about the music rather than about us.
             guard let localURL = try? await fileCache.localURL(trackId: trackId) else { throw error }
             throw FallbackToLocalPlaybackRequired(localURL: localURL)
+        } catch {
+            // Cancelled or broken off: half a file must not pass for the track.
+            await fileCache.discardPartial(trackId: trackId)
+            throw error
+        }
+    }
+
+    /// False once a write fails; the cache then forgets the partial file rather than keep a
+    /// copy with a hole in it.
+    private static func append(_ data: Data, to handle: FileHandle?) -> Bool {
+        guard let handle else { return false }
+        do {
+            try handle.write(contentsOf: data)
+            return true
+        } catch {
+            return false
         }
     }
 

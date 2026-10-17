@@ -235,6 +235,28 @@ public final class PlaybackEngine {
     /// The current track is streaming and not all of it has arrived: its boundary ends where the
     /// data so far does, not where the track does.
     private var streamStillArriving = false
+    /// Frames of the current stream that have finished playing — with `streamingFrameCursor`,
+    /// how far ahead of the listener the schedule reaches.
+    private var streamingFramesPlayed: AVAudioFramePosition = 0
+    /// The stream's own rate, for turning the look-ahead seconds into frames.
+    private var streamingSampleRate: Double = 44_100
+    /// The stream's network task, parked while the schedule holds enough. Decoded PCM is big
+    /// (a stereo hour is over a gigabyte): without this cap an audiobook streamed whole into
+    /// memory, and the phone stuttered or killed the app long before the end.
+    private var streamRoomWaiter: CheckedContinuation<Void, Never>?
+    /// The stream fell behind the listener: the node is held, without changing `isPlaying`,
+    /// until enough has arrived to go on without the next gap. Shown as loading.
+    public private(set) var isBuffering = false
+    /// How much decoded audio is kept scheduled ahead of playback; the fetch waits above this
+    /// and goes on again below `streamResumeSecs`.
+    static let streamLookaheadSecs: Double = 120
+    static let streamResumeSecs: Double = 60
+    /// After a stall, what has to be in hand before playing on.
+    static let rebufferSecs: Double = 8
+    private var lookaheadFrames: AVAudioFramePosition { AVAudioFramePosition(Self.streamLookaheadSecs * streamingSampleRate) }
+    private var resumeFetchFrames: AVAudioFramePosition { AVAudioFramePosition(Self.streamResumeSecs * streamingSampleRate) }
+    private var rebufferFrames: AVAudioFramePosition { AVAudioFramePosition(Self.rebufferSecs * streamingSampleRate) }
+    private var streamFramesAhead: AVAudioFramePosition { streamingFrameCursor - streamingFramesPlayed }
     /// The active source's own encoded format — a streamed track's decoder-reported format
     /// (`StreamingTrackSource.currentFormatInfo()`, via `onFormatKnown`) or a local file's
     /// `AVAudioFile.fileFormat`. Reset to `nil` at the top of every `loadAndPlay`, since it
@@ -480,7 +502,8 @@ public final class PlaybackEngine {
         wireRemoteCommands()
         onWillStartPlaying?()
         if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
-        activeNode.play()
+        // Mid-stall the node stays held; `resumeAfterBuffering` starts it once there is enough.
+        if !isBuffering { activeNode.play() }
         if isCrossfading { idleNode.play() }
         isPlaying = true
         startTicking()
@@ -527,6 +550,8 @@ public final class PlaybackEngine {
         crossfadeTask?.cancel()
         prefetchNextTask?.cancel()
         streamingTask?.cancel()
+        isBuffering = false
+        resumeStreamRoomWaiter()
     }
 
     /// Deliberately ignores `repeatMode` -- a manual skip always moves one literal position
@@ -720,6 +745,8 @@ public final class PlaybackEngine {
         streamingTask = nil
         // Whatever the cancelled stream still reports belongs to a schedule that is gone.
         schedulingGeneration += 1
+        isBuffering = false
+        resumeStreamRoomWaiter()
 
         // A track with no local copy yet streams instead of waiting on a full download.
         // Seeking always uses the file path below: `StreamingTrackSource` can't seek yet, so
@@ -874,10 +901,13 @@ public final class PlaybackEngine {
         activeNode.stop()
         boundaries = []
         streamingFrameCursor = 0
+        streamingFramesPlayed = 0
         streamingBuffersPending = 0
         streamingFinishedReceiving = false
         streamStillArriving = true
         streamConverter = nil
+        isBuffering = false
+        resumeStreamRoomWaiter()
 
         if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
 
@@ -890,6 +920,8 @@ public final class PlaybackEngine {
                         guard self.schedulingGeneration == generation else { return }
                         self.scheduleStreamedBuffer(decoded, trackId: track.id, generation: generation)
                     }
+                    // The network only runs ahead so far: back-pressure through to `URLSession.bytes`.
+                    await self.waitForStreamRoom(generation: generation)
                 }, onFormatKnown: { [weak self] format in
                     guard let self else { return }
                     await MainActor.run {
@@ -932,13 +964,15 @@ public final class PlaybackEngine {
         let startFrame = streamingFrameCursor
         streamingFrameCursor += frameLength
         streamingBuffersPending += 1
+        streamingSampleRate = buffer.format.sampleRate
 
         activeNode.scheduleBuffer(buffer, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.schedulingGeneration == generation else { return }
-                self.handleStreamedBufferConsumed(generation: generation)
+                self.handleStreamedBufferConsumed(frames: frameLength, generation: generation)
             }
         }
+        if isBuffering, streamFramesAhead >= rebufferFrames { resumeAfterBuffering() }
 
         if boundaries.isEmpty {
             boundaries = [ScheduledBoundary(
@@ -983,10 +1017,41 @@ public final class PlaybackEngine {
     /// A streamed buffer finished *playing* (as opposed to finished arriving, which
     /// `finishStreamingReceiving` tracks separately) — only once both are true does the track
     /// actually end, the streaming analogue of a file's single `scheduleFile` completion.
-    private func handleStreamedBufferConsumed(generation: UInt64) {
+    private func handleStreamedBufferConsumed(frames: AVAudioFramePosition, generation: UInt64) {
         streamingBuffersPending -= 1
-        guard streamingFinishedReceiving, streamingBuffersPending <= 0 else { return }
-        handleActiveNodeConsumedSegment()
+        streamingFramesPlayed += frames
+        if streamFramesAhead <= resumeFetchFrames { resumeStreamRoomWaiter() }
+        if streamingFinishedReceiving {
+            if streamingBuffersPending <= 0 { handleActiveNodeConsumedSegment() }
+            return
+        }
+        // The listener caught up with the network: hold here rather than stutter through the
+        // rest, and go on once `rebufferSecs` are in hand again.
+        if streamingBuffersPending <= 0, isPlaying, !isBuffering {
+            Logger.playback.info("stream fell behind at \(self.currentTime, format: .fixed(precision: 1), privacy: .public); buffering")
+            isBuffering = true
+            activeNode.pause()
+        }
+    }
+
+    /// Lets the stream's network task go on; called whenever the schedule has room again or the
+    /// stream it was feeding is over.
+    private func resumeStreamRoomWaiter() {
+        streamRoomWaiter?.resume()
+        streamRoomWaiter = nil
+    }
+
+    /// Parks the stream's task while more than `streamLookaheadSecs` are scheduled and unplayed.
+    /// Returns at once for a stream that is no longer the current one.
+    private func waitForStreamRoom(generation: UInt64) async {
+        while schedulingGeneration == generation, streamFramesAhead > lookaheadFrames {
+            await withCheckedContinuation { streamRoomWaiter = $0 }
+        }
+    }
+
+    private func resumeAfterBuffering() {
+        isBuffering = false
+        if isPlaying { activeNode.play() }
     }
 
     /// The network side of the current track is done — every byte has arrived and been decoded
@@ -996,6 +1061,8 @@ public final class PlaybackEngine {
     private func finishStreamingReceiving(generation: UInt64) {
         streamingFinishedReceiving = true
         streamStillArriving = false
+        resumeStreamRoomWaiter()
+        if isBuffering { resumeAfterBuffering() }
         adoptDurationFromStream()
         if streamingBuffersPending <= 0 {
             // Every scheduled buffer already finished playing before the network finished
@@ -1053,6 +1120,7 @@ public final class PlaybackEngine {
     /// from a different starting point.
     private func switchToLocalFile(_ url: URL, track: Track, generation: UInt64) {
         streamStillArriving = false
+        isBuffering = false
         guard let file = try? AVAudioFile(forReading: url) else {
             handleLoadFailure(loc("Could not load this track."))
             return

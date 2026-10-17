@@ -34,7 +34,7 @@ struct MiniPlayerBar: View {
 
                         Spacer()
 
-                        if engine.isLoading {
+                        if engine.isLoading || engine.isBuffering {
                             ProgressView().frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
                         } else {
                             Button {

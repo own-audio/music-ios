@@ -380,4 +380,60 @@ struct PlaybackEngineStreamingTests {
             try await Task.sleep(nanoseconds: 50_000_000)
         }
     }
+
+    /// A WAV of `seconds` of silence at 8 kHz mono, 16-bit: long enough to outrun the look-ahead,
+    /// small enough to build in a test, and a format Core Audio parses as a stream.
+    private nonisolated static func silentWAV(seconds: Int) -> Data {
+        let rate: UInt32 = 8000
+        let samples = UInt32(seconds) * rate
+        func le32(_ v: UInt32) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        func le16(_ v: UInt16) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        var wav = Data("RIFF".utf8)
+        wav.append(le32(36 + samples * 2))
+        wav.append(Data("WAVEfmt ".utf8))
+        wav.append(le32(16)); wav.append(le16(1)); wav.append(le16(1))
+        wav.append(le32(rate)); wav.append(le32(rate * 2)); wav.append(le16(2)); wav.append(le16(16))
+        wav.append(Data("data".utf8))
+        wav.append(le32(samples * 2))
+        wav.append(Data(count: Int(samples) * 2))
+        return wav
+    }
+
+    @Test("a long stream is decoded no further than the look-ahead while playback waits")
+    func longStreamStaysWithinLookahead() async throws {
+        // Twenty minutes: ten times the look-ahead, far too much to hold decoded.
+        let harness = try await makeHarness(suffix: "lookahead", audioData: Self.silentWAV(seconds: 1200))
+        await harness.engine.play(tracks: [makeTrack(id: "long", durationSecs: 1200)])
+        try await waitUntil(timeout: 10) { harness.engine.isPlaying }
+        harness.engine.pause()
+        // Give the decoder every chance to run ahead; it must stop at the cap.
+        try await Task.sleep(nanoseconds: 3_000_000_000)
+        let buffered = harness.engine.bufferedTime
+        #expect(buffered > 0, "something should be scheduled")
+        #expect(buffered <= PlaybackEngine.streamLookaheadSecs + 30, "the schedule should stop near the look-ahead, not take the whole track: \(buffered) s")
+        harness.engine.stop()
+    }
+
+    @Test("a stream slower than it plays holds instead of stuttering, then finishes")
+    func slowStreamBuffersThenFinishes() async throws {
+        // Three seconds of audio trickled over six: the listener catches up with the network.
+        let harness = try await makeHarness(suffix: "trickle", audioData: try fixtureData("test-tone.mp3"), trickle: ["slow"])
+        await harness.engine.play(tracks: [makeTrack(id: "slow")])
+        try await waitUntil(timeout: 10) { harness.engine.isPlaying }
+        var sawBuffering = false
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline, harness.engine.currentTrack != nil {
+            if harness.engine.isBuffering { sawBuffering = true }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        #expect(sawBuffering, "the player should have paused for the network at least once")
+        #expect(harness.engine.currentTrack == nil, "the track should still play to its end")
+        #expect(harness.engine.errorMessage == nil)
+    }
+
+    private func waitUntil(timeout: Double, _ condition: @MainActor () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline, !condition() { try await Task.sleep(nanoseconds: 50_000_000) }
+        #expect(condition())
+    }
 }
