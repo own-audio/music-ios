@@ -416,6 +416,8 @@ final class PlaybackSmokeTests: XCTestCase {
 
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'downloads.album.'")).firstMatch
         XCTAssertTrue(collection.waitForExistence(timeout: 20), "the downloaded album should be listed offline")
+        let source = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'downloads.source.'")).firstMatch
+        XCTAssertTrue(source.exists && !source.label.isEmpty, "and say which server it came from")
         screenshot(app, "12-downloads")
         collection.tap()
 

@@ -67,7 +67,7 @@ struct DownloadsView: View {
                             Button {
                                 model.play(downloaded: loose, startTrackId: item.trackId)
                             } label: {
-                                DownloadedSongRow(item: item)
+                                DownloadedSongRow(item: item, showsSource: true)
                             }
                             .buttonStyle(.plain)
                         }
@@ -98,6 +98,9 @@ struct DownloadsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             VStack(alignment: .leading, spacing: 2) {
                 Text(collection.name).lineLimit(1)
+                // Which server it came from: with several, the same album can be on more than one.
+                DownloadSourceLabel(serverId: collection.serverId)
+                    .accessibilityIdentifier("downloads.source.\(collection.name)")
                 if let progress = downloads.progress(of: collection.id) {
                     Text(progress.done == progress.total
                         ? songCountText(progress.total)
@@ -169,9 +172,28 @@ struct DownloadedCollectionView: View {
     }
 }
 
+/// The server a download came from, small, under its title.
+struct DownloadSourceLabel: View {
+    @Environment(AppModel.self) private var model
+    let serverId: UUID?
+
+    var body: some View {
+        let name = serverId.flatMap { id in model.servers.first { $0.id == id }?.displayName }
+        HStack(spacing: 4) {
+            Image(systemName: "server.rack").imageScale(.small).accessibilityHidden(true)
+            Text(name ?? String(localized: "Removed server"))
+        }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+    }
+}
+
 struct DownloadedSongRow: View {
     @Environment(AppModel.self) private var model
     let item: DownloadManager.DownloadedTrack
+    /// In the Downloads list's loose songs; an album's own list doesn't repeat it per song.
+    var showsSource = false
 
     var body: some View {
         HStack(spacing: Theme.Spacing.md) {
@@ -184,6 +206,7 @@ struct DownloadedSongRow: View {
                     .foregroundStyle(model.engine.currentTrack?.id == item.trackId ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
                     .lineLimit(1)
                 Text(item.song.artist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if showsSource { DownloadSourceLabel(serverId: TrackID.parse(item.trackId)?.serverId) }
             }
             Spacer(minLength: 0)
             Text(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))
