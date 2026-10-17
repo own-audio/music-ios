@@ -411,10 +411,8 @@ final class PlaybackSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 15))
         sleep(2)
         screenshot(app, "11-offline-home")
-        openTab(app, Self.libraryTab)
-        let downloadsLink = app.buttons["library.downloads"]
-        XCTAssertTrue(downloadsLink.waitForExistence(timeout: 10))
-        downloadsLink.tap()
+        // The Downloads tab, where a listener looks for what is on the phone.
+        openTab(app, Self.downloadsTab)
 
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'downloads.album.'")).firstMatch
         XCTAssertTrue(collection.waitForExistence(timeout: 20), "the downloaded album should be listed offline")
@@ -670,6 +668,24 @@ final class PlaybackSmokeTests: XCTestCase {
         app.buttons["settings.done"].tap()
     }
 
+    /// Offline Mode from the Downloads tab: on, the banner says so; off again, it goes.
+    func testDownloadsTabSwitchesOfflineMode() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launch()
+        addServer(app, screenshots: false)
+        openTab(app, Self.downloadsTab)
+        let toggle = app.buttons["downloads.offlineMode"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        let banner = app.descendants(matching: .any)["offline.banner"].firstMatch
+        XCTAssertFalse(banner.exists)
+        toggle.tap()
+        XCTAssertTrue(banner.waitForExistence(timeout: 5), "Offline Mode on: the banner says so")
+        screenshot(app, "12b-offline-mode-button")
+        toggle.tap()
+        XCTAssertTrue(waitUntil(timeout: 5) { !banner.exists }, "and off again")
+    }
+
     private func addServer(_ app: XCUIApplication, screenshots: Bool = true) {
         let address = app.textFields["addServer.address"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))
@@ -705,6 +721,7 @@ final class PlaybackSmokeTests: XCTestCase {
 
     static let homeTab = ["Home", "Domů"]
     static let libraryTab = ["Library", "Knihovna"]
+    static let downloadsTab = ["Downloads", "Stažené"]
     static let playlistsTab = ["Playlists", "Playlisty"]
     static let searchTab = ["Search", "Hledat"]
 

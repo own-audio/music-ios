@@ -7,7 +7,7 @@ struct RootView: View {
     @State private var isShowingPlayer = false
     @State private var tab: AppTab = .home
 
-    private enum AppTab: Hashable { case home, library, playlists, search }
+    private enum AppTab: Hashable { case home, library, playlists, downloads, search }
 
     var body: some View {
         Group {
@@ -54,6 +54,14 @@ struct RootView: View {
             Tab("Playlists", systemImage: "music.note.list", value: AppTab.playlists) {
                 NavigationStack {
                     PlaylistsView().libraryDestinations()
+                }
+                .miniPlayerInset { isShowingPlayer = true }
+            }
+            // What is on this iPhone: where a downloaded album or playlist is found, and what
+            // still plays with no network.
+            Tab("Downloads", systemImage: "arrow.down.circle", value: AppTab.downloads) {
+                NavigationStack {
+                    DownloadsView().libraryDestinations()
                 }
                 .miniPlayerInset { isShowingPlayer = true }
             }

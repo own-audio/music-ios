@@ -38,6 +38,9 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- An Offline Mode switch on the Downloads tab, beside the list it narrows the app to.
+- A Downloads tab: the albums, playlists and songs on this iPhone, one tap from anywhere (it
+  was inside Library before).
 - CarPlay: the app carries Apple's CarPlay audio entitlement (granted 2026-10-16), so the
   CarPlay screens built earlier show in a car: Recently Played, Recently Added, Playlists,
   Artists, Favorites and Downloads, and Now Playing.
