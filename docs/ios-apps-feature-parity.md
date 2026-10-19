@@ -2,7 +2,7 @@
 
 Music (`music-ios`, own.music), Books (`book-ios`, own.book) and Podcasts
 (`podcast-ios`, own.podcast) side by side, so nothing is forgotten and the three
-stay consistent. Taken from the code on 2026-10-18, the Podcasts column updated 2026-10-19 after its parity work; where a README claims more
+stay consistent. Taken from the code on 2026-10-18, the Podcasts and Books columns updated 2026-10-19 after their parity work; where a README claims more
 than the code does, the table follows the code.
 
 Update a row when a feature lands, and tick the list at the bottom.
@@ -50,9 +50,9 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Canary button (TestFlight builds) | ✅ | ✅ | ✅ |
 | Several servers + switch menu | ✅ Home | ✅ Home (+ each ABS library) | ✅ New Episodes (+ "All Sources" merged) |
 | Server page: status, Check Now, Sign In Again | ✅ | ✅ | ✅ |
-| Add your own addresses / fixed connection in the UI | ✅ | **◐ model only, no screen** | ✅ |
+| Add your own addresses / fixed connection in the UI | ✅ | ✅ | ✅ |
 | Address racing, own.audio address rewrite | ✅ | ✅ | ✅ |
-| Server logos | ✅ | **—** | ✅ |
+| Server logos | ✅ | ✅ | ✅ |
 | "Library on This iPhone" with Update Now | ✅ | ✅ | n/a |
 | Devices list / Sign Out Everywhere | **—** | ✅ | ✅ on the server page |
 | Family screen (members, invites, credit) | ✅ | ✅ | ✅ on the server page |
@@ -68,7 +68,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Search your own library | ✅ | ✅ | ✅ shows and episodes, offline too |
 | Grid/list switch | — | ✅ | — |
 | iPad sidebar | ✅ | ✅ | ✅ |
-| Favourites list | ✅ | **◐ toggle only, badge never set** | — |
+| Favourites list | ✅ | ✅ filter in Library, badge on covers | — |
 | Pull to refresh, "That Didn't Work" alert | ✅ | ✅ | ✅ |
 
 ## Playback
@@ -89,8 +89,8 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Chapters | n/a | ✅ (server, file, per file) | ✅ (feed, server, file) |
 | Bookmarks | n/a | ✅ | — |
 | Queue | ◐ view and jump only | — | ✅ Up Next across sources: reorder, remove, plays on |
-| Last item back after relaunch | — | — | ✅ |
-| AirPlay button | ✅ | **—** | ✅ |
+| Last item back after relaunch | — | ✅ shown, loaded on play | ✅ |
+| AirPlay button | ✅ | ✅ | ✅ |
 | Lock screen, interruptions, headphones unplugged | ✅ | ✅ | ✅ |
 | Mobile data: Original / Saver / Downloaded Only | ✅ | ✅ | ✅ Stream / Downloaded Only (a feed has no Saver) |
 | Listening cache | ✅ | ✅ | ✅ |
@@ -135,6 +135,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | MusicBrainz identify | ✅ | — | — |
 | Ebook narration (with translation) | — | ✅ | — |
 | Summaries and Ask | — | — | ✅ |
+| Discover: categories, search, shows like yours | n/a | n/a | ✅ own.audio catalogue, else Apple's charts |
 | Smart playlists, Instant Mix | ✅ | n/a | n/a |
 | OPML import/export | n/a | n/a | 📋 |
 | Transcript viewer | n/a | n/a | ◐ parsed, no viewer |
@@ -144,10 +145,10 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Feature | Music | Books | Podcasts |
 |---|---|---|---|
 | Widget | **—** | ✅ (untested) | ✅ Up Next (untested on a device) |
-| Live Activity | **—** | ✅ (icons fixed at 15/30 s) | ✅ (icons follow the skip intervals) |
+| Live Activity | **—** | ✅ (icons follow the skip intervals) | ✅ (icons follow the skip intervals) |
 | Siri / App Intents | **—** | ✅ | ✅ |
 | Deep links | **—** | ✅ `ownbook://` | ✅ `ownpodcast://`, `feed://`, `podcast://` |
-| Background refresh, Handoff, Spotlight, notifications | — | — | ◐ background refresh only |
+| Background refresh, Handoff, Spotlight, notifications | — | ◐ background refresh only | ◐ background refresh only |
 | Share sheet | invites | invites | Share Feed |
 
 ## Settings & look
@@ -160,7 +161,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | About: version, source, licence | ✅ | ✅ | ✅ |
 | About: Privacy link | **—** | ✅ | ✅ |
 | Privacy manifest, no analytics | ✅ | ✅ | ✅ |
-| Log viewer, licences screen | — | — | ◐ log viewer only |
+| Log viewer, licences screen | — | ◐ log viewer only | ◐ log viewer only |
 
 ## To do
 
@@ -195,12 +196,12 @@ The counts come from the rows of the tables below. Rows that only describe somet
 - [x] Mobile-data quality setting → Podcasts
 - [x] Offline switch in Settings → Podcasts
 - [x] Family screen → Podcasts
-- [ ] Server logos → Books
+- [x] Server logos → Books
 
 ### 4. Small differences
 
 - [ ] Same speed presets in Books (0.75/1.25) and Podcasts (0.8/1.2)
-- [ ] Add-your-own-address screen in Books
+- [x] Add-your-own-address screen in Books
 - [x] Chapters read from the audio file in Podcasts, as Books does
 - [ ] Bring back the last-played item after a relaunch (none of the three does)
-- [ ] Books Live Activity: icons follow the chosen skip intervals (now always 15 s back and 30 s forward)
+- [x] Books Live Activity: icons follow the chosen skip intervals (now always 15 s back and 30 s forward)

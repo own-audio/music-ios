@@ -29,8 +29,8 @@ Each item takes about an hour; do this phase first.
 - [ ] Music: Privacy link in Settings → About (as in Books/Podcasts)
 - [ ] Music: show Apple/Google buttons only when the server offers them (Books/Podcasts: `ProviderButtons`, 600 ms after typing)
 - [x] Podcasts: canary button in TestFlight/Debug builds (`TestServers.swift` from Books)
-- [ ] Books + Podcasts: one set of speed presets (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3) — *Podcasts done 2026-10-19*
-- [ ] Books: Live Activity button icons follow the chosen skip intervals
+- [x] Books + Podcasts: one set of speed presets (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3) — *Podcasts done 2026-10-19*
+- [x] Books: Live Activity button icons follow the chosen skip intervals
 - [x] Podcasts: hide Unfollow on own.audio and Audiobookshelf shows until it works
 - [x] Podcasts: README lists only what ships; the rest goes under "Coming"
 
@@ -39,8 +39,8 @@ Each item takes about an hour; do this phase first.
 - [ ] Music: "End of track" button in the sleep sheet (the engine has `startUntilEndOfItem`)
 - [ ] Music: sleep countdown badge on the cover
 - [ ] Music: resume position — either read it back (e.g. for long tracks and mixes) or delete the store
-- [ ] Books + Podcasts: AirPlay button in the player (`AirPlayRouteButton` from Music) — *Podcasts done 2026-10-19*
-- [ ] All three: restore the last item in the mini player after a relaunch, paused at its position — *Podcasts done 2026-10-19*
+- [x] Books + Podcasts: AirPlay button in the player (`AirPlayRouteButton` from Music) — *Podcasts done 2026-10-19*
+- [ ] All three: restore the last item in the mini player after a relaunch, paused at its position — *Podcasts and Books done 2026-10-19*
 - [x] Podcasts: chapters read from the audio file when the feed has none (as Books does)
 
 ## P3 — Downloads and offline parity (Podcasts P7)
@@ -63,8 +63,8 @@ This is the biggest phase. Books is the model.
 - [ ] Music + Podcasts: Devices screen — signed-in devices, sign one out, Sign Out Everywhere (`DevicesView` from Books) — *Podcasts done 2026-10-19*
 - [x] Podcasts: Family screen (`HouseholdView` from Books/Music)
 - [x] Podcasts: live `/events` updates from own.audio while in the foreground
-- [ ] Books: server logos in the list, menu and detail page
-- [ ] Books: screen to add your own addresses and pin a fixed connection (the model supports it)
+- [x] Books: server logos in the list, menu and detail page
+- [x] Books: screen to add your own addresses and pin a fixed connection (the model supports it)
 
 ## P5 — System integration
 
@@ -83,13 +83,13 @@ Books is the model for all of these.
 - [ ] Music: Play Next / Add to Queue, plus reorder and remove in the queue sheet
 - [x] Podcasts: search your own shows and episodes, beside the directory search
 - [x] Podcasts: iPad sidebar (split view)
-- [ ] Books: Favourites list or filter (the badge is never set yet)
+- [x] Books: Favourites list or filter (the badge is never set yet)
 - [x] Podcasts: sort shows (title, recently updated) and filter episodes (unplayed, downloaded)
 
 ## P7 — Shared quality
 
-- [ ] All three: log viewer with export in Settings, for bug reports (no analytics) — *Podcasts done 2026-10-19*
-- [ ] All three: background refresh (`BGAppRefreshTask`) — feeds for Podcasts, the catalogue for Music/Books — *Podcasts done 2026-10-19*
+- [ ] All three: log viewer with export in Settings, for bug reports (no analytics) — *Podcasts and Books done 2026-10-19*
+- [ ] All three: background refresh (`BGAppRefreshTask`) — feeds for Podcasts, the catalogue for Music/Books — *Podcasts and Books done 2026-10-19*
 - [ ] All three: UI tests for every feature added in P1–P6, in English and Czech and at the largest text size
 - [ ] Update the parity table and the statistics
 
