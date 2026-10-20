@@ -250,6 +250,50 @@ struct PlaybackEngineStreamingTests {
         #expect(harness.engine.currentTrack == nil)
     }
 
+    @Test("the sleep timer's end of track: the first track plays out, the next waits paused at its start")
+    func sleepAtEndOfTrack() async throws {
+        let harness = try await makeHarness(suffix: "sleep", audioData: try fixtureData("test-tone.mp3"))
+        var completed: [String] = []
+        harness.engine.onPlaybackStopped = { track, _, reason in
+            if reason == .completed { completed.append(track.id) }
+        }
+
+        await harness.engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "second")])
+        harness.engine.sleepTimer.startUntilEndOfItem()
+        try await waitUntil(timeout: 15) { completed == ["first"] && !harness.engine.isPlaying }
+
+        #expect(harness.engine.currentTrack?.id == "second", "the next track is the current one")
+        #expect(harness.engine.currentTime < 1, "at its start: \(harness.engine.currentTime)")
+        #expect(!harness.engine.sleepTimer.isActive, "the timer is spent")
+        try await Task.sleep(for: .seconds(4))
+        #expect(completed == ["first"], "and stays paused")
+    }
+
+    /// Play Next once the old next track is already chained onto the node: the new one plays
+    /// next, then the rest, each once.
+    @Test("Play Next after the next track is chained: the new one plays next, nothing twice")
+    func playNextAfterChain() async throws {
+        let harness = try await makeHarness(suffix: "play-next", audioData: try fixtureData("test-tone.mp3"))
+        var started: [String] = []
+        var completed: [String] = []
+        harness.engine.onPlaybackStarted = { track, _ in started.append(track.id) }
+        harness.engine.onPlaybackStopped = { track, _, reason in
+            if reason == .completed { completed.append(track.id) }
+        }
+
+        await harness.engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "second")])
+        try await waitUntil(timeout: 5) { harness.engine.isPlaying }
+        // Long enough for "second" to be fetched and chained.
+        try await Task.sleep(for: .seconds(1.5))
+        harness.engine.playNext([makeTrack(id: "inserted")])
+        #expect(harness.engine.upcomingTracks.map(\.id) == ["inserted", "second"])
+        try await waitUntil(timeout: 30) { completed.contains("second") }
+
+        #expect(started.filter { $0 != "first" } == ["inserted", "second"], "in the new order: \(started)")
+        #expect(completed == ["first", "inserted", "second"], "each once: \(completed)")
+        harness.engine.stop()
+    }
+
     /// A skip while the next track is still being fetched to follow the current one: the fetch
     /// belongs to the old schedule and must not chain anything onto the new one.
     @Test("a skip while the next track is still downloading: each track plays once, in order")

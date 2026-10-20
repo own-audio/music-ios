@@ -176,4 +176,79 @@ public struct PlayQueue: Sendable {
         isShuffled = true
         position = 0
     }
+
+    // MARK: - Editing what is still to come
+
+    /// Puts `tracks` right after the current one, in their order. A track already in the queue
+    /// moves rather than appearing twice (ids find tracks here); the current track stays put.
+    public mutating func insertNext(_ incoming: [Track]) {
+        insert(incoming, atOrderPosition: { $0.position + 1 }, canonicalAfterCurrent: true)
+    }
+
+    /// Puts `tracks` at the end, in their order; a track already waiting moves there.
+    public mutating func append(_ incoming: [Track]) {
+        insert(incoming, atOrderPosition: { $0.order.count }, canonicalAfterCurrent: false)
+    }
+
+    /// Moves rows of `upcoming`, as a list's drag does: `offsets` and `destination` count from
+    /// the first upcoming track.
+    public mutating func moveUpcoming(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        let base = position + 1
+        guard base < order.count else { return }
+        var upcoming = Array(order[base...])
+        let moving = offsets.filter { upcoming.indices.contains($0) }.map { upcoming[$0] }
+        let before = offsets.filter { $0 < destination }.count
+        for offset in offsets.sorted(by: >) where upcoming.indices.contains(offset) { upcoming.remove(at: offset) }
+        upcoming.insert(contentsOf: moving, at: min(max(destination - before, 0), upcoming.count))
+        order = Array(order[..<base]) + upcoming
+        settleCanonicalOrder()
+    }
+
+    /// Removes rows of `upcoming`.
+    public mutating func removeUpcoming(atOffsets offsets: IndexSet) {
+        let ids = offsets.compactMap { offset in upcoming.indices.contains(offset) ? upcoming[offset].id : nil }
+        for id in ids {
+            if let index = tracks.firstIndex(where: { $0.id == id }) { removeTrack(at: index) }
+        }
+    }
+
+    private mutating func insert(_ incoming: [Track], atOrderPosition where: (Self) -> Int, canonicalAfterCurrent: Bool) {
+        let currentId = currentTrack?.id
+        var seen = Set<String>()
+        let incoming = incoming.filter { $0.id != currentId && seen.insert($0.id).inserted }
+        guard !incoming.isEmpty else { return }
+        for track in incoming {
+            if let index = tracks.firstIndex(where: { $0.id == track.id }) { removeTrack(at: index) }
+        }
+        var orderPosition = min(`where`(self), order.count)
+        // Without shuffle the list a screen shows is the play order, so new tracks go into it
+        // where they will play.
+        var canonical = canonicalAfterCurrent
+            ? (currentTrack.flatMap { current in tracks.firstIndex { $0.id == current.id } }.map { $0 + 1 } ?? tracks.count)
+            : tracks.count
+        if !isShuffled { canonical = orderPosition }
+        for track in incoming {
+            tracks.insert(track, at: canonical)
+            order = order.map { $0 >= canonical ? $0 + 1 : $0 }
+            order.insert(canonical, at: orderPosition)
+            canonical += 1
+            orderPosition += 1
+        }
+    }
+
+    /// Drops one track from both orders, keeping the current track current.
+    private mutating func removeTrack(at index: Int) {
+        guard let orderIndex = order.firstIndex(of: index), orderIndex != position || position >= order.count else { return }
+        tracks.remove(at: index)
+        order.remove(at: orderIndex)
+        order = order.map { $0 > index ? $0 - 1 : $0 }
+        if orderIndex < position { position -= 1 }
+    }
+
+    /// Without shuffle, the canonical order is the play order: a move changes both.
+    private mutating func settleCanonicalOrder() {
+        guard !isShuffled else { return }
+        tracks = order.map { tracks[$0] }
+        order = Array(tracks.indices)
+    }
 }

@@ -25,9 +25,9 @@ These stay in one app because they only make sense for its content.
 
 Each item takes about an hour; do this phase first.
 
-- [ ] Music: give it its own accent colour (the AccentColor asset is empty)
-- [ ] Music: Privacy link in Settings → About (as in Books/Podcasts)
-- [ ] Music: show Apple/Google buttons only when the server offers them (Books/Podcasts: `ProviderButtons`, 600 ms after typing)
+- [x] Music: give it its own accent colour (the AccentColor asset is empty)
+- [x] Music: Privacy link in Settings → About (as in Books/Podcasts)
+- [x] Music: show Apple/Google buttons only when the server offers them (Books/Podcasts: `ProviderButtons`, 600 ms after typing)
 - [x] Podcasts: canary button in TestFlight/Debug builds (`TestServers.swift` from Books)
 - [x] Books + Podcasts: one set of speed presets (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3) — *Podcasts done 2026-10-19*
 - [x] Books: Live Activity button icons follow the chosen skip intervals
@@ -36,11 +36,11 @@ Each item takes about an hour; do this phase first.
 
 ## P2 — Player parity
 
-- [ ] Music: "End of track" button in the sleep sheet (the engine has `startUntilEndOfItem`)
-- [ ] Music: sleep countdown badge on the cover
-- [ ] Music: resume position — either read it back (e.g. for long tracks and mixes) or delete the store
+- [x] Music: "End of track" button in the sleep sheet (the engine has `startUntilEndOfItem`)
+- [x] Music: sleep countdown badge on the cover
+- [x] Music: resume position — either read it back (e.g. for long tracks and mixes) or delete the store — *read back: the last queue keeps the position across a relaunch, 2026-10-20*
 - [x] Books + Podcasts: AirPlay button in the player (`AirPlayRouteButton` from Music) — *Podcasts done 2026-10-19*
-- [ ] All three: restore the last item in the mini player after a relaunch, paused at its position — *Podcasts and Books done 2026-10-19*
+- [x] All three: restore the last item in the mini player after a relaunch, paused at its position — *Podcasts and Books 2026-10-19, Music 2026-10-20*
 - [x] Podcasts: chapters read from the audio file when the feed has none (as Books does)
 
 ## P3 — Downloads and offline parity (Podcasts P7)
@@ -55,12 +55,12 @@ This is the biggest phase. Books is the model.
 - [x] Podcasts: wire the listening cache (`TrackFileCache`)
 - [x] Podcasts: Offline Mode switch in Settings as well
 - [x] Podcasts: offline progress queue that retries (`PendingProgress` from Books)
-- [ ] Music: Download on Wi-Fi Only and Keep at Most (storage limit with eviction)
-- [ ] Music: downloads in a background session that survives a kill (now they resume on the next launch)
+- [x] Music: Download on Wi-Fi Only and Keep at Most (storage limit with eviction)
+- [x] Music: downloads in a background session that survives a kill (now they resume on the next launch)
 
 ## P4 — Accounts and server parity
 
-- [ ] Music + Podcasts: Devices screen — signed-in devices, sign one out, Sign Out Everywhere (`DevicesView` from Books) — *Podcasts done 2026-10-19*
+- [x] Music + Podcasts: Devices screen — signed-in devices, sign one out, Sign Out Everywhere (`DevicesView` from Books) — *Podcasts 2026-10-19, Music 2026-10-20*
 - [x] Podcasts: Family screen (`HouseholdView` from Books/Music)
 - [x] Podcasts: live `/events` updates from own.audio while in the foreground
 - [x] Books: server logos in the list, menu and detail page
@@ -70,17 +70,17 @@ This is the biggest phase. Books is the model.
 
 Books is the model for all of these.
 
-- [ ] Music + Podcasts: Continue Listening / Recently Played widget (App Group snapshot) — *Podcasts done 2026-10-19*
-- [ ] Music + Podcasts: Live Activity (lock screen and Dynamic Island, with buttons that work without opening the app) — *Podcasts done 2026-10-19*
-- [ ] Music + Podcasts: Siri / App Intents ("Play … in own.music", "Continue my podcast"), phrases in English and Czech — *Podcasts done 2026-10-19*
-- [ ] Music + Podcasts: deep links (`ownmusic://`, `ownpodcast://`, plus `podcast://` and `feed://` for following a show) — *Podcasts done 2026-10-19*
+- [x] Music + Podcasts: Continue Listening / Recently Played widget (App Group snapshot) — *Podcasts 2026-10-19, Music 2026-10-20*
+- [x] Music + Podcasts: Live Activity (lock screen and Dynamic Island, with buttons that work without opening the app) — *Podcasts 2026-10-19, Music 2026-10-20*
+- [x] Music + Podcasts: Siri / App Intents ("Play … in own.music", "Continue my podcast"), phrases in English and Czech — *Podcasts 2026-10-19, Music 2026-10-20*
+- [x] Music + Podcasts: deep links (`ownmusic://`, `ownpodcast://`, plus `podcast://` and `feed://` for following a show) — *Podcasts 2026-10-19, Music 2026-10-20*
 - [x] Podcasts: CarPlay (lists: New Episodes, Downloads, Shows)
 - [ ] All three: try CarPlay, the widget and the Live Activity on a real device and in a car
 
 ## P6 — Browsing parity
 
 - [x] Podcasts: Up Next queue UI — Play Next, Play Later, reorder; the logic and tests are already in `FeedLibrary`
-- [ ] Music: Play Next / Add to Queue, plus reorder and remove in the queue sheet
+- [x] Music: Play Next / Add to Queue, plus reorder and remove in the queue sheet
 - [x] Podcasts: search your own shows and episodes, beside the directory search
 - [x] Podcasts: iPad sidebar (split view)
 - [x] Books: Favourites list or filter (the badge is never set yet)
@@ -88,10 +88,10 @@ Books is the model for all of these.
 
 ## P7 — Shared quality
 
-- [ ] All three: log viewer with export in Settings, for bug reports (no analytics) — *Podcasts and Books done 2026-10-19*
-- [ ] All three: background refresh (`BGAppRefreshTask`) — feeds for Podcasts, the catalogue for Music/Books — *Podcasts and Books done 2026-10-19*
-- [ ] All three: UI tests for every feature added in P1–P6, in English and Czech and at the largest text size
-- [ ] Update the parity table and the statistics
+- [x] All three: log viewer with export in Settings, for bug reports (no analytics) — *Podcasts and Books 2026-10-19, Music 2026-10-20*
+- [x] All three: background refresh (`BGAppRefreshTask`) — feeds for Podcasts, the catalogue for Music/Books — *Podcasts and Books 2026-10-19, Music 2026-10-20*
+- [ ] All three: UI tests for every feature added in P1–P6, in English and Czech and at the largest text size — *each app has its features' tests in English, a Czech and a largest-text pass; not every new feature in Czech yet*
+- [x] Update the parity table and the statistics — *2026-10-20*
 
 ## Open questions
 

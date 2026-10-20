@@ -9,6 +9,74 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Parity with the books and podcasts apps
+
+- The app's own colour: music pink from the family's design tokens (`#D63A6A`, `#FF6482` in dark),
+  in the AccentColor asset, which was empty — the app showed the system blue, close to the podcasts
+  app's.
+- Apple and Google sign-in show only for an own.audio server that takes them, asked 600 ms after the
+  address stops changing, as in the other apps; before, both always showed and failed afterwards.
+- A Privacy link in Settings → About, as in the other apps.
+- UI tests (`MusicParityTests`): the sign-in buttons follow the server; the Privacy link is there.
+- Sleep timer: **End of Track** in the sleep sheet, and the timer on the cover (time left, or "End
+  of track"), as in the other apps. Stopping at the end of a track works with gapless chaining —
+  the next track is cued but stays paused — and crossfade doesn't start while it is set.
+- After a relaunch the mini player shows the queue from before, at its track and position, paused;
+  a tap plays it from there. Kept in `last-queue.json` (Application Support), written when the
+  track changes, playback pauses or the app goes to the background.
+- Tests: `PlaybackEngineStreamingTests.sleepAtEndOfTrack`; UI test
+  `PlaybackSmokeTests.testSleepBadgeAndLastQueueAfterRelaunch`.
+- UI tests open iOS 26's folded tab bar: with Search selected, the other tabs fold into one button,
+  and the misuse test's fast tab switching couldn't find Home on any server.
+- Downloads go through a background `URLSession`, as in the books and podcasts apps: a song keeps
+  downloading with the app in the background or killed, and iOS wakes the app to hand the session
+  the next ones (two at a time, so signed links are fresh). Interrupted songs resume from where
+  they stopped. Before, downloads stopped with the app and started over on the next launch.
+- **Download on Wi-Fi Only** (on by default) and **Keep at Most** (1–50 GB or no limit) in
+  Settings. Over the limit, the songs not played for longest go first, never the one playing;
+  `EvictionPolicy` is copied from the podcasts app into `MusicLibrary`, with its tests and one for
+  songs.
+- UI test `MusicParityTests.testDownloadSettings`: the default, the choice, and both kept across a
+  relaunch.
+- **Devices** in Settings for an own.audio server: the account's signed-in devices, this iPhone
+  first and marked, swipe to sign one out, Sign Out Everywhere. `DevicesView` is copied from the
+  books app, with the sessions calls (`AccountSession` in OwnAudioKit, `DeviceSession` in
+  MusicLibrary). UI test `PlaybackSmokeTests.testDevices` (own.audio only).
+- **Recently Played widget** (small and medium): where you left off, then the albums played last
+  on the active server, from a snapshot the app keeps in the App Group
+  (`group.audio.own.musicplayer`); a tap plays it. Copied from the podcasts app's Up Next widget.
+- **Live Activity** on the lock screen and in the Dynamic Island: cover, song, artist, how far, and
+  previous / play-pause / next buttons that work without opening the app. Copied from the podcasts
+  app; one activity follows the queue from song to song.
+- **Siri and Shortcuts**: "Continue listening in own.music", "Play ‹playlist› in own.music",
+  "Play the album ‹album› in own.music", with Czech phrases.
+- Links `ownmusic://resume`, `ownmusic://play/album/<id>`, `ownmusic://play/playlist/<id>` and
+  `ownmusic://player`, which the widget and the Live Activity use. UI test
+  `PlaybackSmokeTests.testResumeLink`.
+- The widget extension (`OwnAudioMusicWidgets`) and the App Group need the group on both App IDs
+  in the developer account before a TestFlight build signs.
+- **Play Next** and **Add to Queue** on every song (long press and the ••• menu) and on an album;
+  with nothing playing they play at once. A song already in the queue moves rather than playing
+  twice. In the queue sheet, drag to reorder and swipe to remove (Edit for the handles), as in the
+  podcasts app's Up Next.
+- Engine: `playNext`, `addToQueue`, `moveUpcoming`, `removeUpcoming`. When the track after this
+  one changes and the old one is already chained for gapless playback, the current track is
+  scheduled again from where it is, which chains the new one. Shuffle and repeat changes go the
+  same way; before, the old next track still played.
+- Tests: `PlayQueueEditingTests` (6), `PlaybackEngineStreamingTests.playNextAfterChain`, UI test
+  `PlaybackSmokeTests.testPlayNextAndQueueEditing`.
+- **Logs** in Settings → About: what the app logged this run, to read and to share as a text file
+  with a bug report; nothing leaves the phone otherwise. Copied from the books app.
+- **Background refresh** (`BGAppRefreshTask`, about hourly when iOS allows): the library copies,
+  waiting plays and edits, and the widget. Copied from the books app.
+- UI tests start through `launchChecked()` (copied from the books app): iOS can hand a test a
+  prewarmed process without its launch arguments, which then ran in the simulator's language or
+  without the reset; the first screen is checked and the launch tried again. `-uiTestReset` also
+  resets the settings (Offline Mode, mobile data, downloads, player), as in the other apps.
+- UI test `MusicParityTests.testNewSettingsInCzechAtLargestText`: the new Settings rows translated
+  and reachable at the largest text size. The parity table and its statistics are updated
+  (`docs/ios-apps-feature-parity.md`: Music 86 %, Books 85 %, Podcasts 78 %).
+
 ### Changed
 
 - One repository for one app, **own.audio Music**: the Subsonic app, the Jellyfin app's client

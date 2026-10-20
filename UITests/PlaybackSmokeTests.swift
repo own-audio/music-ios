@@ -27,7 +27,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testAddServerPlayAlbumAndSkip() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
 
         addServer(app)
         openAlbum(app, named: env["SERVER_ALBUM"])
@@ -81,7 +81,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testSmallerStreamOnMobileDataPlays() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset", "-simulateMobileData", "-mobileBitrate", "128000"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
         let play = app.buttons["detail.play"]
@@ -104,10 +104,146 @@ final class PlaybackSmokeTests: XCTestCase {
 
     /// Dragging the position: the player stays as it was (cover, format, times) while the song
     /// moves there, and the bar doesn't spring back. The ✕ stops playback and closes the player.
+    /// The sleep timer shows on the cover and can stop at the end of the track; after a relaunch
+    /// the mini player offers the queue from where it was left, paused until tapped.
+    func testSleepBadgeAndLastQueueAfterRelaunch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        let miniPlayer = app.buttons["miniPlayer"]
+        XCTAssertTrue(miniPlayer.waitForExistence(timeout: 15))
+        miniPlayer.tap()
+
+        let title = app.descendants(matching: .any)["player.title"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        let playing = title.label
+        let badge = app.descendants(matching: .any)["player.sleepBadge"].firstMatch
+        XCTAssertFalse(badge.exists, "no timer, no badge")
+        app.buttons["Sleep"].tap()
+        let endOfTrack = app.buttons["sleep.endOfTrack"]
+        XCTAssertTrue(endOfTrack.waitForExistence(timeout: 5))
+        endOfTrack.tap()
+        XCTAssertTrue(badge.waitForExistence(timeout: 5), "the timer shows on the cover")
+        XCTAssertTrue(badge.label.contains("End of track"))
+        screenshot(app, "sleep-badge")
+
+        // Turn it off again from the sheet.
+        app.buttons["Sleep"].tap()
+        let off = app.buttons["Turn Off Sleep Timer"]
+        XCTAssertTrue(off.waitForExistence(timeout: 5))
+        off.tap()
+        if app.buttons["Done"].exists { app.buttons["Done"].tap() }
+        XCTAssertTrue(badge.waitForNonExistence(timeout: 5))
+
+        app.buttons["player.playPause"].tap()
+        app.buttons["player.close"].tap()
+        sleep(1)
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.terminate()
+
+        app.launchArguments = Self.english
+        app.launchChecked()
+        let last = app.buttons["miniPlayer.last"]
+        XCTAssertTrue(last.waitForExistence(timeout: 20), "the queue from before the relaunch waits in the mini player")
+        XCTAssertTrue(last.label.contains(playing), "with the track that was playing")
+        screenshot(app, "last-queue")
+        last.tap()
+        XCTAssertTrue(title.waitForExistence(timeout: 20), "a tap plays it and opens the player")
+        XCTAssertEqual(title.label, playing)
+        app.buttons["player.playPause"].tap()
+    }
+
+    /// The widget's link: after a relaunch, `ownmusic://resume` plays the queue from before and
+    /// opens the player.
+    func testResumeLink() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        let miniPlayPause = app.buttons["miniPlayer.playPause"]
+        XCTAssertTrue(waitUntil(timeout: 30) { miniPlayPause.exists && miniPlayPause.label == "Pause" })
+        // The player's own title, to compare with the player's after the link: a long one
+        // scrolls, and its label is not the mini player's.
+        app.buttons["miniPlayer"].tap()
+        let title = app.descendants(matching: .any)["player.title"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        let playing = title.label
+        app.buttons["player.playPause"].tap()
+        app.buttons["player.close"].tap()
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.terminate()
+
+        app.launchArguments = Self.english
+        app.launchChecked()
+        XCTAssertTrue(app.buttons["miniPlayer.last"].waitForExistence(timeout: 20))
+        app.open(URL(string: "ownmusic://resume")!)
+        XCTAssertTrue(title.waitForExistence(timeout: 20), "the link opens the player")
+        XCTAssertEqual(title.label, playing, "on the song from before")
+        let playPause = app.buttons["player.playPause"]
+        XCTAssertTrue(waitUntil(timeout: 30) { playPause.label == "Pause" }, "and plays it")
+        playPause.tap()
+    }
+
+    /// Play Next on a later song of the album: it is next in the queue sheet; a swipe there
+    /// removes it again.
+    func testPlayNextAndQueueEditing() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        XCTAssertTrue(app.buttons["miniPlayer"].waitForExistence(timeout: 15))
+
+        // The album's third song, put next.
+        let more = app.buttons.matching(identifier: "song.more")
+        XCTAssertTrue(waitUntil(timeout: 10) { more.count >= 3 }, "an album of three songs or more")
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'album.song.'"))
+        let third = rows.element(boundBy: 2).identifier.replacingOccurrences(of: "album.song.", with: "")
+        more.element(boundBy: 2).tap()
+        let playNext = app.buttons["Play Next"]
+        XCTAssertTrue(playNext.waitForExistence(timeout: 5))
+        playNext.tap()
+
+        app.buttons["miniPlayer"].tap()
+        app.buttons["Queue"].tap()
+        let upcoming = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'queue.upcoming.'"))
+        XCTAssertTrue(upcoming.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(upcoming.firstMatch.identifier, "queue.upcoming.\(third)", "the chosen song plays next")
+        screenshot(app, "24-queue-play-next")
+
+        upcoming.firstMatch.swipeLeft()
+        let delete = app.buttons["Delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        delete.tap()
+        // The list is built as it scrolls, so its row count says nothing; the song must be gone.
+        let removed = app.descendants(matching: .any)["queue.upcoming.\(third)"]
+        XCTAssertTrue(removed.waitForNonExistence(timeout: 5), "a swipe removes it")
+        app.buttons["Done"].tap()
+        app.buttons["player.playPause"].tap()
+    }
+
     func testSeekThenStop() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
         let play = app.buttons["detail.play"]
@@ -155,14 +291,14 @@ final class PlaybackSmokeTests: XCTestCase {
         }
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
 
         // A cold launch with a server set up, to a library that can be used.
         app.terminate()
         app.launchArguments = Self.english
         var start = Date()
-        app.launch()
+        app.launchChecked()
         XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 30))
         note("launch to Home", Date().timeIntervalSince(start), limit: 6)
 
@@ -236,7 +372,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testServerConnectionDetail() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openServerSettings(app)
         let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
@@ -283,7 +419,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testPlaylistLifeAndSearch() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openTab(app, Self.playlistsTab)
         let new = app.buttons["playlists.new"]
@@ -335,7 +471,7 @@ final class PlaybackSmokeTests: XCTestCase {
         }
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openTab(app, Self.playlistsTab)
         let newSmart = app.buttons["playlists.newSmart"]
@@ -392,7 +528,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testDownloadAlbumAndPlayOffline() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openAlbum(app, named: env["SERVER_DOWNLOAD_ALBUM"].flatMap { $0.isEmpty ? nil : $0 }, screenshots: false)
 
@@ -406,7 +542,7 @@ final class PlaybackSmokeTests: XCTestCase {
 
         app.terminate()
         app.launchArguments = ["-simulateOffline"] + Self.english
-        app.launch()
+        app.launchChecked()
 
         XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 15))
         sleep(2)
@@ -445,7 +581,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testPartlyDownloadedAlbumPlaysOffline() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openTab(app, Self.libraryTab)
         let albums = app.buttons["library.albums"]
@@ -478,7 +614,7 @@ final class PlaybackSmokeTests: XCTestCase {
 
         app.terminate()
         app.launchArguments = ["-simulateOffline"] + Self.english
-        app.launch()
+        app.launchChecked()
 
         XCTAssertTrue(app.descendants(matching: .any)["offline.banner"].waitForExistence(timeout: 15))
         screenshot(app, "14-offline-home")
@@ -503,7 +639,7 @@ final class PlaybackSmokeTests: XCTestCase {
     func testHousehold() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         let household = app.buttons["settings.household"]
         for _ in 0..<3 {
@@ -518,13 +654,41 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "22-family")
     }
 
+    /// own.audio only: Settings → Devices lists the account's devices with this iPhone first and
+    /// marked; it can't swipe itself out. Nothing is signed out here: the test account is shared.
+    func testDevices() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        addServer(app, screenshots: false)
+        let devices = app.buttons["settings.devices"]
+        for _ in 0..<3 {
+            app.buttons["home.settings"].tap()
+            if app.buttons["settings.servers"].waitForExistence(timeout: 5) { break }
+            dismissSavePasswordPrompt(app, within: 3)
+        }
+        guard devices.waitForExistence(timeout: 5) else { throw XCTSkip("not an own.audio server") }
+        devices.tap()
+        let this = app.descendants(matching: .any)["devices.this"].firstMatch
+        XCTAssertTrue(this.waitForExistence(timeout: 15), "this iPhone should be listed")
+        XCTAssertTrue(app.staticTexts["This device"].exists)
+        this.swipeLeft()
+        XCTAssertFalse(app.buttons["Sign Out"].waitForExistence(timeout: 2), "this iPhone can't swipe itself out")
+        // The shared test account collects a session per test run; the button is under them
+        // all, built only when scrolled to.
+        let everywhere = app.buttons["devices.signOutEverywhere"]
+        for _ in 0..<40 where !everywhere.exists { app.swipeUp(velocity: .fast) }
+        XCTAssertTrue(everywhere.exists)
+        screenshot(app, "23-devices")
+    }
+
     /// The catalogue reaches the phone after adding a server; offline, with Whole Library on,
     /// the albums list shows albums that were never opened or downloaded, and one opens with
     /// its songs.
     func testWholeLibraryOffline() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openServerSettings(app)
         let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
@@ -542,7 +706,7 @@ final class PlaybackSmokeTests: XCTestCase {
 
         app.terminate()
         app.launchArguments = ["-simulateOffline", "-offlineShowsWholeLibrary", "YES"] + Self.english
-        app.launch()
+        app.launchChecked()
         XCTAssertTrue(app.descendants(matching: .any)["offline.banner"].waitForExistence(timeout: 15))
         openTab(app, Self.libraryTab)
         let albums = app.buttons["library.albums"]
@@ -565,7 +729,7 @@ final class PlaybackSmokeTests: XCTestCase {
         }
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         addServer(app, screenshots: false)
         openAlbum(app, named: albumName, screenshots: false)
 
@@ -619,7 +783,7 @@ final class PlaybackSmokeTests: XCTestCase {
     private func walkMainScreens(prefix: String, arguments: [String]) throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + arguments
-        app.launch()
+        app.launchChecked()
         let address = app.textFields["addServer.address"]
         sleep(2)
         screenshot(app, "\(prefix)-01-onboarding")
@@ -714,6 +878,11 @@ final class PlaybackSmokeTests: XCTestCase {
     /// sit first in the list off screen, where a tap goes nowhere: the one that can be hit.
     private func tabButton(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement {
         let matches = app.buttons.matching(NSPredicate(format: "label IN %@", labels))
+        // With Search open, iOS 26 folds the other tabs into one button; open it out first.
+        if !matches.firstMatch.waitForExistence(timeout: 2) {
+            let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
+            if folded.exists { folded.tap() }
+        }
         _ = matches.firstMatch.waitForExistence(timeout: 10)
         return matches.allElementsBoundByIndex.first { $0.isHittable } ?? matches.firstMatch
     }

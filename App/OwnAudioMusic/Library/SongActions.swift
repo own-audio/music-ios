@@ -66,6 +66,16 @@ private struct SongActions: ViewModifier {
 
     @ViewBuilder
     private func menuItems(_ id: String?) -> some View {
+        Button {
+            model.enqueue([song], next: true)
+        } label: {
+            Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+        }
+        Button {
+            model.enqueue([song], next: false)
+        } label: {
+            Label("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
+        }
         if let id {
             let starred = model.isFavorite(id)
             Button {

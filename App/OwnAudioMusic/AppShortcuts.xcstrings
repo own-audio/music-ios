@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Continue listening in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračuj v poslechu v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Resume my music in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pusť dál mou hudbu v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Play ${playlist} in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehraj ${playlist} v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Play my playlist ${playlist} in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehraj můj playlist ${playlist} v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Play the album ${album} in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehraj album ${album} v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Listen to ${album} in ${applicationName}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pusť ${album} v ${applicationName}"
+          }
+        }
+      }
+    }
+  }
+}

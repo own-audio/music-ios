@@ -28,7 +28,11 @@ struct QueueSheet: View {
                                 row(track, isCurrent: false)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityIdentifier("queue.upcoming.\(track.title)")
                         }
+                        // Drag to reorder and swipe to remove, as in the podcasts app's Up Next.
+                        .onMove { engine.moveUpcoming(fromOffsets: $0, toOffset: $1) }
+                        .onDelete { engine.removeUpcoming(atOffsets: $0) }
                     }
                 }
                 if !engine.playedTracks.isEmpty {
@@ -50,6 +54,11 @@ struct QueueSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                }
+                if engine.upcomingTracks.count > 1 {
+                    ToolbarItem(placement: .topBarLeading) {
+                        EditButton().accessibilityIdentifier("queue.edit")
+                    }
                 }
             }
         }
@@ -108,6 +117,12 @@ struct SleepTimerSheet: View {
                             }
                             .foregroundStyle(.primary)
                         }
+                        Button("End of Track") {
+                            timer.startUntilEndOfItem()
+                            dismiss()
+                        }
+                        .foregroundStyle(.primary)
+                        .accessibilityIdentifier("sleep.endOfTrack")
                     }
                 }
             }

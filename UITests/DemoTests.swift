@@ -13,7 +13,7 @@ final class DemoTests: XCTestCase {
     func testTryTheDemoLibrary() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchChecked()
 
         let demo = app.buttons["addServer.demo"]
         XCTAssertTrue(demo.waitForExistence(timeout: 10))

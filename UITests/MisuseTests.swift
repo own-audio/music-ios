@@ -232,7 +232,7 @@ final class MisuseTests: XCTestCase {
     private func launch(reset: Bool, offline: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = (reset ? ["-uiTestReset"] : []) + (offline ? ["-simulateOffline"] : []) + Self.english
-        app.launch()
+        app.launchChecked()
         return app
     }
 
@@ -305,6 +305,11 @@ final class MisuseTests: XCTestCase {
     /// sit first in the list off screen, where a tap goes nowhere: the one that can be hit.
     private func tabButton(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement {
         let matches = app.buttons.matching(NSPredicate(format: "label IN %@", labels))
+        // With Search open, iOS 26 folds the other tabs into one button; open it out first.
+        if !matches.firstMatch.waitForExistence(timeout: 2) {
+            let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
+            if folded.exists { folded.tap() }
+        }
         _ = matches.firstMatch.waitForExistence(timeout: 10)
         return matches.allElementsBoundByIndex.first { $0.isHittable } ?? matches.firstMatch
     }

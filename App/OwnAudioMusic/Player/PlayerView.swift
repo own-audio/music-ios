@@ -137,6 +137,27 @@ struct PlayerView: View {
             }
         )
         .accessibilityIdentifier("player.cover")
+        // The sleep timer on the cover, as in the books and podcasts apps. Outside the cover's
+        // identifier, which would otherwise take over the badge's.
+        .overlay(alignment: .topTrailing) {
+            if engine.sleepTimer.isActive {
+                Group {
+                    if let remaining = engine.sleepTimer.remainingSecs {
+                        Label(formatDuration(remaining), systemImage: "moon.zzz.fill")
+                    } else {
+                        Label("End of track", systemImage: "moon.zzz.fill")
+                    }
+                }
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.white)
+                .padding(.horizontal, Theme.Spacing.sm)
+                .padding(.vertical, Theme.Spacing.xs)
+                .background(.black.opacity(0.55), in: Capsule())
+                .padding(Theme.Spacing.sm)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("player.sleepBadge")
+            }
+        }
     }
 
     private var titles: some View {

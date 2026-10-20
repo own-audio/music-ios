@@ -89,7 +89,48 @@ struct MiniPlayerBar: View {
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer))
             .padding(.horizontal, Theme.Spacing.screenEdge)
             .padding(.bottom, Theme.Spacing.xs)
+        } else if let last = model.lastQueue, let track = last.current {
+            lastQueueBar(track)
         }
+    }
+
+    /// The track from before the relaunch, not loaded yet: a tap plays the queue from there.
+    private func lastQueueBar(_ track: Track) -> some View {
+        Button {
+            Haptics.impact(.medium)
+            Task {
+                await model.playLastQueue()
+                if engine.currentTrack != nil { onTap() }
+            }
+        } label: {
+            HStack(spacing: Theme.Spacing.md) {
+                CoverArtView(artworkId: track.artworkId, pointSize: 40)
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(track.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    Text(track.artist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "play.fill")
+                    .font(.title3)
+                    .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.vertical, Theme.Spacing.sm)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("miniPlayer.last")
+        .accessibilityLabel("\(track.title), play from where you left off")
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer)
+                .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
+        )
+        .padding(.horizontal, Theme.Spacing.screenEdge)
+        .padding(.bottom, Theme.Spacing.xs)
     }
 
     /// Two fills on one track, played and buffered; `ProgressView` has no second value.

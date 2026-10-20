@@ -24,7 +24,7 @@ final class IdentifyTests: XCTestCase {
     func testIdentifyAnAlbumFromStartToUndo() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         signIn(app)
 
         // The Library offers identify.
@@ -140,7 +140,7 @@ final class IdentifyTests: XCTestCase {
     func testIdentifyOneSongInYourOwnWords() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         signIn(app)
         openTab(app, ["Library", "Knihovna"])
         let albums = app.buttons["library.albums"]
@@ -200,7 +200,7 @@ final class IdentifyTests: XCTestCase {
     func testMoreMenusStartARun() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
-        app.launch()
+        app.launchChecked()
         signIn(app)
         openTab(app, ["Library", "Knihovna"])
         let albums = app.buttons["library.albums"]

@@ -44,6 +44,16 @@
         }
       }
     },
+    "%@, play from where you left off" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, přehrát od místa, kde jste skončili"
+          }
+        }
+      }
+    },
     "%lld" : {
       "shouldTranslate" : false
     },
@@ -374,6 +384,16 @@
         }
       }
     },
+    "Action" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akce"
+          }
+        }
+      }
+    },
     "Add Address" : {
       "localizations" : {
         "cs" : {
@@ -440,6 +460,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přidat do playlistu…"
+          }
+        }
+      }
+    },
+    "Add to Queue" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat do fronty"
           }
         }
       }
@@ -966,6 +996,26 @@
         }
       }
     },
+    "Continue Listening" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovat v poslechu"
+          }
+        }
+      }
+    },
+    "Control Playback" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovládat přehrávání"
+          }
+        }
+      }
+    },
     "Could not load this track." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1118,6 +1168,16 @@
         }
       }
     },
+    "Devices" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zařízení"
+          }
+        }
+      }
+    },
     "Disc %lld" : {
       "localizations" : {
         "cs" : {
@@ -1164,6 +1224,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Album nebo playlist stáhnete šipkou na jeho stránce, skladbu z její nabídky. Pak hraje i bez sítě."
+          }
+        }
+      }
+    },
+    "Download on Wi-Fi Only" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stahovat jen přes Wi-Fi"
           }
         }
       }
@@ -1264,6 +1334,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-mail"
+          }
+        }
+      }
+    },
+    "End of Track" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konec skladby"
+          }
+        }
+      }
+    },
+    "End of track" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konec skladby"
           }
         }
       }
@@ -1519,6 +1609,16 @@
         }
       }
     },
+    "Goes on with the music you were listening to." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračuje v hudbě, kterou jste poslouchali."
+          }
+        }
+      }
+    },
     "Half a Year" : {
       "localizations" : {
         "cs" : {
@@ -1711,6 +1811,26 @@
         }
       }
     },
+    "Keep at Most" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ponechat nejvýše"
+          }
+        }
+      }
+    },
+    "Last used %@ ago" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naposledy použito před %@"
+          }
+        }
+      }
+    },
     "Lasts About" : {
       "localizations" : {
         "cs" : {
@@ -1767,6 +1887,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Omezit tempo"
+          }
+        }
+      }
+    },
+    "Logs" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Záznamy"
           }
         }
       }
@@ -1972,12 +2102,32 @@
         }
       }
     },
+    "Next Track" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Další skladba"
+          }
+        }
+      }
+    },
     "No address answers right now" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Teď neodpovídá žádná adresa"
+          }
+        }
+      }
+    },
+    "No Limit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bez omezení"
           }
         }
       }
@@ -2028,6 +2178,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tomuto pravidlu teď v knihovně nic neodpovídá. Širší pravidlo dá víc na výběr."
+          }
+        }
+      }
+    },
+    "Nothing Logged Yet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatím nic nezaznamenáno"
           }
         }
       }
@@ -2102,6 +2262,16 @@
         }
       }
     },
+    "Or sign in with the Apple or Google account you use on this own.audio server." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebo se přihlaste účtem Apple nebo Google, který na tomto serveru own.audio používáte."
+          }
+        }
+      }
+    },
     "Order" : {
       "localizations" : {
         "cs" : {
@@ -2118,6 +2288,116 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Původní"
+          }
+        }
+      }
+    },
+    "Play ${album}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát ${album}"
+          }
+        }
+      }
+    },
+    "Play ${playlist}" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát ${playlist}"
+          }
+        }
+      }
+    },
+    "Play a Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát playlist"
+          }
+        }
+      }
+    },
+    "Play an Album" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát album"
+          }
+        }
+      }
+    },
+    "Play Next" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát jako další"
+          }
+        }
+      }
+    },
+    "Play or Pause" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát nebo pozastavit"
+          }
+        }
+      }
+    },
+    "Playlist" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist"
+          }
+        }
+      }
+    },
+    "Plays an album from your server." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehraje album z vašeho serveru."
+          }
+        }
+      }
+    },
+    "Plays one of your playlists." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehraje jeden z vašich playlistů."
+          }
+        }
+      }
+    },
+    "Previous Track" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Předchozí skladba"
+          }
+        }
+      }
+    },
+    "Privacy" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soukromí"
           }
         }
       }
@@ -2322,6 +2602,16 @@
         }
       }
     },
+    "Share Log" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet záznam"
+          }
+        }
+      }
+    },
     "Share My Songs with the Family" : {
       "localizations" : {
         "cs" : {
@@ -2388,6 +2678,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přihlásit přes Quick Connect (Jellyfin)"
+          }
+        }
+      }
+    },
+    "Sign Out" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odhlásit"
+          }
+        }
+      }
+    },
+    "Sign Out Everywhere" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odhlásit všude"
+          }
+        }
+      }
+    },
+    "Sign Out Everywhere?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odhlásit všude?"
+          }
+        }
+      }
+    },
+    "Signed in %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlášeno %@"
           }
         }
       }
@@ -2512,6 +2842,16 @@
         }
       }
     },
+    "Swipe a device to sign it out. Signing out everywhere ends every session, this iPhone's too, and asks for a fresh sign-in." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přejetím zařízení odhlásíte. Odhlášení všude ukončí všechny relace včetně tohoto iPhonu a vyžádá si nové přihlášení."
+          }
+        }
+      }
+    },
     "Talks Through" : {
       "localizations" : {
         "cs" : {
@@ -2552,12 +2892,42 @@
         }
       }
     },
+    "That can't play right now." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To teď nejde přehrát."
+          }
+        }
+      }
+    },
     "That code isn't right, or it has expired. Try the current one." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kód není správný, nebo už vypršel. Zadejte aktuální."
+          }
+        }
+      }
+    },
+    "That is on another server. Switch to it in Settings first." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To je na jiném serveru. Nejdřív se na něj přepněte v Nastavení."
+          }
+        }
+      }
+    },
+    "The app writes here when something goes wrong." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aplikace sem zapisuje, když se něco nepovede."
           }
         }
       }
@@ -2622,6 +2992,16 @@
         }
       }
     },
+    "There is nothing to continue; play something in own.music first." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Není v čem pokračovat; nejdřív něco pusťte v own.music."
+          }
+        }
+      }
+    },
     "This account asks for a second step. Enter the code your authenticator app shows for it, or one of your recovery codes." : {
       "localizations" : {
         "cs" : {
@@ -2638,6 +3018,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tento účet to nemá povolené."
+          }
+        }
+      }
+    },
+    "This device" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toto zařízení"
           }
         }
       }
@@ -4245,12 +4635,12 @@
         }
       }
     },
-    "Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way." : {
+    "Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako bez sítě. Šetří mobilní data.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto iPhonu; co není stažené, je zašedlé. Alba se offline otevřou v obou případech."
+            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako bez sítě. Šetří mobilní data.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto iPhonu; co není stažené, je zašedlé. Alba se offline otevřou v obou případech.\n\nNad limitem jdou první skladby, které nehrály nejdéle; nikdy ne ta, která hraje."
           }
         }
       }
@@ -4321,16 +4711,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seznam všeho na serveru, bez samotné hudby, aby se alba otevřela a knihovnu šlo procházet i offline. Aktualizuje se na pozadí, na Wi-Fi."
-          }
-        }
-      }
-    },
-    "For own.audio servers that offer it: enter the address above." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pro servery own.audio, které to nabízejí: zadejte adresu výše."
           }
         }
       }

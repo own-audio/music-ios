@@ -18,6 +18,7 @@ targets:
     platform: iOS
     sources:
       - path: App/OwnAudioMusic
+      - path: Shared
     info:
       path: App/OwnAudioMusic/Info.plist
       properties:
@@ -25,7 +26,13 @@ targets:
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
-        UIBackgroundModes: [audio]
+        UIBackgroundModes: [audio, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [audio.own.musicplayer.refresh]
+        NSSupportsLiveActivities: true
+        # The widget's and the Live Activity's way in (ownmusic://resume, ownmusic://play/…).
+        CFBundleURLTypes:
+          - CFBundleURLName: audio.own.musicplayer
+            CFBundleURLSchemes: [ownmusic]
         # Only standard HTTPS, which is exempt; saves answering the export question per build.
         ITSAppUsesNonExemptEncryption: false
         UIApplicationSceneManifest:
@@ -65,11 +72,40 @@ targets:
         com.apple.developer.applesignin: [Default]
         # CarPlay audio app (granted by Apple for audio.own.musicplayer, 2026-10-16).
         com.apple.developer.carplay-audio: true
+        # Shared with the widget: its snapshot and the Live Activity's cover.
+        com.apple.security.application-groups: [group.audio.own.musicplayer]
     dependencies:
+      - target: OwnAudioMusicWidgets
       - package: MusicLibrary
       - package: OwnAudioKit
       - package: PlayerEngine
         product: MusicEngine
+  OwnAudioMusicWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Shared
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: own.music
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: audio.own.musicplayer.widgets
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+        CODE_SIGN_STYLE: Automatic
+    entitlements:
+      path: Widgets/OwnAudioMusicWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.audio.own.musicplayer]
   OwnAudioMusicUITests:
     type: bundle.ui-testing
     platform: iOS

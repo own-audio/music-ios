@@ -30,7 +30,7 @@ final class AppStoreScreenshots: XCTestCase {
         app.launchArguments = [
             "-uiTestReset", "-AppleLanguages", "(\(env["SCREENSHOT_LANGUAGE"]!))", "-AppleLocale", czech ? "cs_CZ" : "en_US",
         ]
-        app.launch()
+        app.launchChecked()
         let ourName = t("Family Music", "Rodinná hudba")
 
         // Three servers, one of each kind; own.audio last, so it is the one shown.

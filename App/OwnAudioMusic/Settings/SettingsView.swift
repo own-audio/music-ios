@@ -26,6 +26,14 @@ struct SettingsView: View {
                     LabeledContent("Servers", value: model.activeServer?.displayName ?? "")
                 }
                 .accessibilityIdentifier("settings.servers")
+                if let server = model.activeServer, server.kind == .ownAudio, case .ownAudio = server.auth {
+                    NavigationLink {
+                        DevicesView(serverId: server.id)
+                    } label: {
+                        Label("Devices", systemImage: "iphone.and.laptop")
+                    }
+                    .accessibilityIdentifier("settings.devices")
+                }
                 if model.household != nil {
                     NavigationLink {
                         HouseholdView()
@@ -52,8 +60,22 @@ struct SettingsView: View {
                     set: { model.offlineShowsWholeLibrary = $0 }
                 ))
                 .accessibilityIdentifier("settings.offlineWholeLibrary")
+                Toggle("Download on Wi-Fi Only", isOn: Binding(
+                    get: { model.downloadsWifiOnly },
+                    set: { model.downloadsWifiOnly = $0 }
+                ))
+                .accessibilityIdentifier("settings.wifiOnly")
+                Picker("Keep at Most", selection: Binding(
+                    get: { model.downloadsCapBytes },
+                    set: { model.downloadsCapBytes = $0 }
+                )) {
+                    ForEach(AppModel.downloadsCapChoices, id: \.self) { cap in
+                        Text(cap.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? String(localized: "No Limit")).tag(cap)
+                    }
+                }
+                .accessibilityIdentifier("settings.storageCap")
             } footer: {
-                Text("Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.")
+                Text("Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
             }
 
             Section {
@@ -110,6 +132,16 @@ struct SettingsView: View {
                 Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
                     Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
                 }
+                Link(destination: URL(string: "https://github.com/own-audio/music-ios/blob/main/PRIVACY.md")!) {
+                    Label("Privacy", systemImage: "hand.raised")
+                }
+                .accessibilityIdentifier("settings.privacy")
+                NavigationLink {
+                    LogsView()
+                } label: {
+                    Label("Logs", systemImage: "doc.plaintext")
+                }
+                .accessibilityIdentifier("settings.logs")
                 Link(destination: URL(string: "https://www.mozilla.org/MPL/2.0/")!) {
                     Label("License: MPL 2.0", systemImage: "doc.text")
                 }

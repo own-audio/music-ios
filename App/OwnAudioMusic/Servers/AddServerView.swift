@@ -7,6 +7,8 @@ struct AddServerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var address = ""
+    /// Which of Apple and Google the own.audio server at the typed address takes.
+    @State private var providers: (apple: Bool, google: Bool) = (false, false)
     @State private var username = ""
     @State private var password = ""
     @State private var name = ""
@@ -105,11 +107,20 @@ struct AddServerView: View {
         .navigationTitle("Add Server")
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: Theme.Spacing.xs) {
-                AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() }
-                GoogleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() }
-                Text("For own.audio servers that offer it: enter the address above.")
+                if providers.apple { AppleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() } }
+                if providers.google { GoogleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) { dismiss() } }
+                Text(providers.apple || providers.google ? "Or sign in with the Apple or Google account you use on this own.audio server." : "")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+            // Asked once typing pauses: whether an own.audio server answers there, and which sign-ins it takes.
+            .task(id: address) {
+                providers = (false, false)
+                guard address.trimmingCharacters(in: .whitespaces).count > 3 else { return }
+                try? await Task.sleep(for: .milliseconds(600))
+                guard !Task.isCancelled else { return }
+                let found = await model.ownAudioProviders(address: address)
+                if !Task.isCancelled { providers = found }
             }
             .padding(.horizontal, Theme.Spacing.xl)
             .padding(.vertical, Theme.Spacing.sm)

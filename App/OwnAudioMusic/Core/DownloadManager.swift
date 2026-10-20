@@ -9,9 +9,14 @@ import MusicLibrary
 /// Files live in Application Support, which iOS doesn't clear the way it clears Caches, and are
 /// excluded from iCloud backup: they can always be downloaded again. An index file records what
 /// each file is, so the Downloads screen works with no network at all.
+///
+/// Downloads go through a background `URLSession`, as in the books and podcasts apps: a song
+/// handed to it keeps downloading with the app in the background or killed, and iOS wakes the
+/// app when it is done, which hands the session the next songs. Two at a time, so the links
+/// (own.audio's are signed for a while) are fresh when a song's turn comes.
 @Observable
 @MainActor
-final class DownloadManager {
+final class DownloadManager: NSObject {
     enum State: Equatable {
         case queued
         case downloading
@@ -25,6 +30,8 @@ final class DownloadManager {
         let fileName: String
         let bytes: Int64
         let downloadedAt: Date
+        /// When it last played; what goes first when downloads outgrow Keep at Most.
+        var lastPlayedAt: Date?
     }
 
     /// An album or playlist downloaded as a whole, in its own order.
@@ -45,6 +52,8 @@ final class DownloadManager {
         var collections: [String: Collection] = [:]
         /// Waiting or interrupted, in order; resumed on the next launch.
         var queue: [QueuedTrack] = []
+        /// Resume data of downloads that were interrupted, by track id.
+        var resumeData: [String: Data]? = nil
     }
 
     struct QueuedTrack: Codable, Equatable {
@@ -56,31 +65,53 @@ final class DownloadManager {
     private(set) var collections: [String: Collection] = [:]
     private(set) var states: [String: State] = [:]
 
+    /// Wi-Fi only: the session waits for Wi-Fi instead of using mobile data.
+    var wifiOnly = true { didSet { if wifiOnly != oldValue { restart() } } }
+    /// Keep at Most, in bytes; nil is no limit.
+    var capBytes: Int64? { didSet { if capBytes != oldValue { enforceCap() } } }
+    /// The song playing now, never let go to make room.
+    var protectedTrackId: (() -> String?)?
+    /// Set when iOS relaunched the app for the session's events; called once they are handled.
+    var backgroundCompletion: (() -> Void)?
+
     /// Read by the engine's resolver off the main actor.
     let files: LocalFileIndex
     private let directory: URL
     private let indexURL: URL
     private var queue: [QueuedTrack] = []
-    private var running: [String: Task<Void, Never>] = [:]
+    /// Songs handed to the session, or having their address worked out.
+    private var running: [String: URLSessionDownloadTask?] = [:]
+    private var resumeData: [String: Data] = [:]
     private let registry: ClientRegistry
-    private let session: URLSession
+    private var session: URLSession!
     private static let parallelDownloads = 2
+    static let sessionIdentifier = "audio.own.musicplayer.downloads"
 
+    /// `root` is for tests: a folder of their own and an ordinary session, since a background
+    /// session's identifier can be open only once in a process.
     init(registry: ClientRegistry, root: URL? = nil) {
         self.registry = registry
         let base = root ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         directory = base.appendingPathComponent("Downloads", isDirectory: true)
         indexURL = directory.appendingPathComponent("index.json")
+        files = LocalFileIndex()
+        super.init()
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var excluded = directory
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? excluded.setResourceValues(values)
 
-        let configuration = URLSessionConfiguration.default
+        let configuration: URLSessionConfiguration
+        if root == nil {
+            configuration = .background(withIdentifier: Self.sessionIdentifier)
+            configuration.isDiscretionary = false
+            configuration.sessionSendsLaunchEvents = true
+        } else {
+            configuration = .default
+        }
         configuration.timeoutIntervalForResource = 60 * 60
-        session = URLSession(configuration: configuration)
-        files = LocalFileIndex()
+        session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         loadIndex()
     }
 
@@ -190,66 +221,134 @@ final class DownloadManager {
         queue.filter { states[$0.trackId] == .queued || states[$0.trackId] == .downloading }.count
     }
 
+    /// A downloaded song played: it moves to the back of the line for Keep at Most.
+    func notePlayed(_ trackId: String) {
+        guard tracks[trackId] != nil else { return }
+        tracks[trackId]?.lastPlayedAt = Date()
+        saveIndex()
+    }
+
+    /// Lets go of songs until the downloads fit Keep at Most: the ones not played for longest
+    /// first, never the one playing. A song an album still lists goes too; the album then shows
+    /// as partly downloaded.
+    func enforceCap() {
+        let policy = EvictionPolicy(capBytes: capBytes)
+        let candidates = tracks.values.map {
+            EvictionPolicy.Candidate(id: $0.trackId, bytes: $0.bytes, isFinished: false, lastUsedAt: $0.lastPlayedAt ?? $0.downloadedAt)
+        }
+        let evictions = policy.evictions(from: candidates, protected: protectedTrackId?())
+        guard !evictions.isEmpty else { return }
+        for trackId in evictions { deleteFile(trackId) }
+        saveIndex()
+    }
+
     // MARK: - Work
 
     private func pump() {
         let waiting = queue.filter { states[$0.trackId] == .queued && running[$0.trackId] == nil }
         let free = Self.parallelDownloads - running.count
         for item in waiting.prefix(max(free, 0)) {
-            states[item.trackId] = .downloading
-            running[item.trackId] = Task { await self.fetch(item) }
+            start(item)
         }
     }
 
-    private func fetch(_ item: QueuedTrack) async {
-        defer {
-            running[item.trackId] = nil
-            pump()
+    private func start(_ item: QueuedTrack) {
+        states[item.trackId] = .downloading
+        if let data = resumeData.removeValue(forKey: item.trackId) {
+            let task = session.downloadTask(withResumeData: data)
+            task.taskDescription = item.trackId
+            running[item.trackId] = task
+            task.resume()
+            saveIndex()
+            return
+        }
+        running[item.trackId] = .some(nil)
+        Task {
+            do {
+                let url = try await registry.downloadURL(trackId: item.trackId)
+                guard running[item.trackId] != nil, queue.contains(where: { $0.trackId == item.trackId }) else { return }
+                var request = URLRequest(url: url)
+                request.allowsCellularAccess = !wifiOnly
+                let task = session.downloadTask(with: request)
+                task.taskDescription = item.trackId
+                running[item.trackId] = task
+                task.resume()
+            } catch {
+                running[item.trackId] = nil
+                guard queue.contains(where: { $0.trackId == item.trackId }) else { return }
+                states[item.trackId] = .failed(error.userMessage)
+                pump()
+            }
+        }
+    }
+
+    /// The session finished a song: the file is checked, kept, and the next song goes.
+    private func finished(trackId: String, file: URL, response: URLResponse?) {
+        running[trackId] = nil
+        defer { pump() }
+        guard let item = queue.first(where: { $0.trackId == trackId }) else {
+            try? FileManager.default.removeItem(at: file)
+            return
         }
         do {
-            let url = try await registry.downloadURL(trackId: item.trackId)
-            let (temp, response) = try await session.download(from: url)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                try? FileManager.default.removeItem(at: temp)
                 throw URLError(.badServerResponse)
             }
-            let head = (try? FileHandle(forReadingFrom: temp)).flatMap { handle in
+            let head = (try? FileHandle(forReadingFrom: file)).flatMap { handle in
                 defer { try? handle.close() }
                 return try? handle.read(upToCount: 12)
             } ?? Data()
             // Subsonic reports errors as HTTP 200 with JSON; that must not be saved as a song.
             guard let ext = TrackFileCache.fileExtension(prefix: head)
                     ?? TrackFileCache.fileExtension(mimeType: http.mimeType) else {
-                try? FileManager.default.removeItem(at: temp)
                 throw URLError(.cannotDecodeContentData)
             }
-            guard !Task.isCancelled, queue.contains(where: { $0.trackId == item.trackId }) else {
-                try? FileManager.default.removeItem(at: temp)
-                return
-            }
-            let fileName = "\(Self.safeName(item.trackId)).\(ext)"
+            let fileName = "\(Self.safeName(trackId)).\(ext)"
             let destination = directory.appendingPathComponent(fileName)
             try? FileManager.default.removeItem(at: destination)
-            try FileManager.default.moveItem(at: temp, to: destination)
+            try FileManager.default.moveItem(at: file, to: destination)
             let bytes = (try? FileManager.default.attributesOfItem(atPath: destination.path)[.size] as? Int64) ?? 0
 
-            let track = DownloadedTrack(trackId: item.trackId, song: item.song, fileName: fileName, bytes: bytes, downloadedAt: Date())
-            tracks[item.trackId] = track
-            files.set(item.trackId, destination)
-            states[item.trackId] = .downloaded
-            queue.removeAll { $0.trackId == item.trackId }
+            tracks[trackId] = DownloadedTrack(trackId: trackId, song: item.song, fileName: fileName, bytes: bytes, downloadedAt: Date())
+            files.set(trackId, destination)
+            states[trackId] = .downloaded
+            queue.removeAll { $0.trackId == trackId }
             saveIndex()
-        } catch is CancellationError {
-            return
+            enforceCap()
         } catch {
-            guard queue.contains(where: { $0.trackId == item.trackId }) else { return }
-            states[item.trackId] = .failed(error.userMessage)
+            try? FileManager.default.removeItem(at: file)
+            states[trackId] = .failed(error.userMessage)
+        }
+    }
+
+    private func failed(trackId: String, error: Error, resume: Data?) {
+        running[trackId] = nil
+        if let resume { resumeData[trackId] = resume }
+        if (error as NSError).code != NSURLErrorCancelled, queue.contains(where: { $0.trackId == trackId }) {
+            states[trackId] = .failed(error.userMessage)
+        }
+        saveIndex()
+        pump()
+    }
+
+    /// Wi-Fi Only changed: what is under way starts again under the new rule, from where it got.
+    private func restart() {
+        for (trackId, task) in running {
+            guard let task else { continue }
+            running[trackId] = nil
+            task.cancel { [weak self] data in
+                Task { @MainActor in
+                    guard let self, let item = self.queue.first(where: { $0.trackId == trackId }) else { return }
+                    if let data { self.resumeData[trackId] = data }
+                    self.start(item)
+                }
+            }
         }
     }
 
     private func cancel(_ trackId: String) {
-        running[trackId]?.cancel()
-        running[trackId] = nil
+        if let task = running.removeValue(forKey: trackId) { task?.cancel() }
+        resumeData[trackId] = nil
         queue.removeAll { $0.trackId == trackId }
         states[trackId] = nil
     }
@@ -276,6 +375,7 @@ final class DownloadManager {
         }
         collections = index.collections
         queue = index.queue
+        resumeData = index.resumeData ?? [:]
         for track in tracks.values {
             states[track.trackId] = .downloaded
             files.set(track.trackId, directory.appendingPathComponent(track.fileName))
@@ -284,13 +384,30 @@ final class DownloadManager {
         if tracks.count != index.tracks.count { saveIndex() }
     }
 
-    /// Resumes what was waiting when the app last stopped.
+    /// Picks up what the session still has (it went on while the app was gone), then starts
+    /// what was waiting.
     func resume() {
-        pump()
+        session.getAllTasks { [weak self] tasks in
+            let found = (tasks as? [URLSessionDownloadTask] ?? []).compactMap { task in
+                task.taskDescription.map { ($0, task) }
+            }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                for (trackId, task) in found where self.running[trackId] == nil {
+                    if self.queue.contains(where: { $0.trackId == trackId }) {
+                        self.running[trackId] = task
+                        self.states[trackId] = .downloading
+                    } else {
+                        task.cancel()
+                    }
+                }
+                self.pump()
+            }
+        }
     }
 
     private func saveIndex() {
-        let index = Index(tracks: tracks, collections: collections, queue: queue)
+        let index = Index(tracks: tracks, collections: collections, queue: queue, resumeData: resumeData.isEmpty ? nil : resumeData)
         guard let data = try? JSONEncoder().encode(index) else { return }
         try? data.write(to: indexURL, options: .atomic)
     }
@@ -299,6 +416,32 @@ final class DownloadManager {
         Data(trackId.utf8).base64EncodedString()
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "+", with: "-")
+    }
+}
+
+extension DownloadManager: URLSessionDownloadDelegate {
+    /// The file must be moved before this returns; it is moved here, on the session's queue,
+    /// and checked on the main actor afterwards.
+    nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let trackId = downloadTask.taskDescription ?? ""
+        let response = downloadTask.response
+        let holding = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try? FileManager.default.moveItem(at: location, to: holding)
+        Task { @MainActor in self.finished(trackId: trackId, file: holding, response: response) }
+    }
+
+    nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error else { return }
+        let trackId = task.taskDescription ?? ""
+        let resume = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data
+        Task { @MainActor in self.failed(trackId: trackId, error: error, resume: resume) }
+    }
+
+    nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        Task { @MainActor in
+            self.backgroundCompletion?()
+            self.backgroundCompletion = nil
+        }
     }
 }
 

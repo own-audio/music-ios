@@ -36,6 +36,10 @@ final class AppModel {
     /// Following the active server's library changes (`followLibraryChanges`).
     private var liveUpdates: Task<Void, Never>?
     private var isInForeground = true
+    /// The queue in the player when the app last went away, shown in the mini player until it
+    /// is played again; nil while something is loaded.
+    private(set) var lastQueue: LastQueue?
+    @ObservationIgnored private var lastSavedTrackId: String?
     private(set) var catalogueErrors: [UUID: String] = [:]
     private let catalogueStore = CatalogueStore()
     /// An older catalogue is refreshed; a library rarely changes faster than that, and the
@@ -127,6 +131,24 @@ final class AppModel {
         }
     }
 
+    /// Downloads wait for Wi-Fi; on by default, as in the books and podcasts apps.
+    var downloadsWifiOnly: Bool {
+        didSet {
+            UserDefaults.standard.set(downloadsWifiOnly, forKey: Self.downloadsWifiOnlyKey)
+            downloads.wifiOnly = downloadsWifiOnly
+        }
+    }
+
+    /// Keep at Most for downloads, in bytes; nil is no limit.
+    var downloadsCapBytes: Int64? {
+        didSet {
+            UserDefaults.standard.set(downloadsCapBytes, forKey: Self.downloadsCapKey)
+            downloads.capBytes = downloadsCapBytes
+        }
+    }
+
+    static let downloadsCapChoices: [Int64?] = [nil, 1, 2, 5, 10, 20, 50].map { $0.map { Int64($0) * 1_000_000_000 } }
+
     /// Bits per second for `saver`.
     var saverBitrate: Int {
         didSet {
@@ -166,6 +188,8 @@ final class AppModel {
     private static let mobileDataKey = "mobileData"
     private static let saverBitrateKey = "saverBitrate"
     private static let offlineWholeLibraryKey = "offlineShowsWholeLibrary"
+    private static let downloadsWifiOnlyKey = "downloads.wifiOnly"
+    private static let downloadsCapKey = "downloads.capBytes"
 
     /// How this app shows up in the server's list of devices. The id is made once and kept, so
     /// a reinstall is one device, not a new one each launch.
@@ -211,6 +235,15 @@ final class AppModel {
     }()
 
     init(store: ServerStore = ServerStore()) {
+        // A UI test starts from the defaults, whatever the previous one left switched on (an
+        // Offline Mode left on spoiled the next test). As in the books and podcasts apps.
+        if ProcessInfo.processInfo.arguments.contains("-uiTestReset") {
+            let settings: Set<String> = [Self.scrobblingKey, Self.downloadedOnlyKey, Self.mobileDataKey, Self.saverBitrateKey, Self.offlineWholeLibraryKey]
+            for key in UserDefaults.standard.dictionaryRepresentation().keys
+            where settings.contains(key) || key.hasPrefix("downloads.") || key.hasPrefix("player.") {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
         self.store = store
         ownAudioSessions = OwnAudioSessions(store: store)
         let registry = ClientRegistry()
@@ -239,6 +272,11 @@ final class AppModel {
         let defaults = UserDefaults.standard
         mobileData = defaults.string(forKey: Self.mobileDataKey).flatMap(MobileData.init(rawValue:)) ?? .saver
         saverBitrate = defaults.integer(forKey: Self.saverBitrateKey).nonZero ?? 192_000
+        downloadsWifiOnly = defaults.object(forKey: Self.downloadsWifiOnlyKey) as? Bool ?? true
+        downloadsCapBytes = (defaults.object(forKey: Self.downloadsCapKey) as? Int64).flatMap { $0 > 0 ? $0 : nil }
+        downloads.wifiOnly = downloadsWifiOnly
+        downloads.capBytes = downloadsCapBytes
+        downloads.protectedTrackId = { [weak self] in self?.engine.currentTrack?.id }
         #if DEBUG
         // UI tests: `-mobileBitrate 128000` is Saver at that rate.
         if let bitrate = defaults.integer(forKey: "mobileBitrate").nonZero {
@@ -266,7 +304,12 @@ final class AppModel {
         let files = downloads.files
         let fileCache = fileCache
         Task { await fileCache.setLocalFileLookup { files.url(for: $0) } }
+        liveActivity = LiveActivityController(model: self)
     }
+
+    @ObservationIgnored var liveActivity: LiveActivityController?
+    /// The Recently Played widget's albums from the last time they were asked for.
+    @ObservationIgnored var widgetAlbums: [WidgetSnapshot.Entry] = []
 
     /// As lists show them: own.audio servers first, then the others, each in the order added.
     var serversInOrder: [ServerRecord] {
@@ -290,6 +333,25 @@ final class AppModel {
         sources[serverId] as? OwnAudioSource
     }
 
+    // MARK: Devices (own.audio sessions)
+
+    func sessions(serverId: UUID) async throws -> [DeviceSession] {
+        guard let source = ownAudioSource(serverId: serverId) else { throw SourceError.unsupported }
+        return try await source.sessions()
+    }
+
+    func revokeSession(serverId: UUID, id: String) async throws {
+        guard let source = ownAudioSource(serverId: serverId) else { throw SourceError.unsupported }
+        try await source.revokeSession(id: id)
+    }
+
+    /// Every device out, this one included: the server then needs a fresh sign-in.
+    func signOutEverywhere(serverId: UUID) async throws {
+        guard let source = ownAudioSource(serverId: serverId) else { throw SourceError.unsupported }
+        try await source.signOutEverywhere()
+        signInRefused.insert(serverId)
+    }
+
     private var loadTask: Task<Void, Never>?
 
     /// Loads once, however many callers ask: the phone UI and CarPlay can both start the app.
@@ -309,7 +371,10 @@ final class AppModel {
             downloads.removeAll()
             responseCache.removeAll()
             catalogueStore.removeAll()
+            LastQueue.remove()
         }
+        lastQueue = LastQueue.load()
+        observeQueueForRelaunch()
         servers = await store.loadAll()
         await addServerFromLaunchArguments()
         await rebuildClients()
@@ -325,6 +390,7 @@ final class AppModel {
         }
         await flushPendingScrobbles()
         await flushPendingChanges()
+        await refreshWidget(fetch: true)
     }
 
     /// Finds out what kind of server is at `address` and signs in before saving anything, so a
@@ -594,6 +660,19 @@ final class AppModel {
         }
     }
 
+    /// Which providers the own.audio server at a typed address offers, for showing only their
+    /// buttons; nothing for an address that isn't own.audio. Without a scheme, https then http.
+    func ownAudioProviders(address: String) async -> (apple: Bool, google: Bool) {
+        let api = ServerSetup.ownAudioAPIAddress(address)
+        let candidates = api.contains("://") ? [api] : ["https://\(api)", "http://\(api)"]
+        for text in candidates {
+            guard let url = URL(string: text), url.host() != nil,
+                  let info = try? await ServerSetup.ownAudioInfo(at: url, urlSession: Self.quickSession) else { continue }
+            return (info.signInWithApple, info.signInWithGoogle)
+        }
+        return (false, false)
+    }
+
     /// Which providers an own.audio server offers, for showing only their buttons.
     func ownAudioProviders(serverId: UUID) async -> (apple: Bool, google: Bool) {
         guard let server = servers.first(where: { $0.id == serverId }),
@@ -706,6 +785,24 @@ final class AppModel {
     /// `containerId` ("album:…") lets the engine remember where in it listening stopped.
     /// Offline, only the downloaded ones; a tapped song that isn't downloaded starts the list at
     /// the next one that is.
+    /// "Play Next" and "Add to Queue": into the queue playing now, or played at once when
+    /// nothing is. Offline, only downloaded songs go in.
+    func enqueue(_ songs: [Song], next: Bool) {
+        guard let serverId = activeServerId else { return }
+        let songs = isOffline ? songs.filter { downloads.isDownloaded(TrackID.make(serverId: serverId, itemId: $0.id)) } : songs
+        guard !songs.isEmpty else {
+            actionError = String(localized: "You're offline, and none of these songs are downloaded.")
+            return
+        }
+        guard engine.currentTrack != nil else {
+            play(songs)
+            return
+        }
+        let tracks = songs.map { $0.track(serverId: serverId) }
+        if next { engine.playNext(tracks) } else { engine.addToQueue(tracks) }
+        Haptics.impact(.light)
+    }
+
     func play(_ songs: [Song], startSongId: String? = nil, shuffled: Bool = false, containerId: String? = nil) {
         guard let serverId = activeServerId, !songs.isEmpty else { return }
         var songs = songs
@@ -1374,6 +1471,11 @@ extension AppModel {
     func sceneBecame(active: Bool) {
         guard isInForeground != active else { return }
         isInForeground = active
+        if !active {
+            saveLastQueue()
+            BackgroundRefresh.schedule()
+            Task { await refreshWidget() }
+        }
         followLibraryChanges()
         // Back on screen after a while: what changed meanwhile.
         if active { Task { await syncCatalogues() } }
@@ -1470,4 +1572,81 @@ private extension Int {
 extension Logger {
     /// What went wrong in the app; read with Console or `log stream`, and kept by the UI tests.
     static let app = Logger(subsystem: "audio.own.musicplayer", category: "app")
+}
+
+// MARK: - The last queue, back after a relaunch
+
+/// The queue in the player when the app went away: shown in the mini player at its track and
+/// position, and loaded only when played, as in the books app. Stop and the end of the queue
+/// clear it.
+struct LastQueue: Codable, Equatable {
+    let tracks: [Track]
+    let currentTrackId: String
+    let positionSecs: Double
+
+    var current: Track? { tracks.first { $0.id == currentTrackId } }
+
+    private static var file: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("last-queue.json")
+    }
+
+    static func load() -> LastQueue? {
+        (try? Data(contentsOf: file)).flatMap { try? JSONDecoder().decode(LastQueue.self, from: $0) }
+    }
+
+    func save() {
+        guard let data = try? JSONEncoder().encode(self) else { return }
+        try? data.write(to: Self.file, options: .atomic)
+    }
+
+    static func remove() {
+        try? FileManager.default.removeItem(at: file)
+    }
+}
+
+extension AppModel {
+    /// Saves the queue when playback pauses, plays or moves to another track; a stop — the
+    /// player letting go of its track — forgets it.
+    func observeQueueForRelaunch() {
+        withObservationTracking {
+            _ = engine.isPlaying
+            _ = engine.currentTrack?.id
+        } onChange: {
+            Task { @MainActor [weak self] in
+                self?.queueChanged()
+                self?.observeQueueForRelaunch()
+            }
+        }
+    }
+
+    private func queueChanged() {
+        if let current = engine.currentTrack, current.id != lastSavedTrackId {
+            downloads.notePlayed(current.id)
+            Task { await refreshWidget() }
+        }
+        if engine.currentTrack != nil {
+            saveLastQueue()
+        } else if lastSavedTrackId != nil {
+            // Something was playing and nothing is now: stopped, or the queue ran out.
+            lastSavedTrackId = nil
+            lastQueue = nil
+            LastQueue.remove()
+        }
+    }
+
+    func saveLastQueue() {
+        guard let current = engine.currentTrack else { return }
+        let all = engine.playedTracks + [current] + engine.upcomingTracks
+        LastQueue(tracks: all, currentTrackId: current.id, positionSecs: engine.currentTime).save()
+        lastSavedTrackId = current.id
+        lastQueue = nil
+    }
+
+    /// Plays the last queue from where it was.
+    func playLastQueue() async {
+        guard let last = lastQueue else { return }
+        engine.setShuffled(false)
+        await engine.play(tracks: last.tracks, startTrackId: last.currentTrackId, startPositionSecs: last.positionSecs)
+        lastQueue = nil
+    }
 }

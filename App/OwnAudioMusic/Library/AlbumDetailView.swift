@@ -60,6 +60,20 @@ struct AlbumDetailView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        if let songs, !songs.isEmpty {
+                            Button {
+                                model.enqueue(songs, next: true)
+                            } label: {
+                                Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                            }
+                            .accessibilityIdentifier("album.playNext")
+                            Button {
+                                model.enqueue(songs, next: false)
+                            } label: {
+                                Label("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
+                            }
+                            .accessibilityIdentifier("album.addToQueue")
+                        }
                         if model.capabilities.contains(.ratings) {
                             RatingMenu(rating: model.ratings[id]) { rating in
                                 model.perform { try await model.setRating(id, kind: .album, rating: rating) }

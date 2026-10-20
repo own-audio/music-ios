@@ -22,6 +22,13 @@ struct RootView: View {
         .fullScreenCover(isPresented: $isShowingPlayer) {
             PlayerView()
         }
+        // The widget's and the Live Activity's links.
+        .onOpenURL { url in
+            Task {
+                if !model.hasLoaded { await model.load() }
+                if await model.open(url) { isShowingPlayer = true }
+            }
+        }
         .alert(
             "That Didn't Work",
             isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })

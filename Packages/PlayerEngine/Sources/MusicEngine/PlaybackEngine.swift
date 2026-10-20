@@ -605,10 +605,67 @@ public final class PlaybackEngine {
     public func setShuffled(_ shuffled: Bool) {
         isShuffled = shuffled
         queue?.setShuffled(shuffled)
+        nextChanged()
     }
 
     public func setRepeatMode(_ mode: RepeatMode) {
         repeatMode = mode
+        nextChanged()
+    }
+
+    // MARK: - Editing the queue
+
+    /// "Play Next": right after the current track. With nothing loaded, the caller plays them
+    /// instead.
+    public func playNext(_ tracks: [Track]) {
+        guard queue != nil else { return }
+        queue?.insertNext(tracks)
+        nextChanged()
+    }
+
+    /// "Add to Queue": at the end.
+    public func addToQueue(_ tracks: [Track]) {
+        guard queue != nil else { return }
+        queue?.append(tracks)
+        nextChanged()
+    }
+
+    /// The queue sheet's drag, in `upcomingTracks` offsets.
+    public func moveUpcoming(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        queue?.moveUpcoming(fromOffsets: offsets, toOffset: destination)
+        nextChanged()
+    }
+
+    /// The queue sheet's swipe, in `upcomingTracks` offsets.
+    public func removeUpcoming(atOffsets offsets: IndexSet) {
+        queue?.removeUpcoming(atOffsets: offsets)
+        nextChanged()
+    }
+
+    /// The track after this one may have changed. In gapless mode the old one can already be
+    /// chained onto the node, which can't drop a single scheduled file: the current track is
+    /// scheduled again from where it is, and that chains the new next one. Before this, a
+    /// shuffle or repeat change after the chain was made played the old next track anyway.
+    private func nextChanged() {
+        guard currentTrack != nil else { return }
+        if settingsStore.crossfadeEnabled {
+            prefetchNextTrackForCrossfade()
+            return
+        }
+        let expected = queue?.trackAfterCurrent(repeatMode: repeatMode)?.id
+        if boundaries.count > 1 {
+            guard boundaries[1].trackId != expected else { return }
+            // A new queue can follow at once (a new album sets shuffle first): only the track
+            // and schedule this was decided for get scheduled again.
+            let trackId = currentTrack?.id
+            let generation = schedulingGeneration
+            Task {
+                guard currentTrack?.id == trackId, schedulingGeneration == generation else { return }
+                await seek(to: currentTime)
+            }
+        } else {
+            schedulePrefetchAndChainNext()
+        }
     }
 
     /// Installs or removes the real-time tap driving `spectrum` — never left running
@@ -1233,6 +1290,10 @@ public final class PlaybackEngine {
     /// it fired only because a *newer* load's `stop()` cancelled it.
     private func handleActiveNodeConsumedSegment() {
         guard var queue, let finishedTrack = currentTrack else { return }
+        // The sleep timer's "end of this track": the next track becomes current as usual — in
+        // gapless mode it is already chained and has just begun — and playback pauses at its
+        // start, so Play goes on from there.
+        let stopsHere = sleepTimer.consumeEndOfItem()
         let finishedDuration = Double(finishedTrack.durationSecs ?? Int(currentTime))
         closeSpan(atPositionSecs: finishedDuration, reason: .completed)
 
@@ -1272,12 +1333,25 @@ public final class PlaybackEngine {
             if !settingsStore.crossfadeEnabled {
                 schedulePrefetchAndChainNext()
             }
+            if stopsHere {
+                pauseAudioOnly()
+                // The ticks stop with the pause, before the first one for this track: where the
+                // node stopped, a moment into it.
+                if let frames = elapsedFrames(of: activeNode), let boundary = boundaries.first {
+                    currentTime = boundary.trackPositionOffsetSecs + max(0, Double(frames - boundary.startFrame) / boundary.sampleRate)
+                } else {
+                    currentTime = 0
+                }
+            }
             return
         }
 
         // The prefetch didn't win the race — reactively load, same as `PlaybackEngine`'s own
         // file-end handling. A real (rare) gap, not a silent claim of gaplessness.
-        Task { await loadAndPlay(track: next) }
+        Task {
+            await loadAndPlay(track: next)
+            if stopsHere { pause() }
+        }
     }
 
     // MARK: - Crossfade
@@ -1287,6 +1361,8 @@ public final class PlaybackEngine {
     /// nodes' volumes over the configured duration — real overlap, unlike gapless chaining on
     /// one node, which is exactly why crossfade needs the second node at all.
     private func beginCrossfade() {
+        // Sleeping at the end of this track: it plays to its end, unfaded.
+        guard !sleepTimer.stopsAtEndOfItem else { return }
         guard !isCrossfading, let queue, let next = queue.trackAfterCurrent(repeatMode: repeatMode) else { return }
         isCrossfading = true
         let outgoingNode = activeNode
