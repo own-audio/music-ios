@@ -458,6 +458,26 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    /// The download must not wait for the decoder. It used to: with two minutes decoded ahead
+    /// the player stopped reading, the connection sat idle, the request timed out after 15 s
+    /// and the song ended early — about 30 s into a FLAC on a fast server.
+    @Test("a long stream downloads whole while decoding waits at the look-ahead")
+    func longStreamDownloadsWhileDecodingWaits() async throws {
+        let harness = try await makeHarness(suffix: "download-ahead", audioData: Self.silentWAV(seconds: 1200))
+        await harness.engine.play(tracks: [makeTrack(id: "long", durationSecs: 1200)])
+        try await waitUntil(timeout: 10) { harness.engine.isPlaying }
+        harness.engine.pause()
+        var cached: URL?
+        let deadline = Date().addingTimeInterval(15)
+        while Date() < deadline, cached == nil {
+            cached = await harness.fileCache.existingLocalURL(trackId: "long")
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        #expect(cached != nil, "the whole file should be in the cache while playback waits")
+        #expect(harness.engine.bufferedTime <= PlaybackEngine.streamLookaheadSecs + 30, "decoding still stops at the look-ahead")
+        harness.engine.stop()
+    }
+
     @Test("a stream slower than it plays holds instead of stuttering, then finishes")
     func slowStreamBuffersThenFinishes() async throws {
         // Three seconds of audio trickled over six: the listener catches up with the network.

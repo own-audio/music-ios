@@ -9,9 +9,13 @@ import OSLog
 ///
 /// Deliberately split from `AudioStreamDecoder`: that type is pure Core Audio with no networking
 /// (and is unit tested that way, against real audio bytes with no HTTP anywhere near the test);
-/// this type is pure networking plumbing around it. Uses `URLSession.bytes(for:)` rather than a
-/// `URLSessionDataDelegate` — Swift's `AsyncSequence` already gives pull-based back-pressure for
-/// free: the network is only asked for the next chunk once the last one is decoded.
+/// this type is pure networking plumbing around it.
+///
+/// The download and the decoding run apart. The download goes into the cache's partial file as
+/// fast as the network allows; the decoder reads that file at the player's pace, waiting when
+/// it catches up. They used to be one loop, so the player's look-ahead (two minutes decoded,
+/// then wait) stopped the reading too: the connection sat idle, the request timed out after
+/// 15 s, and a FLAC on a fast server ended about 30 s in.
 public actor StreamingTrackSource {
     /// Thrown instead of a decode error specifically for `AudioStreamDecoder.DecoderError
     /// .streamParseFailed` carrying `kAudioFileStreamError_NotOptimized` — an M4A/ALAC file
@@ -33,6 +37,9 @@ public actor StreamingTrackSource {
     /// receive-buffer growth means real reads from `URLSession.bytes` arrive in chunks close to
     /// this size anyway.
     private static let ingestChunkSize = 16 * 1024
+    /// What the download hands on at a time: no more than the decoder takes, or a slow
+    /// network would hold back sound that has arrived.
+    private static let downloadChunkSize = ingestChunkSize
 
     /// How much may go into the decoder with no audio coming out before it is given up for the
     /// whole file: a few seconds of even the richest FLAC, far more than any header.
@@ -63,12 +70,40 @@ public actor StreamingTrackSource {
             throw PlaybackError.network("Could not stream track \(trackId) (status \((response as? HTTPURLResponse)?.statusCode ?? -1))")
         }
 
-        // Every byte also goes to the cache as it passes, so a seek within the track or a
-        // second listen comes from disk rather than from the server again.
+        // Every byte goes to the cache's partial file, so a seek within the track or a second
+        // listen comes from disk, and the decoder reads it back from there. Without a file
+        // (a full disk) the bytes wait in memory instead.
         let partialURL = await fileCache.partialURL(trackId: trackId)
-        let partial = try? FileHandle(forWritingTo: partialURL)
-        var partialIntact = partial != nil
-        defer { try? partial?.close() }
+        let writer = try? FileHandle(forWritingTo: partialURL)
+        let reader = writer == nil ? nil : try? FileHandle(forReadingFrom: partialURL)
+        let relay = DownloadRelay(writer: reader == nil ? nil : writer)
+        if reader == nil { try? writer?.close() }
+        let fileCache = fileCache
+        let mimeType = http.mimeType
+        let download = Task {
+            do {
+                var chunk = Data()
+                chunk.reserveCapacity(Self.downloadChunkSize)
+                for try await byte in byteStream {
+                    chunk.append(byte)
+                    if chunk.count >= Self.downloadChunkSize {
+                        try await relay.append(chunk)
+                        chunk.removeAll(keepingCapacity: true)
+                    }
+                }
+                if !chunk.isEmpty { try await relay.append(chunk) }
+                // Whole: it becomes the cached track now, whatever the decoder is doing. The
+                // reader's open handle goes on reading the same file under its new name.
+                if await relay.closeFile() {
+                    await fileCache.commitPartial(trackId: trackId, mimeType: mimeType)
+                }
+                await relay.finish(nil)
+            } catch {
+                await relay.finish(error)
+            }
+        }
+        defer { try? reader?.close() }
+
         var pending = Data()
         pending.reserveCapacity(Self.ingestChunkSize)
         var formatReported = false
@@ -78,31 +113,27 @@ public actor StreamingTrackSource {
         var payloadChecked = false
 
         do {
-            for try await byte in byteStream {
-                pending.append(byte)
+            var offset = 0
+            while let data = try await withTaskCancellationHandler(operation: {
+                try await relay.next(after: offset, reader: reader, max: Self.ingestChunkSize)
+            }, onCancel: {
+                Task { await relay.finish(CancellationError()) }
+            }) {
+                offset += data.count
+                pending.append(data)
                 if !payloadChecked, pending.count >= 64 {
                     payloadChecked = true
-                    guard AudioPayloadCheck.looksLikeAudio(
-                        contentType: http.mimeType, prefix: pending
-                    ) else {
+                    guard AudioPayloadCheck.looksLikeAudio(contentType: http.mimeType, prefix: pending) else {
                         throw PlaybackError.network("Server sent an error instead of track \(trackId)")
                     }
                 }
                 if pending.count >= Self.ingestChunkSize {
-                    if partialIntact { partialIntact = Self.append(pending, to: partial) }
                     try await ingestAndDrain(pending, onBuffer: onBuffer, formatReported: &formatReported, onFormatKnown: onFormatKnown)
                     pending.removeAll(keepingCapacity: true)
                 }
             }
             if !pending.isEmpty {
-                if partialIntact { partialIntact = Self.append(pending, to: partial) }
                 try await ingestAndDrain(pending, onBuffer: onBuffer, formatReported: &formatReported, onFormatKnown: onFormatKnown)
-            }
-            if partialIntact {
-                try? partial?.close()
-                await fileCache.commitPartial(trackId: trackId, mimeType: http.mimeType)
-            } else {
-                await fileCache.discardPartial(trackId: trackId)
             }
             try await decoder.finish()
             while let decoded = try await decoder.nextBuffer() {
@@ -115,7 +146,6 @@ public actor StreamingTrackSource {
             }
             if framesDecoded == 0 { throw AudioStreamDecoder.DecoderError.producedNothing }
         } catch let error as AudioStreamDecoder.DecoderError {
-            await fileCache.discardPartial(trackId: trackId)
             Logger.playback.error("decoding \(trackId, privacy: .public) in pieces failed (\(String(describing: error), privacy: .public)); playing the whole file instead")
             // *Any* decoding failure falls back to the file, not only the one known
             // trailing-`moov` case this started as. A track in this library reproduced the
@@ -123,24 +153,17 @@ public actor StreamingTrackSource {
             // end to end, and that progressive decoding rejects with `'bada'` on its very first
             // chunk. Whatever the decoder cannot take in pieces, it can still take whole, and
             // "could not play this track" was a lie about the music rather than about us.
+            // The download is under way already; it finishes into the cache first.
+            await download.value
             guard let localURL = try? await fileCache.localURL(trackId: trackId) else { throw error }
             throw FallbackToLocalPlaybackRequired(localURL: localURL)
         } catch {
-            // Cancelled or broken off: half a file must not pass for the track.
+            // Cancelled or broken off: half a file must not pass for the track. One that
+            // already arrived whole stays cached.
+            download.cancel()
+            await download.value
             await fileCache.discardPartial(trackId: trackId)
             throw error
-        }
-    }
-
-    /// False once a write fails; the cache then forgets the partial file rather than keep a
-    /// copy with a hole in it.
-    private static func append(_ data: Data, to handle: FileHandle?) -> Bool {
-        guard let handle else { return false }
-        do {
-            try handle.write(contentsOf: data)
-            return true
-        } catch {
-            return false
         }
     }
 
@@ -180,5 +203,73 @@ extension TrackFileCache {
         // A fresh source per track: it carries decoder state that must not leak into the next.
         let source = StreamingTrackSource(fileCache: self, session: urlSession)
         try await source.stream(trackId: trackId, onBuffer: onBuffer, onFormatKnown: onFormatKnown)
+    }
+}
+
+/// Hands the download to the decoder: the downloader appends, to the partial file or, without
+/// one, to memory; the decoder waits for bytes past what it has read, and hears how it ended.
+actor DownloadRelay {
+    private var writer: FileHandle?
+    private let inMemory: Bool
+    private var memory = Data()
+    private var written = 0
+    private var done = false
+    private var failure: Error?
+    private var waiter: CheckedContinuation<Void, Never>?
+
+    init(writer: FileHandle?) {
+        self.writer = writer
+        inMemory = writer == nil
+    }
+
+    func append(_ data: Data) throws {
+        if inMemory {
+            memory.append(data)
+        } else {
+            try writer?.write(contentsOf: data)
+        }
+        written += data.count
+        wake()
+    }
+
+    /// Closes the partial file; false when there is none to keep.
+    func closeFile() -> Bool {
+        guard let writer else { return false }
+        try? writer.close()
+        self.writer = nil
+        return true
+    }
+
+    /// The end of the download: `nil` when it arrived whole. The first ending counts.
+    func finish(_ error: Error?) {
+        guard !done else { return }
+        done = true
+        failure = error
+        wake()
+    }
+
+    /// Up to `max` bytes after `offset`, waiting for them; nil once everything is read.
+    func next(after offset: Int, reader: FileHandle?, max: Int) async throws -> Data? {
+        while written <= offset, !done {
+            await withCheckedContinuation { waiter = $0 }
+        }
+        if let failure, failure is CancellationError { throw failure }
+        if written > offset {
+            if inMemory {
+                let data = memory.prefix(max)
+                memory.removeFirst(data.count)
+                return Data(data)
+            }
+            guard let reader else { return nil }
+            try reader.seek(toOffset: UInt64(offset))
+            return try reader.read(upToCount: min(max, written - offset))
+        }
+        if let failure { throw failure }
+        return nil
+    }
+
+    private func wake() {
+        waiter?.resume()
+        waiter = nil
     }
 }

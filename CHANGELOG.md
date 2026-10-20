@@ -9,6 +9,18 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- A streamed song could end early and the next one start, reported about 30 s into a FLAC
+  from own.audio's canary on an iPhone. The download and the decoding were one loop: with two
+  minutes decoded ahead the player stopped reading, so the connection sat idle and the request
+  timed out after 15 s. The download now goes into the cache file at full speed and the decoder
+  reads it from there at its own pace (`DownloadRelay` in `StreamingTrackSource`). Not
+  reproduced in the simulator, whose network stack buffers more than a phone's. Tests:
+  `PlaybackEngineStreamingTests.longStreamDownloadsWhileDecodingWaits` (fails on the old code),
+  UI test `PlaybackSmokeTests.testLongSongPlaysPastHalfAMinute` (`SERVER_SONG` starts at a named
+  song); the UI tests also scroll to a named album far down the grid.
+
 ### Parity with the books and podcasts apps
 
 - The app's own colour: music pink from the family's design tokens (`#D63A6A`, `#FF6482` in dark),

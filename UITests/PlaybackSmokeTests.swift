@@ -240,6 +240,42 @@ final class PlaybackSmokeTests: XCTestCase {
         app.buttons["player.playPause"].tap()
     }
 
+    /// A long song streamed from a fast server keeps playing past the first half minute. The
+    /// download used to stall while the player had two minutes decoded ahead, time out after
+    /// 15 s, and end the song about 30 s in (FLAC from own.audio's canary).
+    func testLongSongPlaysPastHalfAMinute() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        addServer(app, screenshots: false)
+        openAlbum(app, named: env["SERVER_ALBUM"], screenshots: false)
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        // `SERVER_SONG` starts at that song (a long one makes the point best).
+        if let song = env["SERVER_SONG"] {
+            let row = app.buttons["album.song.\(song)"]
+            for _ in 0..<10 where !row.isHittable { app.swipeUp() }
+            row.tap()
+        } else {
+            play.tap()
+        }
+        let miniPlayer = app.buttons["miniPlayer"]
+        XCTAssertTrue(miniPlayer.waitForExistence(timeout: 15))
+        miniPlayer.tap()
+        let title = app.descendants(matching: .any)["player.title"].firstMatch
+        let scrubber = app.descendants(matching: .any)["player.scrubber"].firstMatch
+        XCTAssertTrue(scrubber.waitForExistence(timeout: 10))
+        let first = title.label
+        let playPause = app.buttons["player.playPause"]
+        XCTAssertTrue(waitUntil(timeout: 30) { playPause.label == "Pause" })
+        sleep(50)
+        XCTAssertEqual(title.label, first, "still the first song")
+        let position = Self.seconds((scrubber.value as? String ?? "").components(separatedBy: " of ")[0]) ?? 0
+        XCTAssertGreaterThan(position, 40, "and playing on: \(scrubber.value as? String ?? "")")
+        playPause.tap()
+    }
+
     func testSeekThenStop() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
@@ -861,6 +897,9 @@ final class PlaybackSmokeTests: XCTestCase {
         let album = name.map {
             app.buttons.containing(NSPredicate(format: "label CONTAINS %@", $0)).firstMatch
         } ?? app.scrollViews.buttons.firstMatch
+        // The grid is built as it scrolls: a named album far down the list doesn't exist yet.
+        _ = app.scrollViews.buttons.firstMatch.waitForExistence(timeout: 20)
+        if name != nil { for _ in 0..<20 where !album.isHittable { app.swipeUp() } }
         XCTAssertTrue(album.waitForExistence(timeout: 20))
         sleep(1)
         if screenshots { screenshot(app, "03-albums") }
