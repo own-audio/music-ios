@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var removingServer: ServerRecord?
+    @State private var isAddingServer = false
 
     private var version: String {
         let info = Bundle.main.infoDictionary
@@ -21,7 +22,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            ServersSection(removing: $removingServer)
+            ServersSection(isAdding: $isAddingServer, removing: $removingServer)
 
             Section {
                 NavigationLink {
@@ -120,6 +121,7 @@ struct SettingsView: View {
                 Text("own.audio Music is free and open source (MPL-2.0). It talks only to the servers you add.")
             }
         }
+        .sheet(isPresented: $isAddingServer) { NavigationStack { AddServerView() } }
         .confirmationDialog(
             "Remove \(removingServer?.displayName ?? "")?",
             isPresented: Binding(get: { removingServer != nil }, set: { if !$0 { removingServer = nil } }),

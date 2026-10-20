@@ -158,6 +158,28 @@ final class MusicParityTests: XCTestCase {
         XCTAssertTrue(app.textFields["addServer.address"].waitForExistence(timeout: 15), "with no server left, the welcome screen")
     }
 
+    /// Settings → Add a Server opens the sign-in sheet, and it stays open. It used to close at
+    /// once: the sheet hung on the servers' section, not on the Settings screen.
+    func testAddServerSheetStaysOpen() {
+        let app = launch()
+        let demo = app.buttons["addServer.demo"]
+        XCTAssertTrue(demo.waitForExistence(timeout: 15))
+        demo.tap()
+        XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 90))
+        app.buttons["home.settings"].tap()
+        let add = app.buttons["servers.add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 10))
+        add.tap()
+        let address = app.textFields["addServer.address"]
+        XCTAssertTrue(address.waitForExistence(timeout: 10), "the sign-in sheet opens")
+        sleep(3)
+        XCTAssertTrue(address.exists, "and stays open")
+        address.tap()
+        address.typeText("demo.own.audio")
+        sleep(2)
+        XCTAssertTrue(address.exists, "while typing too")
+    }
+
     private func attach(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = name

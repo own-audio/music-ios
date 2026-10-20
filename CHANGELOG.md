@@ -9,6 +9,13 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Settings → Add a Server closed its sheet at once, so no server could be added from Settings:
+  the sheet hung on the servers' section, not on the Settings screen. It is shown by Settings
+  now. UI test `MusicParityTests.testAddServerSheetStaysOpen` (failed before the fix, on iOS 26.5
+  and 27).
+
 ### Fixed on iOS 27
 
 - The Search tab had no search field on iOS 27: iOS no longer put the field into the tab by

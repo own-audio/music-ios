@@ -7,7 +7,8 @@ import UIKit
 /// server — the one the library shows — has a checkmark.
 struct ServersSection: View {
     @Environment(AppModel.self) private var model
-    @State private var isAdding = false
+    /// Owned by Settings, which shows the sheet: hung on this section, it closed at once.
+    @Binding var isAdding: Bool
     /// Owned by Settings, where the question is asked: a dialog on a section of a form didn't
     /// show on iOS 26.5.
     @Binding var removing: ServerRecord?
@@ -47,9 +48,6 @@ struct ServersSection: View {
             Text("Servers")
         } footer: {
             Text("The library shows the selected server. Music from any server can stay in the queue.")
-        }
-        .sheet(isPresented: $isAdding) {
-            NavigationStack { AddServerView() }
         }
     }
 }
