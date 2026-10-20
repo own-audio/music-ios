@@ -276,6 +276,32 @@ final class PlaybackSmokeTests: XCTestCase {
         playPause.tap()
     }
 
+    /// own.audio typed without https://, as people type it: the app must find it over https.
+    /// It used to put http:// in front; the server redirects that, iOS repeats the sign-in as a
+    /// GET, and own.audio answers 405 — every sign-in and token refresh failed that way.
+    func testOwnAudioAddressWithoutScheme() throws {
+        let host = env["SERVER_HOST"] ?? ""
+        guard host.contains("own.audio") else { throw XCTSkip("not an own.audio server") }
+        let bare = host.replacingOccurrences(of: "https://", with: "").replacingOccurrences(of: "http://", with: "")
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        let address = app.textFields["addServer.address"]
+        XCTAssertTrue(address.waitForExistence(timeout: 10))
+        address.tap()
+        address.typeText(bare)
+        app.textFields["addServer.username"].tap()
+        app.textFields["addServer.username"].typeText(env["SERVER_USER"] ?? "")
+        app.secureTextFields["addServer.password"].tap()
+        app.secureTextFields["addServer.password"].typeText(env["SERVER_PASSWORD"] ?? "")
+        app.buttons["addServer.connect"].tap()
+        dismissSavePasswordPrompt(app)
+        XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 20), "signed in with \(bare)")
+        openServerSettings(app)
+        let row = app.buttons.containing(NSPredicate(format: "label CONTAINS 'own.audio'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+    }
+
     func testSeekThenStop() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
@@ -411,7 +437,7 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launchChecked()
         addServer(app, screenshots: false)
         openServerSettings(app)
-        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
+        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
         XCTAssertTrue(info.waitForExistence(timeout: 10))
         screenshot(app, "16-servers")
         info.tap()
@@ -677,12 +703,12 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launchArguments = ["-uiTestReset"] + Self.english
         app.launchChecked()
         addServer(app, screenshots: false)
-        let household = app.buttons["settings.household"]
-        for _ in 0..<3 {
-            app.buttons["home.settings"].tap()
-            if app.buttons["settings.servers"].waitForExistence(timeout: 5) { break }
-            dismissSavePasswordPrompt(app, within: 3)
-        }
+        // On the server's page, as in the podcasts app.
+        openServerSettings(app)
+        let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        let household = app.buttons["serverDetail.family"]
         guard household.waitForExistence(timeout: 5) else { throw XCTSkip("this server has no family") }
         household.tap()
         XCTAssertTrue(app.staticTexts["Members"].waitForExistence(timeout: 15), "the members should be listed")
@@ -690,19 +716,19 @@ final class PlaybackSmokeTests: XCTestCase {
         screenshot(app, "22-family")
     }
 
-    /// own.audio only: Settings → Devices lists the account's devices with this iPhone first and
+    /// own.audio only: the server page's Devices lists the account's devices with this iPhone first and
     /// marked; it can't swipe itself out. Nothing is signed out here: the test account is shared.
     func testDevices() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset"] + Self.english
         app.launchChecked()
         addServer(app, screenshots: false)
-        let devices = app.buttons["settings.devices"]
-        for _ in 0..<3 {
-            app.buttons["home.settings"].tap()
-            if app.buttons["settings.servers"].waitForExistence(timeout: 5) { break }
-            dismissSavePasswordPrompt(app, within: 3)
-        }
+        // On the server's page, as in the podcasts app.
+        openServerSettings(app)
+        let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        let devices = app.buttons["serverDetail.devices"]
         guard devices.waitForExistence(timeout: 5) else { throw XCTSkip("not an own.audio server") }
         devices.tap()
         let this = app.descendants(matching: .any)["devices.this"].firstMatch
@@ -727,7 +753,7 @@ final class PlaybackSmokeTests: XCTestCase {
         app.launchChecked()
         addServer(app, screenshots: false)
         openServerSettings(app)
-        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.info.'")).firstMatch
+        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
         XCTAssertTrue(info.waitForExistence(timeout: 10))
         info.tap()
         let catalogue = app.descendants(matching: .any)["serverDetail.catalogue"].firstMatch
@@ -917,10 +943,15 @@ final class PlaybackSmokeTests: XCTestCase {
     /// sit first in the list off screen, where a tap goes nowhere: the one that can be hit.
     private func tabButton(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement {
         let matches = app.buttons.matching(NSPredicate(format: "label IN %@", labels))
-        // With Search open, iOS 26 folds the other tabs into one button; open it out first.
+        // With Search open, iOS 26 and 27 fold the other tabs into one button, and on iOS 27 the
+        // field is open with the keyboard: close the search first, else open the fold out.
         if !matches.firstMatch.waitForExistence(timeout: 2) {
-            let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
-            if folded.exists { folded.tap() }
+            let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel", "Zavřít", "Zrušit"])).firstMatch
+            if close.exists { close.tap() }
+            if !matches.firstMatch.waitForExistence(timeout: 2) {
+                let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
+                if folded.exists { folded.tap() }
+            }
         }
         _ = matches.firstMatch.waitForExistence(timeout: 10)
         return matches.allElementsBoundByIndex.first { $0.isHittable } ?? matches.firstMatch
@@ -941,14 +972,14 @@ final class PlaybackSmokeTests: XCTestCase {
     /// Settings → Servers. iOS's offer to save the password can come late and swallow the tap on
     /// Settings, so the tap is tried again once the offer is out of the way.
     private func openServerSettings(_ app: XCUIApplication) {
-        let servers = app.buttons["settings.servers"]
+        // Settings lists the servers itself, as in the podcasts app.
+        let servers = app.buttons["servers.add"]
         for _ in 0..<3 {
             app.buttons["home.settings"].tap()
             if servers.waitForExistence(timeout: 5) { break }
             dismissSavePasswordPrompt(app, within: 3)
         }
         XCTAssertTrue(servers.exists, "Settings should open")
-        servers.tap()
     }
 
     /// iOS offers to save the password after a sign-in form. It's the system's sheet, in the

@@ -2,163 +2,54 @@ import MusicLibrary
 import SwiftUI
 import UIKit
 
-/// Every configured server: pick the one to browse, check, rename or remove.
-struct ServersView: View {
+/// The servers, listed in Settings as in the podcasts app: a tap opens the server's page
+/// (use it, check it, rename it, remove it); a swipe removes one, after asking. The selected
+/// server — the one the library shows — has a checkmark.
+struct ServersSection: View {
     @Environment(AppModel.self) private var model
     @State private var isAdding = false
-    @State private var renaming: ServerRecord?
-    @State private var newName = ""
-    @State private var statuses: [UUID: ConnectionStatus] = [:]
-    @State private var checking: Set<UUID> = []
-    @State private var errorMessage: String?
-    @State private var pickingLibrary: ServerRecord?
-    @State private var showingDetail: UUID?
+    /// Owned by Settings, where the question is asked: a dialog on a section of a form didn't
+    /// show on iOS 26.5.
+    @Binding var removing: ServerRecord?
 
     var body: some View {
-        List {
-            Section {
-                ForEach(model.serversInOrder) { server in
-                    row(server)
-                }
-            } footer: {
-                Text("The library shows the selected server. Music from any server can stay in the queue.")
-            }
-
-            Section {
-                Button {
-                    isAdding = true
+        Section {
+            ForEach(model.serversInOrder) { server in
+                NavigationLink {
+                    ServerDetailView(serverId: server.id)
                 } label: {
-                    Label("Add Server", systemImage: "plus")
+                    HStack(spacing: Theme.Spacing.md) {
+                        ServerKindIcon(kind: server.kind, size: 32)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(server.displayName).foregroundStyle(.primary)
+                            Text("\(server.kind.title) · \(server.auth.username)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .accessibilityIdentifier("servers.protocol.\(server.displayName)")
+                        }
+                        Spacer()
+                        if server.id == model.activeServerId {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel("Selected")
+                        }
+                    }
                 }
-                .accessibilityIdentifier("servers.add")
+                .swipeActions {
+                    Button("Remove", role: .destructive) { removing = server }
+                }
+                .accessibilityIdentifier("servers.row.\(server.displayName)")
             }
+            Button { isAdding = true } label: { Label("Add a Server", systemImage: "plus") }
+                .accessibilityIdentifier("servers.add")
+        } header: {
+            Text("Servers")
+        } footer: {
+            Text("The library shows the selected server. Music from any server can stay in the queue.")
         }
-        .navigationTitle("Servers")
         .sheet(isPresented: $isAdding) {
             NavigationStack { AddServerView() }
-        }
-        .sheet(item: $pickingLibrary) { server in
-            LibraryPickerView(server: server)
-        }
-        .navigationDestination(item: $showingDetail) { id in
-            ServerDetailView(serverId: id)
-        }
-        .alert("Rename Server", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-            TextField("Name", text: $newName)
-            Button("Cancel", role: .cancel) { renaming = nil }
-            Button("Save") {
-                guard let server = renaming else { return }
-                let name = newName.trimmingCharacters(in: .whitespaces)
-                renaming = nil
-                guard !name.isEmpty else { return }
-                Task { try? await model.renameServer(id: server.id, to: name) }
-            }
-        }
-        .alert("Couldn't Remove Server", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
-    }
-
-    private func row(_ server: ServerRecord) -> some View {
-        Button {
-            Haptics.selection()
-            model.selectServer(id: server.id)
-        } label: {
-            HStack(spacing: Theme.Spacing.md) {
-                ServerKindIcon(kind: server.kind, size: 34)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(server.displayName).foregroundStyle(.primary)
-                    Text(server.connectionTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("servers.protocol.\(server.displayName)")
-                    Text("\(server.auth.username) · \(server.host.absoluteString)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    statusText(server.id)
-                }
-                Spacer()
-                if server.id == model.activeServerId {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
-                        .accessibilityLabel("Selected")
-                }
-                Button {
-                    showingDetail = server.id
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Connection")
-                .accessibilityIdentifier("servers.info.\(server.displayName)")
-            }
-        }
-        .accessibilityIdentifier("servers.row.\(server.displayName)")
-        .swipeActions {
-            Button(role: .destructive) {
-                remove(server)
-            } label: {
-                Label("Remove", systemImage: "trash")
-            }
-        }
-        .contextMenu {
-            Button {
-                check(server)
-            } label: {
-                Label("Check Connection", systemImage: "antenna.radiowaves.left.and.right")
-            }
-            if server.kind == .jellyfin {
-                Button {
-                    pickingLibrary = server
-                } label: {
-                    Label("Music Library…", systemImage: "music.note.house")
-                }
-            }
-            Button {
-                newName = server.displayName
-                renaming = server
-            } label: {
-                Label("Rename", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                remove(server)
-            } label: {
-                Label("Remove", systemImage: "trash")
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func statusText(_ id: UUID) -> some View {
-        if checking.contains(id) {
-            Text("Checking…").font(.caption).foregroundStyle(.secondary)
-        } else if let status = statuses[id] {
-            switch status {
-            case .ok: Label("Connected", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
-            case .rejected: Label("Sign-in rejected", systemImage: "xmark.circle.fill").font(.caption).foregroundStyle(.red)
-            case .unreachable: Label("Unreachable", systemImage: "wifi.exclamationmark").font(.caption).foregroundStyle(.orange)
-            }
-        }
-    }
-
-    private func check(_ server: ServerRecord) {
-        checking.insert(server.id)
-        Task {
-            statuses[server.id] = await model.checkConnection(id: server.id)
-            checking.remove(server.id)
-        }
-    }
-
-    private func remove(_ server: ServerRecord) {
-        Task {
-            do {
-                try await model.removeServer(id: server.id)
-            } catch {
-                errorMessage = error.localizedDescription
-            }
         }
     }
 }

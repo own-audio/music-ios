@@ -394,6 +394,16 @@
         }
       }
     },
+    "Add a Server" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat server"
+          }
+        }
+      }
+    },
     "Add Address" : {
       "localizations" : {
         "cs" : {
@@ -1771,6 +1781,16 @@
         }
       }
     },
+    "Its downloads leave this iPhone. Nothing changes on the server." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeho stažené položky z tohoto iPhonu zmizí. Na serveru se nic nezmění."
+          }
+        }
+      }
+    },
     "Jellyfin API" : {
       "localizations" : {
         "cs" : {
@@ -2292,6 +2312,16 @@
         }
       }
     },
+    "own.audio Music is free and open source (MPL-2.0). It talks only to the servers you add." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio Music je zdarma a open source (MPL-2.0). Mluví jen se servery, které přidáte."
+          }
+        }
+      }
+    },
     "Play ${album}" : {
       "localizations" : {
         "cs" : {
@@ -2398,6 +2428,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Soukromí"
+          }
+        }
+      }
+    },
+    "Remove %@?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat %@?"
+          }
+        }
+      }
+    },
+    "Remove Server" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat server"
           }
         }
       }
@@ -2762,6 +2812,16 @@
         }
       }
     },
+    "Source Code and Licence" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zdrojový kód a licence"
+          }
+        }
+      }
+    },
     "Stop Playback" : {
       "localizations" : {
         "cs" : {
@@ -2942,6 +3002,16 @@
         }
       }
     },
+    "The library shows the selected server." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovna ukazuje vybraný server."
+          }
+        }
+      }
+    },
     "The server doesn't have that any more." : {
       "localizations" : {
         "cs" : {
@@ -3108,6 +3178,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Použít"
+          }
+        }
+      }
+    },
+    "Use This Server" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použít tento server"
           }
         }
       }
@@ -4520,7 +4600,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Úsporně"
+            "value" : "Úsporný"
           }
         }
       }

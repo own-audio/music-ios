@@ -105,7 +105,8 @@ final class AppStoreScreenshots: XCTestCase {
 
         // The family.
         openSettings(app)
-        let household = app.buttons["settings.household"]
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch.tap()
+        let household = app.buttons["serverDetail.family"]
         XCTAssertTrue(household.waitForExistence(timeout: 10), "an own.audio server signed in through its API has a family")
         household.tap()
         XCTAssertTrue(app.staticTexts[t("Members", "Členové")].waitForExistence(timeout: 15))
@@ -180,7 +181,7 @@ final class AppStoreScreenshots: XCTestCase {
     }
 
     private func openSettings(_ app: XCUIApplication) {
-        let servers = app.buttons["settings.servers"]
+        let servers = app.buttons["servers.add"]
         for _ in 0..<3 where !servers.exists {
             tab(app, t("Home", "Domů")).tap()
             app.buttons["home.settings"].tap()
@@ -192,7 +193,6 @@ final class AppStoreScreenshots: XCTestCase {
 
     private func openAddServer(_ app: XCUIApplication) {
         openSettings(app)
-        app.buttons["settings.servers"].tap()
         let add = app.buttons["servers.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 10))
         add.tap()

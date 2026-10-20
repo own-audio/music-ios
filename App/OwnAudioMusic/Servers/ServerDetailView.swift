@@ -2,10 +2,15 @@ import MusicLibrary
 import SwiftUI
 
 /// One server's connection: which address is in use, how it is picked, and every address it
-/// is known by.
+/// is known by; its name, and removing it, as in the podcasts app.
 struct ServerDetailView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
     let serverId: UUID
+    @State private var isRenaming = false
+    @State private var newName = ""
+    @State private var confirmRemove = false
+    @State private var pickingLibrary = false
     @State private var isAdding = false
     @State private var newAddress = ""
     @State private var errorMessage: String?
@@ -18,6 +23,21 @@ struct ServerDetailView: View {
     var body: some View {
         if let server {
             List {
+                // The library shows one server at a time; this one, from here.
+                if server.id != model.activeServerId {
+                    Section {
+                        Button {
+                            Haptics.selection()
+                            model.selectServer(id: server.id)
+                        } label: {
+                            Label("Use This Server", systemImage: "checkmark.circle")
+                        }
+                        .accessibilityIdentifier("serverDetail.use")
+                    } footer: {
+                        Text("The library shows the selected server.")
+                    }
+                }
+
                 Section {
                     statusRow(server)
                     Button {
@@ -43,10 +63,24 @@ struct ServerDetailView: View {
                     }
                     Button("Sign In Again") { isSigningIn = true }
                         .accessibilityIdentifier("serverDetail.signInAgain")
+
                 } header: {
                     Text("Account")
                 } footer: {
                     Text("Signed in as \(server.auth.username). Downloads and the library on this iPhone stay as they are.")
+                }
+
+                // The account's family and signed-in devices, on its server's page as in the
+                // podcasts app.
+                if server.kind == .ownAudio, case .ownAudio = server.auth {
+                    Section {
+                        if server.id == model.activeServerId, model.household != nil {
+                            NavigationLink { HouseholdView() } label: { Label("Family", systemImage: "person.3") }
+                                .accessibilityIdentifier("serverDetail.family")
+                        }
+                        NavigationLink { DevicesView(serverId: server.id) } label: { Label("Devices", systemImage: "iphone.gen3") }
+                            .accessibilityIdentifier("serverDetail.devices")
+                    }
                 }
 
                 Section {
@@ -58,6 +92,17 @@ struct ServerDetailView: View {
                     }
                     LabeledContent("Talks Through", value: server.connectionTitle)
                         .accessibilityIdentifier("serverDetail.protocol")
+                    Button {
+                        newName = server.displayName
+                        isRenaming = true
+                    } label: {
+                        LabeledContent("Name", value: server.displayName)
+                    }
+                    .accessibilityIdentifier("serverDetail.name")
+                    if server.kind == .jellyfin {
+                        Button { pickingLibrary = true } label: { Text("Music Library…") }
+                            .accessibilityIdentifier("serverDetail.library")
+                    }
                 } footer: {
                     if server.kind == .ownAudio, case .subsonic = server.auth {
                         Text("Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this iPhone then stays up to date within seconds.")
@@ -130,9 +175,20 @@ struct ServerDetailView: View {
                 } footer: {
                     Text("A list of everything on the server, without the music itself, so albums open and the library can be browsed offline. Updated in the background, on Wi-Fi.")
                 }
+
+                Section {
+                    Button("Remove Server", role: .destructive) { confirmRemove = true }
+                        .accessibilityIdentifier("serverDetail.remove")
+                }
             }
+            // The app's pink read as red beside the status lines here; the buttons take the
+            // text colour, and red stays for removing and for a refused sign-in.
+            .tint(.primary)
             .sheet(isPresented: $isSigningIn) {
                 SignInAgainView(server: server)
+            }
+            .sheet(isPresented: $pickingLibrary) {
+                LibraryPickerView(server: server)
             }
             .navigationTitle(server.displayName)
             .navigationBarTitleDisplayMode(.inline)
@@ -153,6 +209,24 @@ struct ServerDetailView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage ?? "")
+            }
+            .alert("Rename", isPresented: $isRenaming) {
+                TextField("Name", text: $newName)
+                Button("Cancel", role: .cancel) {}
+                Button("Save") {
+                    let name = newName.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty else { return }
+                    model.perform { try await model.renameServer(id: server.id, to: name) }
+                }
+            }
+            .confirmationDialog("Remove \(server.displayName)?", isPresented: $confirmRemove, titleVisibility: .visible) {
+                Button("Remove", role: .destructive) {
+                    let id = server.id
+                    dismiss()
+                    model.perform { try await model.removeServer(id: id) }
+                }
+            } message: {
+                Text("Its downloads leave this iPhone. Nothing changes on the server.")
             }
         }
     }

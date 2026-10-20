@@ -376,6 +376,7 @@ final class AppModel {
         lastQueue = LastQueue.load()
         observeQueueForRelaunch()
         servers = await store.loadAll()
+        await moveOwnAudioToHTTPS()
         await addServerFromLaunchArguments()
         await rebuildClients()
         let saved = UserDefaults.standard.string(forKey: Self.activeServerKey).flatMap(UUID.init)
@@ -413,10 +414,9 @@ final class AppModel {
             try await saveJellyfin(host: host, info: info, session: session, name: name)
             return
         }
-        guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
         // An own.audio server answers its own discovery request too, with its identity and
         // addresses; any other Subsonic server doesn't.
-        let ownAudio = try? await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+        guard let (host, ownAudio) = await hostAndOwnAudioInfo(address) else { throw AddServerError.invalidAddress }
         var username = username
         var secret = password
         switch await ServerSetup.subsonicCheck(host: host, username: username, password: password, urlSession: Self.session) {
@@ -476,10 +476,15 @@ final class AppModel {
     /// app fetches the account's Subsonic key with it; only the key is kept then.
     func addOwnAudioServer(address: String, signIn: OwnAudioSignIn, name: String) async throws {
         let address = ServerSetup.ownAudioAPIAddress(address)
-        guard let host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
+        guard var host = ServerSetup.subsonicHost(address) else { throw AddServerError.invalidAddress }
         let info: ServerSetup.OwnAudioInfo
         do {
-            info = try await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+            if let (secure, found) = await hostAndOwnAudioInfo(address), let found {
+                host = secure
+                info = found
+            } else {
+                info = try await ServerSetup.ownAudioInfo(at: host, urlSession: Self.quickSession)
+            }
         } catch SourceError.unreadable {
             throw AddServerError.notOwnAudio
         } catch {
@@ -660,17 +665,68 @@ final class AppModel {
         }
     }
 
+    /// The server address for what was typed, and own.audio's discovery answer when it is one.
+    /// Without http:// or https://, own.audio is tried over https first. It used to get http://
+    /// in front: own.audio redirects that to https, iOS repeats a POST after a redirect as a
+    /// GET, and so every sign-in and token refresh came back 405 — besides going out unencrypted.
+    /// A server that answers only over http (a home Navidrome, say) still gets http.
+    func hostAndOwnAudioInfo(_ address: String) async -> (URL, ServerSetup.OwnAudioInfo?)? {
+        guard let plain = ServerSetup.subsonicHost(address) else { return nil }
+        let typed = address.trimmingCharacters(in: .whitespaces).lowercased()
+        if !typed.hasPrefix("http://"), !typed.hasPrefix("https://"),
+           var parts = URLComponents(url: plain, resolvingAgainstBaseURL: false) {
+            parts.scheme = "https"
+            if let secure = parts.url, let info = try? await ServerSetup.ownAudioInfo(at: secure, urlSession: Self.quickSession) {
+                return (secure, info)
+            }
+        }
+        return (plain, try? await ServerSetup.ownAudioInfo(at: plain, urlSession: Self.quickSession))
+    }
+
+    /// own.audio servers saved with http:// by the bug above move to https, when the same server
+    /// (by its id) answers there; until then their token refreshes fail.
+    private func moveOwnAudioToHTTPS() async {
+        for server in servers where server.kind == .ownAudio && server.host.scheme == "http" {
+            guard var parts = URLComponents(url: server.host, resolvingAgainstBaseURL: false) else { continue }
+            parts.scheme = "https"
+            guard let secure = parts.url,
+                  let info = try? await ServerSetup.ownAudioInfo(at: secure, urlSession: Self.quickSession),
+                  server.serverId == nil || info.id == server.serverId else { continue }
+            var moved = server
+            moved.host = secure
+            ownAudioSessions.forget(server.id)
+            try? await update(moved)
+            Logger.app.info("own.audio server moved to https")
+        }
+    }
+
     /// Which providers the own.audio server at a typed address offers, for showing only their
     /// buttons; nothing for an address that isn't own.audio. Without a scheme, https then http.
+    /// A check the network didn't answer is tried once more with more time, and is logged: on a
+    /// slow phone connection the buttons used to stay hidden with nothing said. own.audio's own
+    /// hosted service always offers Google, so its addresses show that button even then.
     func ownAudioProviders(address: String) async -> (apple: Bool, google: Bool) {
         let api = ServerSetup.ownAudioAPIAddress(address)
         let candidates = api.contains("://") ? [api] : ["https://\(api)", "http://\(api)"]
-        for text in candidates {
-            guard let url = URL(string: text), url.host() != nil,
-                  let info = try? await ServerSetup.ownAudioInfo(at: url, urlSession: Self.quickSession) else { continue }
-            return (info.signInWithApple, info.signInWithGoogle)
+        for session in [Self.quickSession, Self.session] {
+            var unreachable = false
+            for text in candidates {
+                guard let url = URL(string: text), url.host() != nil else { continue }
+                do {
+                    let info = try await ServerSetup.ownAudioInfo(at: url, urlSession: session)
+                    return (info.signInWithApple, info.signInWithGoogle)
+                } catch SourceError.unreadable {
+                    continue
+                } catch {
+                    unreachable = true
+                    Logger.network.error("sign-in options from \(url.host() ?? "", privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+            guard unreachable, !Task.isCancelled else { break }
         }
-        return (false, false)
+        let hosted = ["https://api.own.audio", "https://api-canary.own.audio"].contains(api)
+            || ["api.own.audio", "api-canary.own.audio"].contains(api.lowercased().replacingOccurrences(of: "https://", with: ""))
+        return (false, hosted)
     }
 
     /// Which providers an own.audio server offers, for showing only their buttons.
@@ -1572,6 +1628,7 @@ private extension Int {
 extension Logger {
     /// What went wrong in the app; read with Console or `log stream`, and kept by the UI tests.
     static let app = Logger(subsystem: "audio.own.musicplayer", category: "app")
+    static let network = Logger(subsystem: "audio.own.musicplayer", category: "network")
 }
 
 // MARK: - The last queue, back after a relaunch

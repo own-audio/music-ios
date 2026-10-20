@@ -9,8 +9,48 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed on iOS 27
+
+- The Search tab had no search field on iOS 27: iOS no longer put the field into the tab by
+  itself, so there was nothing to type into (found in the podcasts app). Selecting the tab now
+  opens the field, with the keyboard (`tabViewSearchActivation(.searchTabSelection)`), on
+  iOS 26 as well.
+
+### Settings the same in all three apps
+
+- The servers are listed in Settings, as in the podcasts app: a tap opens the server's page, a
+  swipe removes one after asking ("Remove ‹name›?"), and the selected server has a checkmark.
+  The page has **Use This Server**, **Name** (rename), Family and Devices for own.audio (moved
+  off the Settings screen), Music Library… for Jellyfin, and **Remove Server** at the bottom.
+  The Servers screen and the long-press menu on its rows are gone.
+- Settings in the same order as the other apps: Downloads (Offline Mode, Download on Wi-Fi
+  Only, Keep at Most, Whole Library When Offline), Streaming, …, About (Version, Source Code and
+  Licence, Privacy, Logs, and the same footer).
+- Czech: "Úsporný" for Saver and "Odebrat ‹name›?" for removing a server, as in the other apps.
+- UI tests follow the new layout; `MusicParityTests.testServerPage` renames and removes a server
+  on its page.
+- The "Remove ‹name›?" question is asked by the Settings screen itself, as in the podcasts app:
+  attached to the servers' section it didn't show on iOS 26.5, and a swipe removed nothing.
+
 ### Fixed
 
+- Signing in to own.audio failed with "method_not_allowed" when the address was typed without
+  https:// — with Google and Apple as well as with a password — and token refreshes of a server
+  saved that way failed too ("session expired"). The app put http:// in front; own.audio
+  redirects that to https, iOS repeats a POST after a redirect as a GET, and the server answers
+  405. The sign-in also went out unencrypted before the redirect. own.audio is now tried over
+  https first (http stays for servers that answer only there, such as a home Navidrome), and
+  own.audio servers saved with http:// move to https at launch when the same server answers
+  there. UI test `PlaybackSmokeTests.testOwnAudioAddressWithoutScheme` (failed before the fix).
+- The Apple and Google buttons stayed hidden when the check for the server's sign-in options
+  got no answer in 6 s, as on a slow phone connection, with nothing said. The check now tries
+  once more with more time and logs a failure (Settings → Logs), and own.audio's hosted
+  addresses show the Google button even without an answer. `MusicParityTests` also checks the
+  web app's address typed with https://.
+- Logs in Settings → About has the accent colour of the links beside it.
+- No pink on the server list and server page: the buttons there (Check Now, Sign In Again, Add
+  Address, Update Now, Add Server) take the text colour. The app's pink read as red beside the
+  status lines; red is left for removing and for a refused sign-in.
 - A streamed song could end early and the next one start, reported about 30 s into a FLAC
   from own.audio's canary on an iPhone. The download and the decoding were one loop: with two
   minutes decoded ahead the player stopped reading, so the connection sat idle and the request

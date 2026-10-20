@@ -1,8 +1,10 @@
+import MusicLibrary
 import MusicEngine
 import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @State private var removingServer: ServerRecord?
 
     private var version: String {
         let info = Bundle.main.infoDictionary
@@ -19,30 +21,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                NavigationLink {
-                    ServersView()
-                } label: {
-                    LabeledContent("Servers", value: model.activeServer?.displayName ?? "")
-                }
-                .accessibilityIdentifier("settings.servers")
-                if let server = model.activeServer, server.kind == .ownAudio, case .ownAudio = server.auth {
-                    NavigationLink {
-                        DevicesView(serverId: server.id)
-                    } label: {
-                        Label("Devices", systemImage: "iphone.and.laptop")
-                    }
-                    .accessibilityIdentifier("settings.devices")
-                }
-                if model.household != nil {
-                    NavigationLink {
-                        HouseholdView()
-                    } label: {
-                        Label("Family", systemImage: "person.2")
-                    }
-                    .accessibilityIdentifier("settings.household")
-                }
-            }
+            ServersSection(removing: $removingServer)
 
             Section {
                 NavigationLink {
@@ -55,11 +34,6 @@ struct SettingsView: View {
                     set: { model.downloadedOnly = $0 }
                 ))
                 .accessibilityIdentifier("settings.downloadedOnly")
-                Toggle("Whole Library When Offline", isOn: Binding(
-                    get: { model.offlineShowsWholeLibrary },
-                    set: { model.offlineShowsWholeLibrary = $0 }
-                ))
-                .accessibilityIdentifier("settings.offlineWholeLibrary")
                 Toggle("Download on Wi-Fi Only", isOn: Binding(
                     get: { model.downloadsWifiOnly },
                     set: { model.downloadsWifiOnly = $0 }
@@ -74,6 +48,11 @@ struct SettingsView: View {
                     }
                 }
                 .accessibilityIdentifier("settings.storageCap")
+                Toggle("Whole Library When Offline", isOn: Binding(
+                    get: { model.offlineShowsWholeLibrary },
+                    set: { model.offlineShowsWholeLibrary = $0 }
+                ))
+                .accessibilityIdentifier("settings.offlineWholeLibrary")
             } footer: {
                 Text("Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
             }
@@ -127,28 +106,28 @@ struct SettingsView: View {
                 Text("Tells the server what's playing and counts plays: on Subsonic servers once you've heard half a song or four minutes, on Jellyfin by its own rules. Plays made offline are sent later. The server can pass them on to Last.fm or ListenBrainz.")
             }
 
-            Section("About") {
+            Section {
                 LabeledContent("Version", value: version)
-                Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
-                    Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
-                }
-                Link(destination: URL(string: "https://github.com/own-audio/music-ios/blob/main/PRIVACY.md")!) {
-                    Label("Privacy", systemImage: "hand.raised")
-                }
-                .accessibilityIdentifier("settings.privacy")
-                NavigationLink {
-                    LogsView()
-                } label: {
-                    Label("Logs", systemImage: "doc.plaintext")
-                }
-                .accessibilityIdentifier("settings.logs")
-                Link(destination: URL(string: "https://www.mozilla.org/MPL/2.0/")!) {
-                    Label("License: MPL 2.0", systemImage: "doc.text")
-                }
-                Link(destination: URL(string: "https://www.own.audio/")!) {
-                    Label("Made by own.audio", systemImage: "heart")
-                }
+                Link("Source Code and Licence", destination: URL(string: "https://github.com/own-audio/music-ios")!)
+                Link("Privacy", destination: URL(string: "https://github.com/own-audio/music-ios/blob/main/PRIVACY.md")!)
+                    .accessibilityIdentifier("settings.privacy")
+                // Tinted like the links above it.
+                NavigationLink { LogsView() } label: { Text("Logs").foregroundStyle(.tint) }
+                    .accessibilityIdentifier("settings.logs")
+            } header: {
+                Text("About")
+            } footer: {
+                Text("own.audio Music is free and open source (MPL-2.0). It talks only to the servers you add.")
             }
+        }
+        .confirmationDialog(
+            "Remove \(removingServer?.displayName ?? "")?",
+            isPresented: Binding(get: { removingServer != nil }, set: { if !$0 { removingServer = nil } }),
+            titleVisibility: .visible, presenting: removingServer
+        ) { server in
+            Button("Remove", role: .destructive) { model.perform { try await model.removeServer(id: server.id) } }
+        } message: { _ in
+            Text("Its downloads leave this iPhone. Nothing changes on the server.")
         }
         .navigationTitle("Settings")
     }

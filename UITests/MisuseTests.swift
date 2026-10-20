@@ -189,6 +189,10 @@ final class MisuseTests: XCTestCase {
         let remove = app.buttons["Remove"]
         XCTAssertTrue(remove.waitForExistence(timeout: 5))
         remove.tap()
+        // It asks first, as in the podcasts app.
+        let confirm = app.sheets.buttons["Remove"].exists ? app.sheets.buttons["Remove"] : app.buttons["Remove"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
         XCTAssertTrue(waitUntil(timeout: 15) { !app.buttons["miniPlayer"].exists }, "removing the server should stop its music")
         XCTAssertTrue(waitUntil(timeout: 15) { app.textFields["addServer.address"].exists || !row.exists }, "and leave no server behind")
         XCTAssertEqual(app.state, .runningForeground)
@@ -305,10 +309,15 @@ final class MisuseTests: XCTestCase {
     /// sit first in the list off screen, where a tap goes nowhere: the one that can be hit.
     private func tabButton(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement {
         let matches = app.buttons.matching(NSPredicate(format: "label IN %@", labels))
-        // With Search open, iOS 26 folds the other tabs into one button; open it out first.
+        // With Search open, iOS 26 and 27 fold the other tabs into one button, and on iOS 27 the
+        // field is open with the keyboard: close the search first, else open the fold out.
         if !matches.firstMatch.waitForExistence(timeout: 2) {
-            let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
-            if folded.exists { folded.tap() }
+            let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel", "Zavřít", "Zrušit"])).firstMatch
+            if close.exists { close.tap() }
+            if !matches.firstMatch.waitForExistence(timeout: 2) {
+                let folded = app.tabBars.buttons.matching(NSPredicate(format: "value == 'Collapsed'")).firstMatch
+                if folded.exists { folded.tap() }
+            }
         }
         _ = matches.firstMatch.waitForExistence(timeout: 10)
         return matches.allElementsBoundByIndex.first { $0.isHittable } ?? matches.firstMatch
@@ -325,14 +334,14 @@ final class MisuseTests: XCTestCase {
 
     private func openServerSettings(_ app: XCUIApplication) {
         openTab(app, Self.homeTab)
-        let servers = app.buttons["settings.servers"]
+        // Settings lists the servers itself, as in the podcasts app.
+        let servers = app.buttons["servers.add"]
         for _ in 0..<3 {
             app.buttons["home.settings"].tap()
             if servers.waitForExistence(timeout: 5) { break }
             dismissSavePasswordPrompt(app, within: 3)
         }
         XCTAssertTrue(servers.exists, "Settings should open")
-        servers.tap()
     }
 
     private func dismissSavePasswordPrompt(_ app: XCUIApplication, within seconds: TimeInterval = 10) {

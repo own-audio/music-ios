@@ -27,8 +27,12 @@ final class MusicParityTests: XCTestCase {
         field.typeText("app-canary.own.audio")
         XCTAssertTrue(app.buttons["addServer.apple"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["addServer.google"].exists)
+        // The web app's address with https://, as it is copied from a browser.
         field.tap()
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 30) + "https://example.com")
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 30) + "https://app-canary.own.audio")
+        XCTAssertTrue(app.buttons["addServer.google"].waitForExistence(timeout: 20), "with https:// too")
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 40) + "https://example.com")
         XCTAssertTrue(app.buttons["addServer.google"].waitForNonExistence(timeout: 20))
         XCTAssertFalse(app.buttons["addServer.apple"].exists)
     }
@@ -44,6 +48,10 @@ final class MusicParityTests: XCTestCase {
         let privacy = app.descendants(matching: .any)["settings.privacy"].firstMatch
         for _ in 0..<12 where !privacy.isHittable { app.swipeUp() }
         XCTAssertTrue(privacy.isHittable, "Privacy under About, as in the other apps")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "settings-about"
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 
     /// Download on Wi-Fi Only (on by default) and Keep at Most, kept across a relaunch.
@@ -110,5 +118,50 @@ final class MusicParityTests: XCTestCase {
         add(shot)
         app.descendants(matching: .any)["settings.logs"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Záznamy"].waitForExistence(timeout: 10), "the log opens")
+    }
+
+    /// The server list and page open; the screenshots are for a look at their colours.
+    func testServerPage() {
+        let app = launch()
+        let demo = app.buttons["addServer.demo"]
+        XCTAssertTrue(demo.waitForExistence(timeout: 15))
+        demo.tap()
+        XCTAssertTrue(app.buttons["home.settings"].waitForExistence(timeout: 90))
+        app.buttons["home.settings"].tap()
+        let info = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
+        XCTAssertTrue(info.waitForExistence(timeout: 10))
+        attach(app, "settings-servers")
+        info.tap()
+        XCTAssertTrue(app.buttons["serverDetail.check"].waitForExistence(timeout: 10))
+        app.buttons["serverDetail.check"].tap()
+        sleep(3)
+        attach(app, "server-page")
+
+        // Renamed and removed on its page, as in the podcasts app.
+        let name = app.buttons["serverDetail.name"]
+        for _ in 0..<4 where !name.isHittable { app.swipeUp() }
+        name.tap()
+        let field = app.alerts.firstMatch.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 30) + "Demo Renamed")
+        let save = app.alerts.firstMatch.buttons["Save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        save.tap()
+        if app.alerts.firstMatch.exists { app.alerts.firstMatch.buttons.element(boundBy: 1).tap() }
+        XCTAssertTrue(app.navigationBars["Demo Renamed"].waitForExistence(timeout: 5), "the page shows the new name")
+        let remove = app.buttons["serverDetail.remove"]
+        for _ in 0..<8 where !remove.isHittable { app.swipeUp() }
+        remove.tap()
+        let confirm = app.buttons["Remove"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "it asks first")
+        confirm.tap()
+        XCTAssertTrue(app.textFields["addServer.address"].waitForExistence(timeout: 15), "with no server left, the welcome screen")
+    }
+
+    private func attach(_ app: XCUIApplication, _ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 }
