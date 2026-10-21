@@ -9,6 +9,17 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Concerts (M11)
+
+- The player knows chapters: a concert recorded as one file plays with a chapter where each
+  song starts. Next and previous move between its songs — previous restarts a song a few
+  seconds in, as for tracks — and past the last song next goes to the next track. The lock
+  screen, Live Activity and CarPlay show the song playing, with the concert as its album, and
+  keep next enabled while a song follows. `PlayerEngine`: `TrackChapter`, `ChapterNavigation`,
+  `setChapters(_:forTrackId:)`, `playChapter(at:)`, `canSkipForward`. Tests:
+  `ChapterNavigationTests`, and a real playback in `PlaybackEngineStreamingTests` moving
+  between the songs of a concert.
+
 ### Tests
 
 - CarPlay unit tests (`UnitTests/CarPlayContentTests`, a new unit-test target hosted by the app):

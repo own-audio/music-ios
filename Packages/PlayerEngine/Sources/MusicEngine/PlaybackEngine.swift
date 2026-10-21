@@ -61,6 +61,47 @@ public final class PlaybackEngine {
     /// Whether "previous" would do anything: go back a track, or restart this one.
     public var canGoBack: Bool { hasPreviousTrack || currentTime > Self.restartThreshold }
 
+    // MARK: Chapters
+
+    /// Chapters by track id, set by the app once it knows them (a concert as one file, a song
+    /// per chapter). Kept for the session, so a track played again has them at once.
+    public private(set) var chaptersByTrack: [String: [TrackChapter]] = [:]
+
+    /// The playing track's chapters, in order; empty for an ordinary track.
+    public var currentChapters: [TrackChapter] {
+        currentTrack.flatMap { chaptersByTrack[$0.id] } ?? []
+    }
+
+    public var currentChapterIndex: Int? {
+        ChapterNavigation.index(in: currentChapters, at: currentTime)
+    }
+
+    public var currentChapter: TrackChapter? {
+        currentChapterIndex.map { currentChapters[$0] }
+    }
+
+    /// Whether "next" would do anything: the next chapter, or the next track.
+    public var canSkipForward: Bool {
+        hasNextTrack || ChapterNavigation.next(in: currentChapters, at: currentTime) != nil
+    }
+
+    /// Chapters for a track, in any order; an empty list removes them.
+    public func setChapters(_ chapters: [TrackChapter], forTrackId trackId: String) {
+        chaptersByTrack[trackId] = chapters.isEmpty ? nil : chapters.sorted { $0.startSecs < $1.startSecs }
+        if currentTrack?.id == trackId { pushNowPlayingInfo() }
+    }
+
+    /// Jumps to a chapter of the playing track.
+    public func playChapter(at index: Int) async {
+        let chapters = currentChapters
+        guard chapters.indices.contains(index) else { return }
+        await seek(to: chapters[index].startSecs)
+        if !isPlaying { resumeAudioOnly() }
+    }
+
+    /// The chapter the lock screen last showed, so it is refreshed when the next one begins.
+    private var shownChapterIndex: Int?
+
     /// Every track after the current one, in play order — the queue sheet's list. Empty once
     /// the queue is exhausted or nothing is loaded.
     public var upcomingTracks: [Track] { queue?.upcoming ?? [] }
@@ -560,6 +601,11 @@ public final class PlaybackEngine {
     /// crossfade lookaheads that prepare for it); letting `.one` hijack a deliberate Next would
     /// trap a listener on the current track until they changed the mode first.
     public func next() {
+        // Inside a concert, next is the next song of it; past its last one, the next track.
+        if let start = ChapterNavigation.next(in: currentChapters, at: currentTime) {
+            Task { await seek(to: start) }
+            return
+        }
         guard var queue, let nextTrack = queue.nextTrack else {
             Logger.playback.info("next: nothing after this")
             return
@@ -572,6 +618,10 @@ public final class PlaybackEngine {
     }
 
     public func previous() {
+        if let start = ChapterNavigation.previous(in: currentChapters, at: currentTime, restartThreshold: Self.restartThreshold) {
+            Task { await seek(to: start) }
+            return
+        }
         // Restart-the-current-track-if-more-than-a-few-seconds-in is the universal music-player
         // convention (same reasoning a CD player's "previous" button has always used) — a
         // listener hitting previous three seconds into a song wants the *previous* song, not to
@@ -1468,6 +1518,9 @@ public final class PlaybackEngine {
 
         currentTime = boundary.trackPositionOffsetSecs
             + Double(nodeElapsedFrames - boundary.startFrame) / boundary.sampleRate
+        if !currentChapters.isEmpty, currentChapterIndex != shownChapterIndex {
+            pushNowPlayingInfo()
+        }
 
         // Grounded in the real file's own remaining frames (`boundary.endFrame`, set from
         // `AVAudioFile.length` when the track was scheduled), not `duration - currentTime`
@@ -1559,15 +1612,18 @@ public final class PlaybackEngine {
     }
 
     private func pushNowPlayingInfo() {
+        // In a concert the lock screen names the song playing, with the concert as its album.
+        let chapter = currentChapter
+        shownChapterIndex = currentChapterIndex
         nowPlayingController.update(
-            title: currentTrack?.title ?? "",
+            title: chapter?.title ?? currentTrack?.title ?? "",
             artist: currentTrack?.artist,
-            album: currentTrack?.album,
+            album: chapter != nil ? currentTrack?.title : currentTrack?.album,
             duration: duration,
             elapsedTime: currentTime,
             rate: isPlaying ? 1 : 0,
             artwork: currentArtwork,
-            hasNextTrack: hasNextTrack,
+            hasNextTrack: canSkipForward,
             // The lock screen is refreshed now and then, not every tick, so it cannot follow the
             // restart threshold: there "previous" stays available for any track long enough to restart.
             hasPreviousTrack: hasPreviousTrack || duration > Self.restartThreshold

@@ -114,6 +114,18 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   time, artist spacing) counts the songs that fit as it changes. A smart playlist can be shared
   with the household (each member gets their own selection), saved as an ordinary playlist, or
   deleted. Servers without them (Subsonic, Jellyfin, older own.audio) show none.
+- [ ] **M11: Concerts.** A whole concert as one song with a chapter where each song of the show
+  starts (own.audio servers from 1.0.0-beta.35, `features.track_chapters`; the server's plan is
+  `docs/concerts-plan.md` in own-audio/server). Hidden on servers without them.
+  - [x] M11a — Player (2026-10-21): chapters per track in the engine; next/previous move between chapters
+    (past the last one, to the next track), previous restarts a chapter after 3 s; the chapter's
+    title on the lock screen and in CarPlay; next stays enabled while a chapter follows.
+  - [ ] M11b — Server: `chapter_count` on songs, the chapters of a song, concerts
+    (`GET /albums?kind=live`), the saved position (`/me/progress/track/{id}`), saving edited
+    chapters (`PUT /tracks/{id}/chapters`).
+  - [ ] M11c — Screens: Concerts in the library; a song list in Now Playing to jump to a song;
+    a concert resumes where it was left, on any device (position saved every 15 s and on pause);
+    the owner edits the songs (rename, move to the playing position, add, delete).
 - Later: Plex as a fourth server (official API since 2025), podcasts tab where the server has
   podcasts, CarPlay check.
 - Later: Ampache (tried 8.2.2 on 2026-10-11): its Subsonic API refuses token sign-in (`t`+`s`,

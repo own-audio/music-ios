@@ -60,7 +60,7 @@ final class LiveActivityController {
             trackId: track.id, title: track.title, artist: track.artist ?? "",
             positionSecs: engine.currentTime, durationSecs: engine.duration > 0 ? engine.duration : Double(track.durationSecs ?? 0),
             isPlaying: engine.isPlaying, at: Date(),
-            coverFile: cover?.trackId == track.id ? cover?.file : nil, hasNext: engine.hasNextTrack
+            coverFile: cover?.trackId == track.id ? cover?.file : nil, hasNext: engine.canSkipForward
         )
         if cover?.trackId != track.id { fetchCover(track) }
         tick(while: engine.isPlaying)

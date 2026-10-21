@@ -98,6 +98,30 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    @Test("in a concert, next and previous move between its songs, and the last song ends next")
+    func nextAndPreviousFollowChapters() async throws {
+        let harness = try await makeHarness(suffix: "chapters", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        engine.setChapters([TrackChapter(title: "One", startSecs: 0), TrackChapter(title: "Two", startSecs: 1.5)], forTrackId: "concert")
+        await engine.play(tracks: [makeTrack(id: "concert")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(engine.currentChapter?.title == "One")
+        #expect(engine.canSkipForward, "a song follows, so next is on though no track does")
+
+        engine.next()
+        try await waitUntil(timeout: 5) { engine.currentChapterIndex == 1 }
+        #expect(engine.currentTrack?.id == "concert", "next stayed in the concert")
+        #expect(!engine.canSkipForward, "the last song, and no track after it")
+
+        engine.previous()
+        try await waitUntil(timeout: 5) { engine.currentChapterIndex == 0 }
+        #expect(engine.currentTrack?.id == "concert")
+
+        await engine.playChapter(at: 1)
+        try await waitUntil(timeout: 5) { engine.currentChapter?.title == "Two" }
+        engine.stop()
+    }
+
     @Test("currentTime genuinely advances while a streamed track plays — proof real audio is scheduled, not just state flags")
     func currentTimeAdvancesDuringStreamedPlayback() async throws {
         let harness = try await makeHarness(suffix: "flac", audioData: try fixtureData("test-tone.flac"))

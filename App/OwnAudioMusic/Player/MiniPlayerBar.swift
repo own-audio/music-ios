@@ -61,8 +61,8 @@ struct MiniPlayerBar: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .disabled(!engine.hasNextTrack)
-                        .opacity(engine.hasNextTrack ? 1 : 0.3)
+                        .disabled(!engine.canSkipForward)
+                        .opacity(engine.canSkipForward ? 1 : 0.3)
                         .accessibilityIdentifier("miniPlayer.next")
                         .accessibilityLabel("Next")
                     }

@@ -126,7 +126,7 @@ struct PlayerView: View {
             DragGesture(minimumDistance: 24).onEnded { value in
                 guard engine.currentTrack != nil, abs(value.translation.width) > abs(value.translation.height) else { return }
                 if value.translation.width < 0 {
-                    guard engine.hasNextTrack else { return }
+                    guard engine.canSkipForward else { return }
                     Haptics.impact(.light)
                     engine.next()
                 } else {
@@ -253,8 +253,8 @@ struct PlayerView: View {
                     .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
                     .contentShape(Rectangle())
             }
-            .disabled(!engine.hasNextTrack)
-            .opacity(engine.hasNextTrack ? 1 : 0.35)
+            .disabled(!engine.canSkipForward)
+            .opacity(engine.canSkipForward ? 1 : 0.35)
             .accessibilityIdentifier("player.next")
             .accessibilityLabel("Next")
         }
