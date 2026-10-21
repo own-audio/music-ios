@@ -106,6 +106,41 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
         return await subsonic?.checkConnection() ?? .ok
     }
 
+    // MARK: - Concerts
+
+    public func supportsConcerts() async -> Bool {
+        (try? await client.features())?["track_chapters"] == true
+    }
+
+    /// Newest first: a concert is something you just added, more often than one you look up.
+    public func concerts() async throws -> [Album] {
+        try await allAlbums { try await client.albums(kind: "live", sort: "added", include: ["contributors"], cursor: $0, limit: Self.pageMax) }
+    }
+
+    public func chapters(songId: String) async throws -> [SongChapter] {
+        try await client.trackChapters(id: songId).map { SongChapter(title: $0.title, startSecs: Double($0.startMs) / 1000) }
+    }
+
+    public func saveChapters(songId: String, _ chapters: [SongChapter]) async throws -> [SongChapter] {
+        let marks = chapters.sorted { $0.startSecs < $1.startSecs }.map { (title: $0.title, startMs: Int64(($0.startSecs * 1000).rounded())) }
+        do {
+            return try await client.setTrackChapters(id: songId, marks).map { SongChapter(title: $0.title, startSecs: Double($0.startMs) / 1000) }
+        } catch OwnAudioError.problem(let p) where p.status == 403 {
+            throw SourceError.notAllowed
+        } catch OwnAudioError.problem(let p) where p.status == 400 {
+            throw SourceError.server(p.detail ?? p.code)
+        }
+    }
+
+    public func savedPosition(songId: String) async throws -> Double? {
+        guard let progress = try await client.progress(.track, id: songId), !progress.finished else { return nil }
+        return Double(progress.positionMs) / 1000
+    }
+
+    public func savePosition(songId: String, positionSecs: Double) async throws {
+        _ = try await client.saveProgress(.track, id: songId, positionMs: Int64((positionSecs * 1000).rounded()))
+    }
+
     // MARK: - Browsing
 
     public func artists() async throws -> [Artist] {

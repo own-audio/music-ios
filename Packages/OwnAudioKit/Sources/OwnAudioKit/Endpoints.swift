@@ -15,12 +15,13 @@ extension OwnAudioClient {
     }
 
     /// `sort`: `title` or `added` (newest first).
+    /// `kind`: a release kind, `live` for concerts.
     public func albums(
-        contributorId: String? = nil, genreId: String? = nil, releaseGroupId: String? = nil, query: String? = nil,
-        sort: String? = nil, include: [String] = [], cursor: String? = nil, limit: Int = 100
+        contributorId: String? = nil, genreId: String? = nil, releaseGroupId: String? = nil, kind: String? = nil,
+        query: String? = nil, sort: String? = nil, include: [String] = [], cursor: String? = nil, limit: Int = 100
     ) async throws -> Page<Album> {
         try await get("albums", query: [
-            "contributor_id": contributorId, "genre_id": genreId, "release_group_id": releaseGroupId, "q": query,
+            "contributor_id": contributorId, "genre_id": genreId, "release_group_id": releaseGroupId, "kind": kind, "q": query,
             "sort": sort, "include": include.isEmpty ? nil : include.joined(separator: ","),
             "cursor": cursor, "limit": String(limit),
         ])

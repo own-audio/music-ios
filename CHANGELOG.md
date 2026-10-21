@@ -19,6 +19,15 @@ package, merged into this repository — is in `docs/history/`.
   `setChapters(_:forTrackId:)`, `playChapter(at:)`, `canSkipForward`. Tests:
   `ChapterNavigationTests`, and a real playback in `PlaybackEngineStreamingTests` moving
   between the songs of a concert.
+- own.audio servers with concerts (`features.track_chapters`, 1.0.0-beta.35): songs carry
+  their `chapter_count`; the source lists concerts (albums of kind `live`, newest first), reads
+  and saves a song's chapters, and reads and saves where the listener stopped
+  (`/me/progress/track/{id}`), so a concert resumes on any device. Other servers answer that
+  they have none, without a request. `OwnAudioKit`: `features()`, `trackChapters(id:)`,
+  `setTrackChapters(id:_:)`, `progress(_:id:)`, `albums(kind:)`; `MusicSource`:
+  `supportsConcerts()`, `concerts()`, `chapters(songId:)`, `saveChapters(songId:_:)`,
+  `savedPosition(songId:)`, `savePosition(songId:positionSecs:)`. Tests: `ConcertsTests`,
+  `ConcertSourceTests`.
 
 ### Tests
 

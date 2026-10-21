@@ -120,13 +120,18 @@ public struct Song: Codable, Identifiable, Sendable, Hashable {
     /// Whose it is and who hears it, where the server keeps a household (own.audio); nil
     /// elsewhere.
     public let sharing: Sharing?
+    /// Chapters in its file: a concert recorded as one song, a chapter per song of the show.
+    /// Nil where the server has no chapters.
+    public let chapterCount: Int?
+
+    public var isConcert: Bool { (chapterCount ?? 0) > 0 }
 
     public init(
         id: String, title: String, album: String? = nil, artist: String? = nil,
         albumId: String? = nil, artistId: String? = nil, track: Int? = nil, discNumber: Int? = nil,
         duration: Int? = nil, genre: String? = nil, coverArt: String? = nil, suffix: String? = nil,
         bitRate: Int? = nil, isFavorite: Bool = false, rating: Int? = nil, playCount: Int? = nil,
-        gain: Gain? = nil, playlistEntryId: String? = nil, sharing: Sharing? = nil
+        gain: Gain? = nil, playlistEntryId: String? = nil, sharing: Sharing? = nil, chapterCount: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -147,6 +152,18 @@ public struct Song: Codable, Identifiable, Sendable, Hashable {
         self.gain = gain
         self.playlistEntryId = playlistEntryId
         self.sharing = sharing
+        self.chapterCount = chapterCount
+    }
+}
+
+/// Where a song of a concert begins, in a concert recorded as one file.
+public struct SongChapter: Codable, Sendable, Hashable {
+    public var title: String
+    public var startSecs: Double
+
+    public init(title: String, startSecs: Double) {
+        self.title = title
+        self.startSecs = startSecs
     }
 }
 

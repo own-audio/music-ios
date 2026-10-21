@@ -166,6 +166,8 @@ public struct Track: Decodable, Sendable, Equatable, Identifiable {
     public let contentType: String?
     public let sizeBytes: Int64?
     public let image: String?
+    /// Chapter marks in its file — a concert's songs. Nil from servers before concerts.
+    public let chapterCount: Int?
     public let createdAt: Date
     public let updatedAt: Date
 }

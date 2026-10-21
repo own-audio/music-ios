@@ -52,7 +52,7 @@ struct RecordMapper {
             suffix: OwnAudioSource.suffix(t.contentType),
             bitRate: (t.sizeBytes ?? 0) > 0 && (seconds ?? 0) > 0 ? Int((t.sizeBytes ?? 0) * 8 / Int64(seconds ?? 1)) : nil,
             isFavorite: listener.favourites.contains(t.id), rating: listener.ratings[t.id], playlistEntryId: entryId,
-            sharing: sharing(t)
+            sharing: sharing(t), chapterCount: t.chapterCount
         )
     }
 

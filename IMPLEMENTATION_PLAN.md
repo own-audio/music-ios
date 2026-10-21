@@ -120,7 +120,7 @@ Their histories are merged here; their plans and changelogs are in `docs/history
   - [x] M11a — Player (2026-10-21): chapters per track in the engine; next/previous move between chapters
     (past the last one, to the next track), previous restarts a chapter after 3 s; the chapter's
     title on the lock screen and in CarPlay; next stays enabled while a chapter follows.
-  - [ ] M11b — Server: `chapter_count` on songs, the chapters of a song, concerts
+  - [x] M11b — Server (2026-10-21): `chapter_count` on songs, the chapters of a song, concerts
     (`GET /albums?kind=live`), the saved position (`/me/progress/track/{id}`), saving edited
     chapters (`PUT /tracks/{id}/chapters`).
   - [ ] M11c — Screens: Concerts in the library; a song list in Now Playing to jump to a song;

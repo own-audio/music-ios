@@ -108,11 +108,30 @@ public protocol MusicSource: Sendable {
     // Several music libraries
     func musicLibraries() async throws -> [MusicLibraryInfo]
 
+    // Concerts: a whole concert as one song, with a chapter where each song of the show starts.
+    /// Whether the server has them; screens hide Concerts otherwise.
+    func supportsConcerts() async -> Bool
+    func concerts() async throws -> [Album]
+    /// A song's chapters in order; empty for an ordinary song.
+    func chapters(songId: String) async throws -> [SongChapter]
+    /// Replaces a song's chapters (its owner's); answers them as stored.
+    func saveChapters(songId: String, _ chapters: [SongChapter]) async throws -> [SongChapter]
+    /// Where the listener stopped in a long song, kept by the server for every device.
+    func savedPosition(songId: String) async throws -> Double?
+    func savePosition(songId: String, positionSecs: Double) async throws
+
     /// Ends the session on the server where there is one.
     func signOut() async
 }
 
 extension MusicSource {
+    public func supportsConcerts() async -> Bool { false }
+    public func concerts() async throws -> [Album] { throw SourceError.unsupported }
+    public func chapters(songId: String) async throws -> [SongChapter] { [] }
+    public func saveChapters(songId: String, _ chapters: [SongChapter]) async throws -> [SongChapter] { throw SourceError.unsupported }
+    public func savedPosition(songId: String) async throws -> Double? { nil }
+    public func savePosition(songId: String, positionSecs: Double) async throws {}
+
     public func albums(_ sort: AlbumSort, limit: Int) async throws -> [Album] {
         try await albums(sort, limit: limit, offset: 0)
     }
