@@ -106,6 +106,21 @@ targets:
       path: Widgets/OwnAudioMusicWidgets.entitlements
       properties:
         com.apple.security.application-groups: [group.audio.own.musicplayer]
+  # Unit tests of the app's own code (what CarPlay shows), hosted by the app.
+  OwnAudioMusicTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: UnitTests
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/OwnAudioMusic.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OwnAudioMusic
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - target: OwnAudioMusic
   OwnAudioMusicUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -124,12 +139,14 @@ schemes:
     build:
       targets:
         OwnAudioMusic: all
+        OwnAudioMusicTests: [test]
         OwnAudioMusicUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - OwnAudioMusicTests
         - OwnAudioMusicUITests
     archive:
       config: Release

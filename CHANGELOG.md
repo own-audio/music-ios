@@ -9,6 +9,13 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Tests
+
+- CarPlay unit tests (`UnitTests/CarPlayContentTests`, a new unit-test target hosted by the app):
+  the start list, the rows of Downloads (loose songs first, then by name) and Favorites (the songs
+  first, then albums), the caps and how a list is built. What CarPlay shows moved out of the scene
+  delegate into `CarPlayContent`, as in the books and podcasts apps.
+
 ### Fixed
 
 - Settings → Add a Server closed its sheet at once, so no server could be added from Settings:

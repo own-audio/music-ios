@@ -14,8 +14,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private var interfaceController: CPInterfaceController?
     private var model: AppModel { AppModel.shared }
 
-    /// CarPlay's guidelines ask for short lists, and each car sets its own cap.
-    private static var maxItems: Int { min(100, CPListTemplate.maximumItemCount) }
+    private static var maxItems: Int { CarPlayContent.maxItems }
 
     func templateApplicationScene(
         _ templateApplicationScene: CPTemplateApplicationScene,
@@ -57,7 +56,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     // MARK: - Root
 
     private func showRoot() {
-        guard model.activeSource != nil else {
+        let entries = CarPlayContent.rootEntries(hasServer: model.activeSource != nil)
+        guard !entries.isEmpty else {
             let item = CPListItem(text: String(localized: "Add a server on your iPhone"), detailText: nil)
             item.isEnabled = false
             interfaceController?.setRootTemplate(
@@ -65,20 +65,19 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             ) { _, _ in }
             return
         }
-        let entries: [(String, String, () async -> Void)] = [
-            (String(localized: "Recently Played"), "clock", { [weak self] in await self?.pushAlbums(.recentlyPlayed, title: String(localized: "Recently Played")) }),
-            (String(localized: "Recently Added"), "sparkles", { [weak self] in await self?.pushAlbums(.newest, title: String(localized: "Recently Added")) }),
-            (String(localized: "Downloads"), "arrow.down.circle", { [weak self] in self?.pushDownloads() }),
-            (String(localized: "Playlists"), "music.note.list", { [weak self] in await self?.pushPlaylists() }),
-            (String(localized: "Artists"), "music.mic", { [weak self] in await self?.pushArtists() }),
-            (String(localized: "Favorites"), "star", { [weak self] in await self?.pushFavorites() }),
-        ]
-        let items = entries.map { text, symbol, action -> CPListItem in
-            let item = CPListItem(text: text, detailText: nil, image: UIImage(systemName: symbol))
+        let items = entries.map { entry -> CPListItem in
+            let item = CPListItem(text: entry.title, detailText: nil, image: UIImage(systemName: entry.symbol))
             item.accessoryType = .disclosureIndicator
-            item.handler = { _, completion in
+            item.handler = { [weak self] _, completion in
                 Task {
-                    await action()
+                    switch entry {
+                    case .recentlyPlayed: await self?.pushAlbums(.recentlyPlayed, title: entry.title)
+                    case .recentlyAdded: await self?.pushAlbums(.newest, title: entry.title)
+                    case .downloads: self?.pushDownloads()
+                    case .playlists: await self?.pushPlaylists()
+                    case .artists: await self?.pushArtists()
+                    case .favorites: await self?.pushFavorites()
+                    }
                     completion()
                 }
             }
@@ -137,15 +136,16 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func pushFavorites() async {
         guard let client = model.activeSource, let starred = await loading({ try await client.favorites() }) else { return }
         let songs = starred.songs
-        var items: [CPListItem] = []
-        if !songs.isEmpty {
-            items.append(listItem(String(localized: "Favorite Songs"), detail: songCountText(songs.count), artwork: nil, symbol: "star.fill") { [weak self] in
-                self?.play(songs, containerId: "favorites")
-            })
-        }
-        items += starred.albums.prefix(Self.maxItems - items.count).map { album in
-            listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
-                await self?.playAlbum(album)
+        let items = CarPlayContent.favoriteRows(songs: songs.count, albums: starred.albums).map { row -> CPListItem in
+            switch row {
+            case .songs(let count):
+                listItem(String(localized: "Favorite Songs"), detail: songCountText(count), artwork: nil, symbol: "star.fill") { [weak self] in
+                    self?.play(songs, containerId: "favorites")
+                }
+            case .album(let album):
+                listItem(album.displayName, detail: album.artist, artwork: album.coverArt ?? album.id) { [weak self] in
+                    await self?.playAlbum(album)
+                }
             }
         }
         push(title: String(localized: "Favorites"), items: items, emptyText: String(localized: "No favorites"))
@@ -154,27 +154,29 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// From the download index alone, so it works with no signal.
     private func pushDownloads() {
         let downloads = model.downloads
-        let collections = downloads.collections.values.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        var items = collections.prefix(Self.maxItems - 1).map { collection in
-            let item = CPListItem(text: collection.name, detailText: collection.artist)
-            item.handler = { [weak self] _, completion in
-                let songs = downloads.songs(in: collection)
-                self?.model.play(downloaded: songs, containerId: collection.id)
-                self?.showNowPlaying()
-                completion()
-            }
-            loadArtwork(for: item, artworkId: collection.coverArt.map { TrackID.make(serverId: collection.serverId, itemId: $0) })
-            return item
-        }
         let loose = downloads.looseTracks
-        if !loose.isEmpty {
-            let item = CPListItem(text: String(localized: "Downloaded Songs"), detailText: songCountText(loose.count), image: UIImage(systemName: "music.note"))
-            item.handler = { [weak self] _, completion in
-                self?.model.play(downloaded: loose)
-                self?.showNowPlaying()
-                completion()
+        let rows = CarPlayContent.downloadRows(collections: Array(downloads.collections.values), looseSongs: loose.count)
+        let items = rows.map { row -> CPListItem in
+            switch row {
+            case .looseSongs(let count):
+                let item = CPListItem(text: String(localized: "Downloaded Songs"), detailText: songCountText(count), image: UIImage(systemName: "music.note"))
+                item.handler = { [weak self] _, completion in
+                    self?.model.play(downloaded: loose)
+                    self?.showNowPlaying()
+                    completion()
+                }
+                return item
+            case .collection(let collection):
+                let item = CPListItem(text: collection.name, detailText: collection.artist)
+                item.handler = { [weak self] _, completion in
+                    let songs = downloads.songs(in: collection)
+                    self?.model.play(downloaded: songs, containerId: collection.id)
+                    self?.showNowPlaying()
+                    completion()
+                }
+                loadArtwork(for: item, artworkId: collection.coverArt.map { TrackID.make(serverId: collection.serverId, itemId: $0) })
+                return item
             }
-            items.insert(item, at: 0)
         }
         push(title: String(localized: "Downloads"), items: items, emptyText: String(localized: "Nothing downloaded"))
     }
@@ -215,9 +217,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func push(title: String, items: [CPListItem], emptyText: String) {
-        let template = CPListTemplate(title: title, sections: [CPListSection(items: items)])
-        template.emptyViewTitleVariants = [emptyText]
-        interfaceController?.pushTemplate(template, animated: true) { _, _ in }
+        interfaceController?.pushTemplate(CarPlayContent.listTemplate(title: title, items: items, emptyText: emptyText), animated: true) { _, _ in }
     }
 
     /// The row appears at once; its cover fills in when loaded.
