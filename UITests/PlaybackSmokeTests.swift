@@ -109,17 +109,21 @@ final class PlaybackSmokeTests: XCTestCase {
         let title = app.descendants(matching: .any)["player.title"].firstMatch
         let firstTitle = title.label
         screenshot(app, "concert-player")
+        // A concert may open where it was left (on any device), so the song playing is read, not assumed.
+        let words = songs.label.split(separator: " ")
+        let playing = Int(words.dropFirst().first ?? "") ?? 1
+        let count = Int(words.last ?? "") ?? 0
+        let pick = playing == 1 ? 2 : 1
         songs.tap()
-        let second = app.buttons["chapters.row.1"]
-        XCTAssertTrue(second.waitForExistence(timeout: 10), "the songs list has a second song")
-        second.tap()
-        XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song 2 of") }, "the chosen song plays: \(songs.label)")
+        let row = app.buttons["chapters.row.\(pick - 1)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "the songs list has song \(pick)")
+        row.tap()
+        XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song \(pick) of") }, "the chosen song plays: \(songs.label)")
         XCTAssertNotEqual(title.label, firstTitle, "the title is the song playing")
 
-        let count = Int(songs.label.split(separator: " ").last ?? "") ?? 0
-        if count >= 3 {
+        if pick < count {
             app.buttons["player.next"].tap()
-            XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song 3 of") }, "next is the next song of the concert")
+            XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song \(pick + 1) of") }, "next is the next song of the concert")
         }
         screenshot(app, "concert-next-song")
     }

@@ -36,7 +36,9 @@ package, merged into this repository — is in `docs/history/`.
   unless that was its last half minute. Its owner edits the songs from the list: rename, set a
   start to where the player is, add one there, delete; saved as a whole. Czech included. Tests:
   `ChapterTimeTests` (unit), `PlaybackSmokeTests.testConcertSongs` (UI, skipped where the
-  server has no concert).
+  server has no concert; it reads which song is playing, as a concert may resume mid-show —
+  passed against an own.audio 1.0.0-beta.35 test server, where it resumed in the song a web
+  browser had paused in).
 
 ### Tests
 
