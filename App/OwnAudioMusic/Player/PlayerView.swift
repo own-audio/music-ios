@@ -5,7 +5,7 @@ import SwiftUI
 /// transport, and a row of tools (shuffle, repeat, crossfade, sleep timer, queue, AirPlay).
 struct PlayerView: View {
     private enum ActiveSheet: Identifiable {
-        case queue, sleepTimer, crossfade, lyrics, equalizer
+        case queue, sleepTimer, crossfade, lyrics, equalizer, chapters
         var id: Self { self }
     }
 
@@ -59,6 +59,7 @@ struct PlayerView: View {
             case .crossfade: CrossfadeSheet(settings: model.playbackSettings)
             case .lyrics: LyricsView()
             case .equalizer: EqualizerView(store: model.equalizer)
+            case .chapters: ChaptersSheet()
             }
         }
         .onChange(of: engine.currentTrack == nil) { _, isEmpty in
@@ -166,7 +167,8 @@ struct PlayerView: View {
             // pushed the star off screen. It gets an explicit width that leaves room for the star
             // on each side, keeping the title centred.
             ZStack(alignment: .trailing) {
-                MarqueeText(text: engine.currentTrack?.title ?? "", font: .title2.bold())
+                // In a concert, the song playing; the concert is below, as the album.
+                MarqueeText(text: engine.currentChapter?.title ?? engine.currentTrack?.title ?? "", font: .title2.bold())
                     .foregroundStyle(.white)
                     .frame(width: PlayerLayout.contentWidth - 2 * Theme.minTarget)
                     .frame(maxWidth: .infinity)
@@ -189,7 +191,8 @@ struct PlayerView: View {
                 }
             }
             .frame(width: PlayerLayout.contentWidth)
-            Text([engine.currentTrack?.artist, engine.currentTrack?.album].compactMap { $0 }.joined(separator: " · "))
+            Text([engine.currentTrack?.artist, engine.currentChapter != nil ? engine.currentTrack?.title : engine.currentTrack?.album]
+                .compactMap { $0 }.joined(separator: " · "))
                 .font(.headline)
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
@@ -201,7 +204,20 @@ struct PlayerView: View {
                     .padding(.top, 2)
                     .accessibilityLabel("Format: \(badge)")
             }
-            if let trackIndex = engine.trackIndexDisplay {
+            if let chapter = engine.currentChapterIndex {
+                Button {
+                    activeSheet = .chapters
+                } label: {
+                    Label("Song \(chapter + 1) of \(engine.currentChapters.count)", systemImage: "list.bullet")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(.horizontal, Theme.Spacing.md)
+                        .padding(.vertical, Theme.Spacing.xs)
+                        .background(.white.opacity(0.15), in: Capsule())
+                }
+                .padding(.top, 2)
+                .accessibilityIdentifier("player.chapters")
+            } else if let trackIndex = engine.trackIndexDisplay {
                 Text("Track \(trackIndex.current) of \(trackIndex.total)")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))

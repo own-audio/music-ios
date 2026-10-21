@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The Library tab's sections.
 enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
-    case artists, albums, songs, genres, favorites
+    case artists, albums, songs, genres, favorites, concerts
 
     var id: String { rawValue }
 
@@ -14,7 +14,13 @@ enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
         case .songs: "Songs"
         case .genres: "Genres"
         case .favorites: "Favorites"
+        case .concerts: "Concerts"
         }
+    }
+
+    /// The sections the active server has: Concerts only where it keeps them.
+    @MainActor static func available(_ model: AppModel) -> [LibrarySection] {
+        allCases.filter { $0 != .concerts || model.concertsAvailable }
     }
 
     var systemImage: String {
@@ -24,6 +30,7 @@ enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
         case .songs: "music.note"
         case .genres: "guitars"
         case .favorites: "star"
+        case .concerts: "ticket"
         }
     }
 
@@ -34,6 +41,7 @@ enum LibrarySection: String, CaseIterable, Identifiable, Hashable {
         case .songs: .songs
         case .genres: .genres
         case .favorites: .favorites
+        case .concerts: .concerts
         }
     }
 }
@@ -49,7 +57,7 @@ struct LibraryView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: Theme.Spacing.md) {
-                ForEach(LibrarySection.allCases) { section in
+                ForEach(LibrarySection.available(model)) { section in
                     NavigationLink(value: section.route) {
                         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                             Image(systemName: section.systemImage)

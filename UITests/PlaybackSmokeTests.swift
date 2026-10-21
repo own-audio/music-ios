@@ -78,6 +78,52 @@ final class PlaybackSmokeTests: XCTestCase {
 
     /// On mobile data with 128 kbps chosen, a server that transcodes (Jellyfin) makes an MP3 on the
     /// fly; one that doesn't sends the original. Either way it has to play.
+    /// Concerts (own.audio from 1.0.0-beta.35): a whole concert as one song with a chapter per
+    /// song of the show. The songs list jumps to a song, next moves to the next one. Skipped on
+    /// servers without concerts, or with none in the library.
+    func testConcertSongs() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        addServer(app, screenshots: false)
+
+        openTab(app, Self.libraryTab)
+        let concerts = app.buttons["library.concerts"]
+        guard concerts.waitForExistence(timeout: 20) else { throw XCTSkip("this server keeps no concerts") }
+        concerts.tap()
+        let concert = app.scrollViews.buttons.firstMatch
+        guard concert.waitForExistence(timeout: 20) else { throw XCTSkip("no concert in this library") }
+        screenshot(app, "concerts")
+        concert.tap()
+
+        let play = app.buttons["detail.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 20))
+        XCTAssertTrue(waitUntil(timeout: 20) { play.isEnabled })
+        play.tap()
+        let miniPlayer = app.buttons["miniPlayer"]
+        XCTAssertTrue(miniPlayer.waitForExistence(timeout: 15))
+        miniPlayer.tap()
+
+        let songs = app.buttons["player.chapters"]
+        XCTAssertTrue(songs.waitForExistence(timeout: 30), "a concert shows which of its songs is playing")
+        let title = app.descendants(matching: .any)["player.title"].firstMatch
+        let firstTitle = title.label
+        screenshot(app, "concert-player")
+        songs.tap()
+        let second = app.buttons["chapters.row.1"]
+        XCTAssertTrue(second.waitForExistence(timeout: 10), "the songs list has a second song")
+        second.tap()
+        XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song 2 of") }, "the chosen song plays: \(songs.label)")
+        XCTAssertNotEqual(title.label, firstTitle, "the title is the song playing")
+
+        let count = Int(songs.label.split(separator: " ").last ?? "") ?? 0
+        if count >= 3 {
+            app.buttons["player.next"].tap()
+            XCTAssertTrue(waitUntil(timeout: 15) { songs.label.contains("Song 3 of") }, "next is the next song of the concert")
+        }
+        screenshot(app, "concert-next-song")
+    }
+
     func testSmallerStreamOnMobileDataPlays() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestReset", "-simulateMobileData", "-mobileBitrate", "128000"] + Self.english

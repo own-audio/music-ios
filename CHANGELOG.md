@@ -28,6 +28,15 @@ package, merged into this repository — is in `docs/history/`.
   `supportsConcerts()`, `concerts()`, `chapters(songId:)`, `saveChapters(songId:_:)`,
   `savedPosition(songId:)`, `savePosition(songId:positionSecs:)`. Tests: `ConcertsTests`,
   `ConcertSourceTests`.
+- Concerts in the library (own.audio servers that keep them; hidden elsewhere): a grid of the
+  concerts, newest first, on iPhone and in the iPad sidebar. Playing one, the player shows the
+  song of the show playing as its title, with the concert below, and a "Song 3 of 27" button
+  that opens the songs to jump to one. A concert resumes where it was left — the position is
+  the server's, saved every 15 seconds and on pause, so it carries over from another device —
+  unless that was its last half minute. Its owner edits the songs from the list: rename, set a
+  start to where the player is, add one there, delete; saved as a whole. Czech included. Tests:
+  `ChapterTimeTests` (unit), `PlaybackSmokeTests.testConcertSongs` (UI, skipped where the
+  server has no concert).
 
 ### Tests
 

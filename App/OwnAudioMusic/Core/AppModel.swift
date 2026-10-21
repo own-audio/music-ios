@@ -18,9 +18,20 @@ final class AppModel {
     private(set) var activeServerId: UUID? {
         didSet {
             UserDefaults.standard.set(activeServerId?.uuidString, forKey: Self.activeServerKey)
-            if activeServerId != oldValue { followLibraryChanges() }
+            if activeServerId != oldValue {
+                followLibraryChanges()
+                Task { await refreshConcertsAvailable() }
+            }
         }
     }
+
+    /// Whether the active server keeps concerts; Library shows them only then. Remembered per
+    /// server, so they stay listed offline.
+    var concertsAvailable = false
+    /// Engine track ids of the concerts played this session: their songs are loaded as they
+    /// start, and where the listener is goes to the server.
+    var concertTrackIds: Set<String> = []
+    var concertPositionTask: Task<Void, Never>?
 
     let engine: PlaybackEngine
     let playbackSettings: PlaybackSettingsStore
@@ -381,6 +392,7 @@ final class AppModel {
         await rebuildClients()
         let saved = UserDefaults.standard.string(forKey: Self.activeServerKey).flatMap(UUID.init)
         activeServerId = servers.contains { $0.id == saved } ? saved : servers.first?.id
+        await refreshConcertsAvailable()
         await loadCatalogues()
         hasLoaded = true
         followLibraryChanges()
@@ -875,11 +887,15 @@ final class AppModel {
             }
         }
         let tracks = songs.map { $0.track(serverId: serverId) }
+        rememberConcerts(songs, serverId: serverId)
         engine.setShuffled(shuffled)
         Task {
+            let first = startSongId.flatMap { id in songs.first { $0.id == id } } ?? (shuffled ? nil : songs.first)
+            let resumeAt = await concertResumePosition(first)
             await engine.play(
                 tracks: tracks,
-                startTrackId: startSongId.map { TrackID.make(serverId: serverId, itemId: $0) },
+                startTrackId: (first?.id ?? startSongId).map { TrackID.make(serverId: serverId, itemId: $0) },
+                startPositionSecs: resumeAt,
                 containerId: containerId.map { "\(serverId.uuidString)|\($0)" }
             )
         }
@@ -913,12 +929,14 @@ final class AppModel {
         let scrobbler = ScrobbleTracker { [weak self] event in self?.report(event) }
         self.scrobbler = scrobbler
         engine.onPlaybackStarted = { [weak self] track, position in
+            self?.concertStarted(track)
             guard let self, self.scrobblingEnabled else { return }
             scrobbler.started(key: track.id, durationSecs: track.durationSecs)
             self.startScrobbleTicks()
             Task { await self.reportSession(.start, trackId: track.id, position: position) }
         }
         engine.onPlaybackStopped = { [weak self] track, position, reason in
+            self?.concertStopped(track, at: position, reason: reason)
             guard let self, self.scrobblingEnabled else { return }
             let isEnd: Bool = switch reason {
             case .completed, .skipped, .replaced: true
@@ -1041,7 +1059,7 @@ final class AppModel {
         pendingScrobbles.remove(sent)
     }
 
-    private func resolve(_ trackId: String) async -> ((any MusicSource), String)? {
+    func resolve(_ trackId: String) async -> ((any MusicSource), String)? {
         guard let (serverId, songId) = TrackID.parse(trackId), let source = sources[serverId] else { return nil }
         return (source, songId)
     }

@@ -5907,6 +5907,156 @@
           }
         }
       }
+    },
+    "Concerts" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koncerty"
+          }
+        }
+      }
+    },
+    "No Concerts" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Žádné koncerty"
+          }
+        }
+      }
+    },
+    "A whole concert in one file, with a chapter where each song starts, shows up here." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tady se objeví celý koncert v jednom souboru, s kapitolou na začátku každé skladby."
+          }
+        }
+      }
+    },
+    "Song %lld of %lld" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skladba %1$lld z %2$lld"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit"
+          }
+        }
+      }
+    },
+    "Edit Songs" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit skladby"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Čas"
+          }
+        }
+      }
+    },
+    "Song" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skladba"
+          }
+        }
+      }
+    },
+    "Start Here" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Začít tady"
+          }
+        }
+      }
+    },
+    "The arrow sets a song's start to where the player is now." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šipka nastaví začátek skladby na místo, kde právě hraje přehrávač."
+          }
+        }
+      }
+    },
+    "Add a Song Here" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat skladbu sem"
+          }
+        }
+      }
+    },
+    "Couldn't Save" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodařilo se uložit"
+          }
+        }
+      }
+    },
+    "“%@” is not a time. Write it as 9:26 or 1:02:03." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ není čas. Zapište ho jako 9:26 nebo 1:02:03."
+          }
+        }
+      }
+    },
+    "Every song needs a name." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Každá skladba potřebuje název."
+          }
+        }
+      }
+    },
+    "Two songs start at the same time." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dvě skladby začínají ve stejný čas."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

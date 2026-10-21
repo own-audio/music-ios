@@ -93,6 +93,7 @@ private struct LibraryTab: View {
         case downloads
     }
 
+    @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var selection: SidebarItem? = .section(.artists)
 
@@ -100,7 +101,7 @@ private struct LibraryTab: View {
         if sizeClass == .regular {
             NavigationSplitView {
                 List(selection: $selection) {
-                    ForEach(LibrarySection.allCases) { section in
+                    ForEach(LibrarySection.available(model)) { section in
                         Label(section.title, systemImage: section.systemImage)
                             .tag(SidebarItem.section(section))
                             .accessibilityIdentifier("library.\(section.rawValue)")
@@ -132,6 +133,7 @@ private struct LibraryTab: View {
         case .section(.songs): SongsView()
         case .section(.genres): GenresView()
         case .section(.favorites): FavoritesView()
+        case .section(.concerts): ConcertsView()
         case .downloads: DownloadsView()
         case nil: ContentUnavailableView("Pick a Section", systemImage: "square.stack")
         }
