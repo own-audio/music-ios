@@ -151,8 +151,9 @@ extension OwnAudioClient {
 
     /// Live updates: a `library` event whenever the account's library or its own state
     /// changed, which says to read `changes(since:)`. Runs until the connection ends; resume
-    /// with the last event's id.
-    public func events(lastEventId: String? = nil) -> AsyncThrowingStream<LiveEvent, Error> {
+    /// with the last event's id. `onOpen` is called once the server has accepted the stream, so
+    /// a caller can stop polling for what the stream will tell it.
+    public func events(lastEventId: String? = nil, onOpen: (@Sendable () -> Void)? = nil) -> AsyncThrowingStream<LiveEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -182,6 +183,7 @@ extension OwnAudioClient {
                             continue
                         }
                         guard status == 200 else { throw OwnAudioError.http(status) }
+                        onOpen?()
                         var parser = EventStreamParser()
                         do {
                             for try await byte in bytes {

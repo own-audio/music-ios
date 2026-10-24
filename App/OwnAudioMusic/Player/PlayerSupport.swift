@@ -89,14 +89,20 @@ private struct MarqueeTextSizeKey: PreferenceKey {
 
 /// One line that scrolls when it is too wide, like Apple Music's Now Playing title, instead of
 /// wrapping or truncating. Still and centred when it fits, and always with Reduce Motion on.
+/// It scrolls once, after a moment, each time the text changes or the player opens, then rests
+/// at the start: scrolling for as long as the player is open redrew the screen at the display's
+/// full rate for nothing.
 struct MarqueeText: View {
     let text: String
     var font: Font = .body
 
     private static let gap: CGFloat = 40
     private static let pointsPerSecond: CGFloat = 30
+    private static let pauseBeforeScrolling: Duration = .seconds(2)
 
     @State private var measuredSize: CGSize = .zero
+    /// When the one scroll began; nil while the line rests.
+    @State private var scrollStart: Date?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -107,14 +113,24 @@ struct MarqueeText: View {
             Group {
                 if overflows && !reduceMotion {
                     let cycle = measuredSize.width + Self.gap
-                    TimelineView(.animation) { timeline in
-                        let elapsed = timeline.date.timeIntervalSinceReferenceDate
-                        let offset = CGFloat(elapsed.truncatingRemainder(dividingBy: cycle / Self.pointsPerSecond)) * Self.pointsPerSecond
+                    TimelineView(.animation(paused: scrollStart == nil)) { timeline in
+                        let elapsed = scrollStart.map { timeline.date.timeIntervalSince($0) } ?? 0
+                        // A full cycle ends where it began, the second copy in the first's place.
+                        let offset = min(max(CGFloat(elapsed) * Self.pointsPerSecond, 0), cycle)
                         HStack(spacing: Self.gap) {
                             measuredLine
                             measuredLine
                         }
-                        .offset(x: -offset)
+                        .offset(x: scrollStart == nil ? 0 : -offset)
+                    }
+                    .task(id: "\(text)|\(cycle)") {
+                        scrollStart = nil
+                        try? await Task.sleep(for: Self.pauseBeforeScrolling)
+                        guard !Task.isCancelled else { return }
+                        scrollStart = Date()
+                        try? await Task.sleep(for: .seconds(Double(cycle / Self.pointsPerSecond)))
+                        guard !Task.isCancelled else { return }
+                        scrollStart = nil
                     }
                 } else {
                     HStack {

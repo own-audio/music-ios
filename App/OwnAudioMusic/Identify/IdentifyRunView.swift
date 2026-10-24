@@ -264,19 +264,10 @@ struct IdentifyRunView: View {
     }
 
     private func watch() async {
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                for await progress in IdentifyEvents.progress(client) where progress.runId == runId {
-                    await reload()
-                }
-            }
-            group.addTask {
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(10))
-                    if await run?.isActive == true { await reload() }
-                }
-            }
-        }
+        let runId = runId
+        await IdentifyFollower().follow(
+            client, matching: { $0.runId == runId }, runActive: { run?.isActive == true }, reload: { await reload() }
+        )
     }
 }
 

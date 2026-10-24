@@ -34,12 +34,9 @@ public actor StreamingTrackSource {
     /// Bytes are batched to this size before being handed to `AudioStreamDecoder.ingest(_:)` —
     /// large enough that decoding isn't dominated by per-call overhead, small enough that "first
     /// sound" latency isn't held hostage to an oversized first read. iOS's own default TCP
-    /// receive-buffer growth means real reads from `URLSession.bytes` arrive in chunks close to
+    /// receive-buffer growth means the pieces the network delivers arrive close to
     /// this size anyway.
     private static let ingestChunkSize = 16 * 1024
-    /// What the download hands on at a time: no more than the decoder takes, or a slow
-    /// network would hold back sound that has arrived.
-    private static let downloadChunkSize = ingestChunkSize
 
     /// How much may go into the decoder with no audio coming out before it is given up for the
     /// whole file: a few seconds of even the richest FLAC, far more than any header.
@@ -65,7 +62,7 @@ public actor StreamingTrackSource {
         onFormatKnown: @Sendable (AudioStreamDecoder.FormatInfo) async -> Void = { _ in }
     ) async throws {
         let remoteURL = try await fileCache.resolveRemoteURL(trackId: trackId)
-        let (byteStream, response) = try await session.bytes(from: remoteURL)
+        let (byteStream, response) = try await ChunkedDownload.start(remoteURL, session: session)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw PlaybackError.network("Could not stream track \(trackId) (status \((response as? HTTPURLResponse)?.statusCode ?? -1))")
         }
@@ -82,16 +79,13 @@ public actor StreamingTrackSource {
         let mimeType = http.mimeType
         let download = Task {
             do {
-                var chunk = Data()
-                chunk.reserveCapacity(Self.downloadChunkSize)
-                for try await byte in byteStream {
-                    chunk.append(byte)
-                    if chunk.count >= Self.downloadChunkSize {
-                        try await relay.append(chunk)
-                        chunk.removeAll(keepingCapacity: true)
-                    }
+                // As the network delivers it, a piece at a time. Reading `URLSession.bytes`
+                // byte by byte cost an async step per byte: tens of millions for one FLAC.
+                for try await chunk in byteStream {
+                    try await relay.append(chunk)
                 }
-                if !chunk.isEmpty { try await relay.append(chunk) }
+                // A cancelled stream just ends; it must not pass for the whole track.
+                try Task.checkCancellation()
                 // Whole: it becomes the cached track now, whatever the decoder is doing. The
                 // reader's open handle goes on reading the same file under its new name.
                 if await relay.closeFile() {
@@ -273,3 +267,70 @@ actor DownloadRelay {
         waiter = nil
     }
 }
+
+/// One GET whose body arrives as the pieces URLSession hands over, instead of byte by byte.
+/// Cancelling the consuming task, or ending the stream, cancels the request.
+final class ChunkedDownload: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var responseWaiter: CheckedContinuation<URLResponse, Error>?
+    private let chunks: AsyncThrowingStream<Data, Error>.Continuation
+
+    private init(chunks: AsyncThrowingStream<Data, Error>.Continuation) {
+        self.chunks = chunks
+    }
+
+    /// The body and the response, once the response has arrived.
+    static func start(_ url: URL, session: URLSession) async throws -> (AsyncThrowingStream<Data, Error>, URLResponse) {
+        let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+        let download = ChunkedDownload(chunks: continuation)
+        let task = session.dataTask(with: url)
+        task.delegate = download
+        continuation.onTermination = { _ in task.cancel() }
+        let response = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (waiter: CheckedContinuation<URLResponse, Error>) in
+                download.lock.withLock { download.responseWaiter = waiter }
+                task.resume()
+            }
+        } onCancel: {
+            task.cancel()
+        }
+        return (stream, response)
+    }
+
+    private func takeWaiter() -> CheckedContinuation<URLResponse, Error>? {
+        lock.withLock {
+            defer { responseWaiter = nil }
+            return responseWaiter
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+        completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
+    ) {
+        completionHandler(.allow)
+        takeWaiter()?.resume(returning: response)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        chunks.yield(data)
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error {
+            takeWaiter()?.resume(throwing: error)
+            chunks.finish(throwing: error)
+        } else {
+            // Ended without a response having been handed over (no body on some paths).
+            if let waiter = takeWaiter() {
+                if let response = task.response {
+                    waiter.resume(returning: response)
+                } else {
+                    waiter.resume(throwing: URLError(.badServerResponse))
+                }
+            }
+            chunks.finish()
+        }
+    }
+}
+

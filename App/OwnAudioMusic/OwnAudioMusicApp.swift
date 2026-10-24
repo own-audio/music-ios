@@ -31,7 +31,7 @@ struct OwnAudioMusicApp: App {
                 .environment(model)
                 .task { if !model.hasLoaded { await model.load() } }
         }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
             // Audio keeps playing in the background, so this is a save, not a pause.
             if phase == .background { model.engine.saveProgressForTeardown() }
             model.sceneBecame(active: phase != .background)

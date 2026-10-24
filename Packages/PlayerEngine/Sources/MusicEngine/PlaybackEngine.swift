@@ -879,6 +879,8 @@ public final class PlaybackEngine {
         // Whatever was being fetched to follow the previous schedule no longer follows anything.
         prefetchNextTask?.cancel()
         prefetchNextTask = nil
+        crossfadeStartTask?.cancel()
+        crossfadeStartTask = nil
         streamStillArriving = false
         if requiresLocalFiles, await fileCache.existingLocalURL(trackId: track.id) == nil {
             await playNextLocalTrack()
@@ -1456,6 +1458,9 @@ public final class PlaybackEngine {
 
     // MARK: - Crossfade
 
+    /// For tests: how much of the outgoing track was left when the last crossfade began.
+    private(set) var crossfadeBeganWithSecsLeft: Double?
+
     /// Called from the tick loop once within `fadeDurationSecs` of the current track ending, in
     /// crossfade mode only. Starts the next track on the idle node at volume 0 and ramps both
     /// nodes' volumes over the configured duration — real overlap, unlike gapless chaining on
@@ -1465,6 +1470,9 @@ public final class PlaybackEngine {
         guard !sleepTimer.stopsAtEndOfItem else { return }
         guard !isCrossfading, let queue, let next = queue.trackAfterCurrent(repeatMode: repeatMode) else { return }
         isCrossfading = true
+        if let frames = elapsedFrames(of: activeNode), let boundary = boundaries.first {
+            crossfadeBeganWithSecsLeft = Double(boundary.endFrame - frames) / boundary.sampleRate
+        }
         let outgoingNode = activeNode
         let incomingNode = idleNode
         let fadeSecs = settingsStore.fadeDurationSecs
@@ -1540,11 +1548,25 @@ public final class PlaybackEngine {
 
     // MARK: - Ticking / progress
 
+    /// Set by the app when no screen of it is visible: the position then moves once a second
+    /// instead of four times, since only the lock screen (which counts on its own) could show it.
+    public var isInBackground = false {
+        didSet {
+            guard isInBackground != oldValue, tickTask != nil else { return }
+            startTicking()
+        }
+    }
+
+    var tickIntervalSecs: Double { isInBackground ? 1 : 0.25 }
+    /// A crossfade due between two ticks starts on time from this, not up to a tick late.
+    private var crossfadeStartTask: Task<Void, Never>?
+
     private func startTicking() {
         stopTicking()
+        let nanos = UInt64(tickIntervalSecs * 1_000_000_000)
         tickTask = Task { [weak self] in
             while let self, !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 250_000_000)
+                try? await Task.sleep(nanoseconds: nanos)
                 guard !Task.isCancelled else { return }
                 await self.tick()
             }
@@ -1554,6 +1576,8 @@ public final class PlaybackEngine {
     private func stopTicking() {
         tickTask?.cancel()
         tickTask = nil
+        crossfadeStartTask?.cancel()
+        crossfadeStartTask = nil
     }
 
     private func tick() async {
@@ -1584,9 +1608,22 @@ public final class PlaybackEngine {
         // Not while the track is still arriving: its boundary then ends with the data so far,
         // and a playback that caught up with the network would be taken for the track's end —
         // a song skipped to faded out after its first ten seconds or so.
-        if settingsStore.crossfadeEnabled, !isCrossfading, hasNextTrack, !streamStillArriving,
-           remainingRealSecs <= settingsStore.fadeDurationSecs {
-            beginCrossfade()
+        if settingsStore.crossfadeEnabled, !isCrossfading, hasNextTrack, !streamStillArriving {
+            let lead = remainingRealSecs - settingsStore.fadeDurationSecs
+            if lead <= 0 {
+                beginCrossfade()
+            } else if lead < tickIntervalSecs, crossfadeStartTask == nil {
+                // Due before the next tick, which at one a second would leave the fade short
+                // of audio: started from here, at its time.
+                let trackId = currentTrack?.id
+                crossfadeStartTask = Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(lead * 1_000_000_000))
+                    guard let self, !Task.isCancelled else { return }
+                    self.crossfadeStartTask = nil
+                    guard self.isPlaying, !self.isCrossfading, self.currentTrack?.id == trackId else { return }
+                    self.beginCrossfade()
+                }
+            }
         }
     }
 

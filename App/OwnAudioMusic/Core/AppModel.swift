@@ -46,7 +46,9 @@ final class AppModel {
     private var resyncRequested: Set<UUID> = []
     /// Following the active server's library changes (`followLibraryChanges`).
     private var liveUpdates: Task<Void, Never>?
-    private var isInForeground = true
+    /// False until a scene of the app is on screen: a launch by CarPlay or in the background
+    /// must not open the live-updates stream (`followLibraryChanges`).
+    private var isInForeground = false
     /// The queue in the player when the app last went away, shown in the mini player until it
     /// is played again; nil while something is loaded.
     private(set) var lastQueue: LastQueue?
@@ -308,6 +310,8 @@ final class AppModel {
             }
         }
         wireScrobbling()
+        // As `isInForeground`: nothing is on screen until a scene says so (CarPlay alone never does).
+        engine.isInBackground = true
         // A downloaded song plays from the phone whether or not the server can be reached.
         let files = downloads.files
         let fileCache = fileCache
@@ -338,6 +342,9 @@ final class AppModel {
         (inForeground || playerLoaded, inForeground)
     }
 
+    /// The widget's pictures as JPEG by artwork id, so a refresh for the same covers doesn't
+    /// encode them again.
+    @ObservationIgnored var widgetCovers: [String: Data] = [:]
     /// The Recently Played widget's albums from the last time they were asked for.
     @ObservationIgnored var widgetAlbums: [WidgetSnapshot.Entry] = []
 
@@ -1207,6 +1214,7 @@ final class AppModel {
         for id in Set(changed) {
             let composite = TrackID.make(serverId: serverId, itemId: id)
             await covers.forget(artworkId: composite)
+            widgetCovers[composite] = nil
             coverChanges[composite, default: 0] += 1
         }
     }
@@ -1575,6 +1583,7 @@ extension AppModel {
     /// library changes, and the copy on the phone catches up at once instead of at the next
     /// scheduled sync. A changed favorite on another device shows here within seconds.
     func sceneBecame(active: Bool) {
+        engine.isInBackground = !active
         guard isInForeground != active else { return }
         isInForeground = active
         if !active {
@@ -1583,8 +1592,9 @@ extension AppModel {
             Task { await refreshWidget() }
         }
         followLibraryChanges()
-        // Back on screen after a while: what changed meanwhile.
-        if active {
+        // Back on screen after a while: what changed meanwhile. Before the first load, the load
+        // itself syncs.
+        if active, hasLoaded {
             Task {
                 if addressesNeedChoosing {
                     addressesNeedChoosing = false

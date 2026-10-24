@@ -32,6 +32,23 @@ package, merged into this repository — is in `docs/history/`.
   otherwise when the app comes back. The address remembered per network is keyed by the sorted
   interfaces now, so each network is learned once more. Tests: `NetworkChangeTests`.
 
+- Smaller things that kept the phone awake:
+  - the player's position moves once a second while the app is in the background, four times
+    on screen; a crossfade due between two ticks is started on time from the tick before, so
+    the fade still has its full length (`PlaybackEngine.isInBackground`; test in
+    `PlaybackEngineStreamingTests`);
+  - a title too long for the player scrolls once, after two seconds, and then rests, instead of
+    redrawing the screen at full rate for as long as the player is open;
+  - a streamed song is read from the network in the pieces it arrives in, not one byte at a
+    time (`ChunkedDownload`; tests in `StreamingTrackSourceTests`);
+  - the Identify screens listen to the server's events and reload at most every 2 s; they poll
+    only while a run is going and the event stream is closed or has said nothing for 30 s,
+    and reconnect after 2 s, doubling up to a minute (`IdentifyFollower`, `ReloadThrottle`;
+    `OwnAudioClient.events(onOpen:)`; tests in `IdentifyLiveTests` and `OwnAudioClientTests`);
+  - the app counts as on screen only once a scene is, so a launch by CarPlay or in the
+    background no longer opens the live-updates stream;
+  - the widget's pictures are encoded once per cover, not again for every song of an album.
+
 ### Removed
 
 - The Live Activity. The lock screen showed two players, the system's Now Playing controls and

@@ -224,8 +224,10 @@ struct OwnAudioClientTests {
         }
         let client = OwnAudioClient(host: host, tokens: TokenSession(Tokens(accessToken: "a", refreshToken: "r", expiresAt: .distantFuture, scope: "")), session: mock.urlSession)
         var received: [LiveEvent] = []
-        for try await event in client.events(lastEventId: "40") { received.append(event) }
+        let opened = OpenCount()
+        for try await event in client.events(lastEventId: "40", onOpen: { opened.add() }) { received.append(event) }
         #expect(received.map(\.id) == ["41"])
+        #expect(opened.value == 1, "the caller hears that the stream is open")
         #expect(await mock.requestLog().first?.value(forHTTPHeaderField: "Authorization") == "Bearer a")
     }
 
@@ -311,4 +313,11 @@ struct OwnAudioClientTests {
         #expect(try change.decode(Favourite.self)?.id == "t1")
         guard case .end? = try OwnAudioClient.snapshotLine(#"{"type":"end","cursor":"c1"}"#) else { Issue.record("end"); return }
     }
+}
+
+private final class OpenCount: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var value: Int { lock.withLock { count } }
+    func add() { lock.withLock { count += 1 } }
 }

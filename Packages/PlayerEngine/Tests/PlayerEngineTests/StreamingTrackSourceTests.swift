@@ -6,7 +6,7 @@ import Testing
 @testable import PlayerCore
 
 /// The network plumbing around `AudioStreamDecoder`: real fixture bytes served through
-/// `MockURLProtocol`, so the actual `URLSession.bytes` path runs without a live server.
+/// `MockURLProtocol`, so the actual `URLSession` download path runs without a live server.
 ///
 /// The `onBuffer` closure is `@Sendable`, so a captured `var` can't be mutated from it; a small
 /// reference box can.
@@ -37,6 +37,43 @@ struct StreamingTrackSourceTests {
             guard request.url == Self.streamURL else { return .init(statusCode: 404, body: Data()) }
             return .init(statusCode: 200, body: data, headers: ["Content-Type": contentType])
         }
+    }
+
+    @Test("the download arrives in the pieces the network sends, whole and in order, not byte by byte")
+    func downloadArrivesInPieces() async throws {
+        let body = Data((0..<100_000).map { UInt8($0 % 251) })
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            .init(statusCode: 200, body: body, headers: ["Content-Type": "audio/mpeg"], pieces: 10, pieceDelay: 0.02)
+        }
+        let (chunks, response) = try await ChunkedDownload.start(Self.streamURL, session: mock.urlSession)
+        #expect((response as? HTTPURLResponse)?.statusCode == 200)
+        var received = Data()
+        var count = 0
+        for try await chunk in chunks {
+            received.append(chunk)
+            count += 1
+        }
+        #expect(received == body)
+        #expect(count >= 2 && count <= 10, "\(count) pieces")
+    }
+
+    @Test("a download whose task is cancelled stops, rather than passing for the whole body")
+    func downloadCancels() async throws {
+        let body = Data(repeating: 7, count: 200_000)
+        let mock = await MockURLProtocol.makeStubbedSession { _ in
+            .init(statusCode: 200, body: body, headers: ["Content-Type": "audio/mpeg"], pieces: 20, pieceDelay: 0.1)
+        }
+        let consumer = Task { () -> Int in
+            let (chunks, _) = try await ChunkedDownload.start(Self.streamURL, session: mock.urlSession)
+            var total = 0
+            for try await chunk in chunks { total += chunk.count }
+            try Task.checkCancellation()
+            return total
+        }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        consumer.cancel()
+        let result = await consumer.result
+        #expect(throws: CancellationError.self) { try result.get() }
     }
 
     @Test("streams a real MP3 end to end, producing roughly its known duration")

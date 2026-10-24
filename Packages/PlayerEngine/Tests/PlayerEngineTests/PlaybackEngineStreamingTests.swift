@@ -521,6 +521,28 @@ struct PlaybackEngineStreamingTests {
         #expect(harness.engine.errorMessage == nil)
     }
 
+    @Test("in the background the position moves once a second, and a crossfade still starts on time")
+    func backgroundTicksSlowerAndFadesOnTime() async throws {
+        let harness = try await makeHarness(suffix: "background-fade", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        harness.settings.setCrossfadeEnabled(true)
+        harness.settings.setFadeDurationSecs(1)
+        for id in ["a", "b"] { _ = try await harness.fileCache.localURL(trackId: id) }
+        engine.isInBackground = true
+        #expect(engine.tickIntervalSecs == 1)
+
+        await engine.play(tracks: [makeTrack(id: "a"), makeTrack(id: "b")])
+        try await waitUntil(timeout: 10) { engine.currentTrack?.id == "b" }
+        let left = try #require(engine.crossfadeBeganWithSecsLeft)
+        // A tick a second would start it anywhere up to a second late, with too little left.
+        #expect(left >= 0.75, "the fade began with \(left) s of the first track left, not about 1 s")
+        #expect(left <= 1.4, "the fade began early: \(left) s left")
+
+        engine.isInBackground = false
+        #expect(engine.tickIntervalSecs == 0.25)
+        engine.stop()
+    }
+
     @Test("paused, the audio engine stops after the grace period; within it, it keeps running")
     func engineIdlesAfterGrace() async throws {
         let harness = try await makeHarness(suffix: "idle", audioData: try fixtureData("test-tone.mp3"))

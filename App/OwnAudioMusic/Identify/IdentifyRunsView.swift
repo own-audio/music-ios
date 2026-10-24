@@ -111,23 +111,13 @@ struct IdentifyRunsView: View {
     }
 
     /// Progress arrives as `identify` events where the server sends them; a slow poll covers
-    /// older servers and a dropped connection.
+    /// older servers and a dropped connection (`IdentifyFollower`).
     private func watch() async {
         await load()
         // Servers with library folders (and an account that may see them) let a run be limited
         // to one; without them the whole library is the only choice.
         folders = (try? await client.musicFolders()) ?? []
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                for await _ in IdentifyEvents.progress(client) { await load() }
-            }
-            group.addTask {
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(10))
-                    if await hasActiveRun { await load() }
-                }
-            }
-        }
+        await IdentifyFollower().follow(client, runActive: { hasActiveRun }, reload: { await load() })
     }
 
     private var hasActiveRun: Bool {
@@ -235,24 +225,4 @@ func identifyMessage(_ error: Error) -> String {
     }
     if case OwnAudioError.network = error { return String(localized: "Couldn't reach the server.") }
     return String(localized: "Something went wrong.")
-}
-
-enum IdentifyEvents {
-    /// One element per `identify` event, until the connection ends; reconnects after a pause.
-    static func progress(_ client: OwnAudioClient) -> AsyncStream<IdentifyProgress> {
-        AsyncStream { continuation in
-            let task = Task {
-                while !Task.isCancelled {
-                    do {
-                        for try await event in client.events() {
-                            if let progress = IdentifyProgress(event) { continuation.yield(progress) }
-                        }
-                    } catch {}
-                    try? await Task.sleep(for: .seconds(15))
-                }
-                continuation.finish()
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
 }

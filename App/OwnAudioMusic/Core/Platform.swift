@@ -54,10 +54,11 @@ extension AppModel {
     /// last time are kept and only the first entry follows the player.
     func refreshWidget(fetch: Bool = false) async {
         var entries: [WidgetSnapshot.Entry] = []
+        var used: [String: Data] = [:]
         let current = engine.currentTrack ?? lastQueue?.current
         if let track = current {
             var cover: Data?
-            if let artworkId = track.artworkId { cover = await covers.data(artworkId: artworkId, size: 160) }
+            if let artworkId = track.artworkId { cover = await widgetCover(artworkId, used: &used) }
             entries.append(.init(id: track.id, kind: .resume, title: track.title, subtitle: track.artist ?? "", cover: cover))
         }
         if fetch, let serverId = activeServerId, let source = activeSource, !isOffline,
@@ -67,12 +68,30 @@ extension AppModel {
                 let artworkId = TrackID.make(serverId: serverId, itemId: album.coverArt ?? album.id)
                 recent.append(.init(
                     id: TrackID.make(serverId: serverId, itemId: album.id), kind: .album, title: album.displayName,
-                    subtitle: album.artist ?? "", cover: await covers.data(artworkId: artworkId, size: 160)
+                    subtitle: album.artist ?? "", cover: await widgetCover(artworkId, used: &used)
                 ))
             }
             widgetAlbums = recent
+            widgetCovers = used
+        } else {
+            // The albums' pictures from last time are still shown, so they stay; a few songs'
+            // covers more at most, until the next fetch starts over.
+            widgetCovers.merge(used) { $1 }
+            if widgetCovers.count > 16 { widgetCovers = used }
         }
         entries += widgetAlbums.filter { $0.title != current?.album }
         WidgetSnapshot(entries: Array(entries.prefix(4)), at: Date()).save()
+    }
+
+    /// A cover as the widget's small JPEG, encoded once per picture: a song change within an
+    /// album used to decode and encode the same cover again.
+    private func widgetCover(_ artworkId: String, used: inout [String: Data]) async -> Data? {
+        if let data = widgetCovers[artworkId] ?? used[artworkId] {
+            used[artworkId] = data
+            return data
+        }
+        let data = await covers.data(artworkId: artworkId, size: 160)
+        if let data { used[artworkId] = data }
+        return data
     }
 }
