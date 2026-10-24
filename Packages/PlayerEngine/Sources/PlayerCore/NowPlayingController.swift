@@ -42,10 +42,23 @@ public final class NowPlayingController {
     /// Takes the audio over from other apps. Called when playback starts, not at launch: opening
     /// the app to browse must not stop what another app is playing.
     public func activateSession() {
+        isSessionActive = true
         #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(true)
         #endif
     }
+
+    /// Gives the audio back once playback has stopped, so an app the listener paused for this
+    /// one may go on. Only after the engine has stopped: iOS refuses while audio is running.
+    public func deactivateSession() {
+        isSessionActive = false
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
+    }
+
+    /// Whether this app last took the audio or gave it back.
+    public private(set) var isSessionActive = false
 
     /// Asks for the track's own rate above 48 kHz. The route decides: a USB DAC can run that
     /// fast, Bluetooth usually can't. `sessionSampleRate` reads back what was granted.

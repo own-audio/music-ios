@@ -25,6 +25,7 @@ struct PlaybackEngineStreamingTests {
         let streamRequestLog: MockURLProtocol.StubbedSession
         let settings: PlaybackSettingsStore
         let fileCache: TrackFileCache
+        let nowPlaying: NowPlayingController
     }
 
     /// Requests seen per track id, so a test can slow down only the first one.
@@ -67,14 +68,15 @@ struct PlaybackEngineStreamingTests {
         let defaults = UserDefaults(suiteName: "test.engine.settings.\(suffix)")!
         defaults.removePersistentDomain(forName: "test.engine.settings.\(suffix)")
         let settings = PlaybackSettingsStore(defaults: defaults)
+        let nowPlaying = NowPlayingController()
         let engine = PlaybackEngine(
             fileCache: fileCache,
-            nowPlayingController: NowPlayingController(),
+            nowPlayingController: nowPlaying,
             settingsStore: settings,
             equalizerStore: EqualizerStore(defaults: UserDefaults(suiteName: "test.engine.eq.\(suffix)")!),
             resumeStore: InMemoryResumeStore()
         )
-        return Harness(engine: engine, streamRequestLog: mock, settings: settings, fileCache: fileCache)
+        return Harness(engine: engine, streamRequestLog: mock, settings: settings, fileCache: fileCache, nowPlaying: nowPlaying)
     }
 
     private func makeTrack(id: String = "track-1", durationSecs: Int = 3) -> Track {
@@ -517,6 +519,82 @@ struct PlaybackEngineStreamingTests {
         #expect(sawBuffering, "the player should have paused for the network at least once")
         #expect(harness.engine.currentTrack == nil, "the track should still play to its end")
         #expect(harness.engine.errorMessage == nil)
+    }
+
+    @Test("paused, the audio engine stops after the grace period; within it, it keeps running")
+    func engineIdlesAfterGrace() async throws {
+        let harness = try await makeHarness(suffix: "idle", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        engine.idleGraceSecs = 0.6
+        await engine.play(tracks: [makeTrack()])
+        try await waitUntil(timeout: 5) { engine.isPlaying && engine.currentTime > 0.3 }
+        #expect(engine.isAudioEngineRunning)
+
+        engine.pause()
+        try await Task.sleep(nanoseconds: 200_000_000)
+        #expect(engine.isAudioEngineRunning, "a quick resume finds the engine running")
+        engine.togglePlayPause()
+        #expect(engine.isPlaying)
+        engine.pause()
+        try await Task.sleep(nanoseconds: 400_000_000)
+        #expect(engine.isAudioEngineRunning, "the resume started the grace period over")
+
+        try await waitUntil(timeout: 3) { !engine.isAudioEngineRunning }
+        #expect(!engine.isPlaying)
+        #expect(engine.currentTrack != nil, "idle is not stop: the track stays loaded")
+        engine.stop()
+    }
+
+    @Test("after a long pause, play goes on from where it paused and plays to the end", arguments: [false, true])
+    func resumesAfterIdleAtTheRightPlace(fromFile: Bool) async throws {
+        let harness = try await makeHarness(suffix: "idle-resume-\(fromFile)", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        engine.idleGraceSecs = 0.2
+        if fromFile { _ = try await harness.fileCache.localURL(trackId: "track-1") }
+        await engine.play(tracks: [makeTrack()])
+        try await waitUntil(timeout: 10) { engine.isPlaying && engine.currentTime > 0.5 }
+
+        engine.pause()
+        let pausedAt = engine.currentTime
+        try await waitUntil(timeout: 3) { !engine.isAudioEngineRunning }
+        try await Task.sleep(nanoseconds: 800_000_000)
+        #expect(engine.currentTime == pausedAt, "nothing moves while paused")
+
+        // What the lock screen, the headphones and CarPlay call.
+        let resumedAt = Date()
+        engine.togglePlayPause()
+        #expect(engine.isPlaying)
+        #expect(engine.isAudioEngineRunning)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let afterResume = engine.currentTime
+        let played = Date().timeIntervalSince(resumedAt)
+        #expect(afterResume > pausedAt, "the position moves again: \(pausedAt) -> \(afterResume)")
+        // No further than the time since the resume: it went on from the pause, not from where
+        // the engine's clock would have been had it run through it.
+        #expect(afterResume <= pausedAt + played + 0.3, "\(pausedAt) -> \(afterResume) after \(played) s")
+
+        try await waitUntil(timeout: 10) { engine.currentTrack == nil }
+        #expect(engine.errorMessage == nil)
+    }
+
+    @Test("stop stops the audio engine and gives the audio session back")
+    func stopStopsEngineAndSession() async throws {
+        let harness = try await makeHarness(suffix: "stop-session", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        await engine.play(tracks: [makeTrack()])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(harness.nowPlaying.isSessionActive)
+
+        engine.stop()
+        #expect(!engine.isAudioEngineRunning)
+        #expect(!harness.nowPlaying.isSessionActive)
+
+        // And a new play takes it again.
+        await engine.play(tracks: [makeTrack(id: "track-2")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(engine.isAudioEngineRunning)
+        #expect(harness.nowPlaying.isSessionActive)
+        engine.stop()
     }
 
     private func waitUntil(timeout: Double, _ condition: @MainActor () -> Bool) async throws {

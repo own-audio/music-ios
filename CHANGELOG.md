@@ -9,6 +9,18 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Battery
+
+- A paused player lets the phone sleep. The audio engine kept running after a pause or a stop,
+  rendering silence, and with background audio iOS then never suspends the app. Now it pauses
+  30 s after the player pauses (a resume within that is instant; after it, the same position
+  plays on, from the app, the lock screen, headphones or CarPlay), stops on Stop, and pauses at
+  once on a call. A headphone or Bluetooth change while paused no longer starts it again. Stop
+  gives the audio session back, so an app paused for this one can go on. `PlayerEngine`:
+  `NowPlayingController.deactivateSession()`. Tests in `PlaybackEngineStreamingTests`: the
+  engine stops after the grace period, play goes on at the right place after it (streamed and
+  from a file), stop gives the session back.
+
 ### Removed
 
 - The Live Activity. The lock screen showed two players, the system's Now Playing controls and

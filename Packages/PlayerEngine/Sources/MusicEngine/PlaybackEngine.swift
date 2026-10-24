@@ -373,8 +373,50 @@ public final class PlaybackEngine {
     }
 
     private func handleEngineConfigurationChange() {
-        guard !engine.isRunning else { return }
+        // Paused, the engine stays stopped: the next play starts it. Restarting it here kept a
+        // paused player rendering silence after every headphone or Bluetooth change, and iOS
+        // never suspends an app whose audio engine runs.
+        guard !engine.isRunning, isPlaying || isLoading else { return }
         try? engine.start()
+    }
+
+    // MARK: - Engine idle
+
+    /// How long after a pause the engine keeps running, so a quick resume is instant. After
+    /// that it is paused too: a running `AVAudioEngine` renders silence for as long as it runs,
+    /// and with the audio background mode the app is then never suspended.
+    var idleGraceSecs: Double = 30
+    private var idleTask: Task<Void, Never>?
+
+    /// For tests: whether the audio engine itself is running, apart from the player nodes.
+    var isAudioEngineRunning: Bool { engine.isRunning }
+
+    private func scheduleEngineIdle() {
+        idleTask?.cancel()
+        let grace = idleGraceSecs
+        idleTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(grace * 1_000_000_000))
+            guard !Task.isCancelled, let self, !self.isPlaying, !self.isLoading else { return }
+            self.idleEngineNow()
+        }
+    }
+
+    /// `pause()`, not `stop()`: the nodes keep what is scheduled on them, so play goes on from
+    /// the same sample — a streamed track has no file to schedule again from.
+    private func idleEngineNow() {
+        idleTask?.cancel()
+        idleTask = nil
+        guard engine.isRunning else { return }
+        Logger.playback.info("engine paused while idle")
+        engine.pause()
+    }
+
+    private func startEngineIfNeeded() throws {
+        idleTask?.cancel()
+        idleTask = nil
+        guard !engine.isRunning else { return }
+        nowPlayingController.activateSession()
+        try engine.start()
     }
 
     #if os(iOS) || os(tvOS)
@@ -417,6 +459,8 @@ public final class PlaybackEngine {
         switch type {
         case .began:
             pauseAudioOnly()
+            // iOS has stopped the audio already; no grace for a call.
+            idleEngineNow()
         case .ended:
             guard let optionsValue else { return }
             if AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
@@ -536,13 +580,14 @@ public final class PlaybackEngine {
         saveProgressNow()
         pushNowPlayingInfo()
         closeSpan(atPositionSecs: currentTime, reason: .stopped)
+        scheduleEngineIdle()
     }
 
     private func resumeAudioOnly() {
         guard currentTrack != nil, !isPlaying else { return }
         wireRemoteCommands()
         onWillStartPlaying?()
-        if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
+        try? startEngineIfNeeded()
         // Mid-stall the node stays held; `resumeAfterBuffering` starts it once there is enough.
         if !isBuffering { activeNode.play() }
         if isCrossfading { idleNode.play() }
@@ -558,6 +603,10 @@ public final class PlaybackEngine {
         saveProgressNow()
         closeSpan(atPositionSecs: currentTime, reason: .stopped)
         nowPlayingController.clear()
+        idleTask?.cancel()
+        idleTask = nil
+        engine.stop()
+        nowPlayingController.deactivateSession()
 
         currentTrack = nil
         duration = 0
@@ -871,7 +920,7 @@ public final class PlaybackEngine {
             updateFormatSnapshot(Self.formatInfo(from: file.fileFormat))
             adoptDurationFromFile(file)
 
-            if !engine.isRunning { nowPlayingController.activateSession(); try engine.start() }
+            try startEngineIfNeeded()
 
             // A fresh load (not a seek) always restarts the active node's own schedule —
             // `scheduleFile`'s `at: nil` only chains cleanly onto a schedule this engine itself
@@ -1016,7 +1065,7 @@ public final class PlaybackEngine {
         isBuffering = false
         resumeStreamRoomWaiter()
 
-        if !engine.isRunning { nowPlayingController.activateSession(); try? engine.start() }
+        try? startEngineIfNeeded()
 
         streamingTask = Task { [weak self] in
             guard let self else { return }
@@ -1352,6 +1401,7 @@ public final class PlaybackEngine {
             currentTrack = nil
             stopTicking()
             nowPlayingController.clear()
+            scheduleEngineIdle()
             self.queue = queue
             // Played to the end: the next Play on this container should start it over, not
             // resume onto the last second of the final track.
