@@ -24,6 +24,14 @@ package, merged into this repository — is in `docs/history/`.
   it was every 15 s, and a paused concert kept its 15 s position loop; both now end with the
   pause (which reports the position once, as before) and start again with play.
 
+- A change of network is acted on once it has settled for 3 s, and the same interfaces
+  reported in a new order are no change at all. Each change used to race every server
+  address, send what waited and sync every library, several times over when Wi-Fi gave way to
+  mobile data. In the background only what waited is sent and no library syncs; the addresses
+  are chosen again only while something is in the player (its next song needs a working one),
+  otherwise when the app comes back. The address remembered per network is keyed by the sorted
+  interfaces now, so each network is learned once more. Tests: `NetworkChangeTests`.
+
 ### Removed
 
 - The Live Activity. The lock screen showed two players, the system's Now Playing controls and

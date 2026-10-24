@@ -24,9 +24,7 @@ final class NetworkMonitor {
             let connected = path.status == .satisfied
             let expensive = path.isExpensive
             let constrained = path.isConstrained
-            // Interface names carry the VPN (utun…) as well as Wi-Fi and cellular.
-            let signature = ([connected ? "up" : "down"] + path.availableInterfaces.map { "\($0.type)-\($0.name)" })
-                .joined(separator: ",")
+            let signature = Self.signature(connected: connected, interfaces: path.availableInterfaces.map { "\($0.type)-\($0.name)" })
             Task { @MainActor in
                 guard let self, self.signature != signature || self.isExpensive != expensive || self.isConstrained != constrained else { return }
                 self.isConnected = connected
@@ -37,5 +35,39 @@ final class NetworkMonitor {
             }
         }
         monitor.start(queue: DispatchQueue(label: "NetworkMonitor"))
+    }
+
+    /// Interface names carry the VPN (utun…) as well as Wi-Fi and cellular. Sorted: iOS
+    /// reports the same interfaces in a new order now and then, which is no new network.
+    nonisolated static func signature(connected: Bool, interfaces: [String]) -> String {
+        ([connected ? "up" : "down"] + interfaces.sorted()).joined(separator: ",")
+    }
+}
+
+/// Runs the last of a burst of calls, once the burst has been quiet for `delay`. A network
+/// change rarely comes alone — Wi-Fi drops, mobile data comes up, a VPN reconnects on top —
+/// and each used to race every server address and sync every library.
+@MainActor
+final class Debouncer {
+    private let delay: Duration
+    private var task: Task<Void, Never>?
+
+    init(delay: Duration) {
+        self.delay = delay
+    }
+
+    func schedule(_ action: @escaping @MainActor () async -> Void) {
+        task?.cancel()
+        let delay = delay
+        task = Task {
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            await action()
+        }
+    }
+
+    func cancel() {
+        task?.cancel()
+        task = nil
     }
 }

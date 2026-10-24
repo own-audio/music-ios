@@ -302,12 +302,9 @@ final class AppModel {
             self.applyOfflineState()
             self.applyStreamQuality()
             if connected {
-                Task {
-                    await self.chooseAddresses()
-                    await self.flushPendingScrobbles()
-                    await self.flushPendingChanges()
-                    await self.syncCatalogues()
-                }
+                self.networkSettle.schedule { [weak self] in await self?.networkSettled() }
+            } else {
+                self.networkSettle.cancel()
             }
         }
         wireScrobbling()
@@ -315,6 +312,30 @@ final class AppModel {
         let files = downloads.files
         let fileCache = fileCache
         Task { await fileCache.setLocalFileLookup { files.url(for: $0) } }
+    }
+
+    /// Waits for a burst of network changes to end before acting on it.
+    @ObservationIgnored private let networkSettle = Debouncer(delay: .seconds(3))
+    /// A network change in the background skipped choosing addresses; coming back does it.
+    @ObservationIgnored private var addressesNeedChoosing = false
+
+    /// The phone is on a new network, and has been for a moment. In the background only what
+    /// waited is sent: no library sync, and the address race only while something is in the
+    /// player, whose next song has to reach the server from the new network.
+    private func networkSettled() async {
+        let plan = Self.afterNetworkChange(inForeground: isInForeground, playerLoaded: engine.currentTrack != nil)
+        if plan.chooseAddresses {
+            await chooseAddresses()
+        } else {
+            addressesNeedChoosing = true
+        }
+        await flushPendingScrobbles()
+        await flushPendingChanges()
+        if plan.syncLibraries { await syncCatalogues() }
+    }
+
+    nonisolated static func afterNetworkChange(inForeground: Bool, playerLoaded: Bool) -> (chooseAddresses: Bool, syncLibraries: Bool) {
+        (inForeground || playerLoaded, inForeground)
     }
 
     /// The Recently Played widget's albums from the last time they were asked for.
@@ -1563,7 +1584,15 @@ extension AppModel {
         }
         followLibraryChanges()
         // Back on screen after a while: what changed meanwhile.
-        if active { Task { await syncCatalogues() } }
+        if active {
+            Task {
+                if addressesNeedChoosing {
+                    addressesNeedChoosing = false
+                    await chooseAddresses()
+                }
+                await syncCatalogues()
+            }
+        }
     }
 
     /// (Re)starts or stops following the active server; called whenever what it depends on
