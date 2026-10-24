@@ -935,6 +935,9 @@ final class AppModel {
         }
         engine.onPlaybackStopped = { [weak self] track, position, reason in
             self?.concertStopped(track, at: position, reason: reason)
+            // Paused or stopped, nothing moves: the stop report below tells the server, and the
+            // loop starts again with the next play. Every 15 s it woke the radio for nothing.
+            self?.stopScrobbleTicks()
             guard let self, self.scrobblingEnabled else { return }
             let isEnd: Bool = switch reason {
             case .completed, .skipped, .replaced: true
@@ -969,20 +972,30 @@ final class AppModel {
         } catch {}
     }
 
-    /// Counts a play while it is still playing, so it isn't lost if the app is killed.
+    /// Counts a play while it is still playing, so it isn't lost if the app is killed. Runs
+    /// only while playing: `onPlaybackStopped` ends it, `onPlaybackStarted` starts it again.
     private func startScrobbleTicks() {
         guard scrobbleTickTask == nil else { return }
         scrobbleTickTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(15))
-                guard let self else { return }
-                if self.engine.isPlaying { self.scrobbler?.tick() }
+                guard let self, !Task.isCancelled else { return }
+                guard self.engine.isPlaying else {
+                    self.scrobbleTickTask = nil
+                    return
+                }
+                self.scrobbler?.tick()
                 // Without a report now and then the server takes the session for ended.
                 if let track = self.engine.currentTrack {
                     await self.reportSession(.progress, trackId: track.id, position: self.engine.currentTime)
                 }
             }
         }
+    }
+
+    private func stopScrobbleTicks() {
+        scrobbleTickTask?.cancel()
+        scrobbleTickTask = nil
     }
 
     private func report(_ event: ScrobbleTracker.Event) {

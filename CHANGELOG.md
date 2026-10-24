@@ -20,6 +20,9 @@ package, merged into this repository — is in `docs/history/`.
   `NowPlayingController.deactivateSession()`. Tests in `PlaybackEngineStreamingTests`: the
   engine stops after the grace period, play goes on at the right place after it (streamed and
   from a file), stop gives the session back.
+- Progress goes to the server only while playing. Paused, the app still told Jellyfin where
+  it was every 15 s, and a paused concert kept its 15 s position loop; both now end with the
+  pause (which reports the position once, as before) and start again with play.
 
 ### Removed
 

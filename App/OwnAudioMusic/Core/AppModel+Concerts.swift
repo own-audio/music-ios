@@ -52,21 +52,19 @@ extension AppModel {
         concertPositionTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(15))
-                guard let self, !Task.isCancelled else { return }
-                guard self.engine.isPlaying, self.engine.currentTrack?.id == track.id else { continue }
+                guard let self, !Task.isCancelled, self.engine.isPlaying, self.engine.currentTrack?.id == track.id else { return }
                 await self.saveConcertPosition(trackId: track.id, at: self.engine.currentTime)
             }
         }
     }
 
-    /// Paused, stopped, skipped or played out: where the listener is goes to the server. A seek
-    /// is a jump within the same listening, saved by the next tick.
+    /// Paused, stopped, skipped or played out: where the listener is goes to the server, and
+    /// the loop ends until the next play starts it again (`concertStarted`). A seek is a jump
+    /// within the same listening, saved by the next tick.
     func concertStopped(_ track: Track, at position: Double, reason: PlaybackStopReason) {
         guard reason != .seeked, concertTrackIds.contains(track.id) else { return }
-        if reason != .stopped {
-            concertPositionTask?.cancel()
-            concertPositionTask = nil
-        }
+        concertPositionTask?.cancel()
+        concertPositionTask = nil
         Task { await saveConcertPosition(trackId: track.id, at: position) }
     }
 
