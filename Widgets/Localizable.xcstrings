@@ -2,16 +2,6 @@
   "sourceLanguage" : "en",
   "version" : "1.0",
   "strings" : {
-    "Action" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Akce"
-          }
-        }
-      }
-    },
     "Continue · %@" : {
       "localizations" : {
         "cs" : {
@@ -22,92 +12,12 @@
         }
       }
     },
-    "Control Playback" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ovládat přehrávání"
-          }
-        }
-      }
-    },
-    "Next" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Další"
-          }
-        }
-      }
-    },
-    "Next Track" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Další skladba"
-          }
-        }
-      }
-    },
     "Nothing played yet" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zatím nic nehrálo"
-          }
-        }
-      }
-    },
-    "Pause" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pozastavit"
-          }
-        }
-      }
-    },
-    "Play" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přehrát"
-          }
-        }
-      }
-    },
-    "Play or Pause" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přehrát nebo pozastavit"
-          }
-        }
-      }
-    },
-    "Previous" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Předchozí"
-          }
-        }
-      }
-    },
-    "Previous Track" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Předchozí skladba"
           }
         }
       }

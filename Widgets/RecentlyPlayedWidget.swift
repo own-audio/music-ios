@@ -5,7 +5,6 @@ import WidgetKit
 struct OwnAudioMusicWidgets: WidgetBundle {
     var body: some Widget {
         RecentlyPlayedWidget()
-        TrackLiveActivity()
     }
 }
 

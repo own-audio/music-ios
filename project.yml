@@ -28,8 +28,7 @@ targets:
         UILaunchScreen: {}
         UIBackgroundModes: [audio, fetch]
         BGTaskSchedulerPermittedIdentifiers: [audio.own.musicplayer.refresh]
-        NSSupportsLiveActivities: true
-        # The widget's and the Live Activity's way in (ownmusic://resume, ownmusic://play/…).
+        # The widget's way in (ownmusic://resume, ownmusic://play/…).
         CFBundleURLTypes:
           - CFBundleURLName: audio.own.musicplayer
             CFBundleURLSchemes: [ownmusic]
@@ -72,7 +71,7 @@ targets:
         com.apple.developer.applesignin: [Default]
         # CarPlay audio app (granted by Apple for audio.own.musicplayer, 2026-10-16).
         com.apple.developer.carplay-audio: true
-        # Shared with the widget: its snapshot and the Live Activity's cover.
+        # Shared with the widget: its snapshot.
         com.apple.security.application-groups: [group.audio.own.musicplayer]
     dependencies:
       - target: OwnAudioMusicWidgets

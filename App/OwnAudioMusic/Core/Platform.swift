@@ -2,8 +2,7 @@ import Foundation
 import MusicEngine
 import MusicLibrary
 
-/// The ways in from outside the app: the widget's and the Live Activity's links, Siri, and the
-/// widget's snapshot. Shaped like the podcasts app's `Platform.swift`.
+/// The ways in from outside the app: the widget's links, Siri, and the widget's snapshot. Shaped like the podcasts app's `Platform.swift`.
 extension AppModel {
     /// `ownmusic://resume`, `ownmusic://play/album/<id>`, `ownmusic://play/playlist/<id>` or
     /// `ownmusic://player`. True when the player should open.

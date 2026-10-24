@@ -28,7 +28,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Unit tests (about) | **~290** | ~130 | ~175 |
 | UI tests | 32 | 30 | **37** |
 
-- **All three now share the same frame** (2026-10-20): the last item back after a relaunch, a sleep badge on the cover, Devices, Wi-Fi only and Keep at Most, a widget, a Live Activity, Siri, links, a log viewer and background refresh. Music caught up last, from 67 % to 86 %.
+- **All three now share the same frame** (2026-10-20): the last item back after a relaunch, a sleep badge on the cover, Devices, Wi-Fi only and Keep at Most, a widget, Siri, links, a log viewer and background refresh. Music caught up last, from 67 % to 86 %.
 - **What is left is mostly what doesn't fit an app's content**: speed and skip intervals in Music, ratings and identify outside Music, import and narration outside Books, summaries and Ask outside Podcasts. Handoff, Spotlight, notifications and a licences screen are missing in all three.
 - **Music is the biggest** and has features none of the others has (MusicBrainz identify, smart playlists, EQ, ReplayGain, crossfade, lyrics); several of those count as one row each.
 - **Podcasts** still has OPML, Jellyfin and a transcript viewer left in its own plan.
@@ -146,7 +146,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 | Feature | Music | Books | Podcasts |
 |---|---|---|---|
 | Widget | ✅ Recently Played | ✅ (untested) | ✅ Up Next (untested on a device) |
-| Live Activity | ✅ | ✅ (icons follow the skip intervals) | ✅ (icons follow the skip intervals) |
+| Live Activity | removed 2026-10-24: the system's Now Playing controls are the one lock-screen player | being removed (battery-offline plan, L) | being removed (battery-offline plan, L) |
 | Siri / App Intents | ✅ | ✅ | ✅ |
 | Deep links | ✅ | ✅ `ownbook://` | ✅ `ownpodcast://`, `feed://`, `podcast://` |
 | Background refresh, Handoff, Spotlight, notifications | ◐ background refresh only | ◐ background refresh only | ◐ background refresh only |
@@ -189,7 +189,7 @@ The counts come from the rows of the tables below. Rows that only describe somet
 
 ### 3. Bring what only one app has to the others
 
-- [x] Widget, Live Activity, Siri, deep links (Books only) → Music, Podcasts
+- [x] Widget, Live Activity, Siri, deep links (Books only) → Music, Podcasts (the Live Activity was removed again on 2026-10-24)
 - [x] Devices screen (Books only) → Music, Podcasts
 - [x] AirPlay button (Music only) → Books, Podcasts
 - [x] Canary button → Podcasts
@@ -205,4 +205,4 @@ The counts come from the rows of the tables below. Rows that only describe somet
 - [x] Add-your-own-address screen in Books
 - [x] Chapters read from the audio file in Podcasts, as Books does
 - [x] Bring back the last-played item after a relaunch (none of the three does)
-- [x] Books Live Activity: icons follow the chosen skip intervals (now always 15 s back and 30 s forward)
+- [x] Books Live Activity: icons follow the chosen skip intervals (now always 15 s back and 30 s forward; the Live Activity was removed on 2026-10-24)

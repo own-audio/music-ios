@@ -315,10 +315,8 @@ final class AppModel {
         let files = downloads.files
         let fileCache = fileCache
         Task { await fileCache.setLocalFileLookup { files.url(for: $0) } }
-        liveActivity = LiveActivityController(model: self)
     }
 
-    @ObservationIgnored var liveActivity: LiveActivityController?
     /// The Recently Played widget's albums from the last time they were asked for.
     @ObservationIgnored var widgetAlbums: [WidgetSnapshot.Entry] = []
 

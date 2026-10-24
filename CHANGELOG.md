@@ -9,12 +9,19 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Removed
+
+- The Live Activity. The lock screen showed two players, the system's Now Playing controls and
+  ours below them; only the system's stay, also in the Dynamic Island and on CarPlay. It also
+  woke the app every 15 s to move its progress bar. The widget, the links and Siri are
+  unchanged. A Live Activity started by an older build ends on its own.
+
 ### Concerts (M11)
 
 - The player knows chapters: a concert recorded as one file plays with a chapter where each
   song starts. Next and previous move between its songs — previous restarts a song a few
   seconds in, as for tracks — and past the last song next goes to the next track. The lock
-  screen, Live Activity and CarPlay show the song playing, with the concert as its album, and
+  screen and CarPlay show the song playing, with the concert as its album, and
   keep next enabled while a song follows. `PlayerEngine`: `TrackChapter`, `ChapterNavigation`,
   `setChapters(_:forTrackId:)`, `playChapter(at:)`, `canSkipForward`. Tests:
   `ChapterNavigationTests`, and a real playback in `PlaybackEngineStreamingTests` moving
@@ -142,13 +149,10 @@ package, merged into this repository — is in `docs/history/`.
 - **Recently Played widget** (small and medium): where you left off, then the albums played last
   on the active server, from a snapshot the app keeps in the App Group
   (`group.audio.own.musicplayer`); a tap plays it. Copied from the podcasts app's Up Next widget.
-- **Live Activity** on the lock screen and in the Dynamic Island: cover, song, artist, how far, and
-  previous / play-pause / next buttons that work without opening the app. Copied from the podcasts
-  app; one activity follows the queue from song to song.
 - **Siri and Shortcuts**: "Continue listening in own.music", "Play ‹playlist› in own.music",
   "Play the album ‹album› in own.music", with Czech phrases.
 - Links `ownmusic://resume`, `ownmusic://play/album/<id>`, `ownmusic://play/playlist/<id>` and
-  `ownmusic://player`, which the widget and the Live Activity use. UI test
+  `ownmusic://player`, which the widget uses. UI test
   `PlaybackSmokeTests.testResumeLink`.
 - The widget extension (`OwnAudioMusicWidgets`) and the App Group need the group on both App IDs
   in the developer account before a TestFlight build signs.

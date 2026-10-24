@@ -30,7 +30,7 @@ Each item takes about an hour; do this phase first.
 - [x] Music: show Apple/Google buttons only when the server offers them (Books/Podcasts: `ProviderButtons`, 600 ms after typing)
 - [x] Podcasts: canary button in TestFlight/Debug builds (`TestServers.swift` from Books)
 - [x] Books + Podcasts: one set of speed presets (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3) — *Podcasts done 2026-10-19*
-- [x] Books: Live Activity button icons follow the chosen skip intervals
+- [x] Books: Live Activity button icons follow the chosen skip intervals (the Live Activity was removed on 2026-10-24)
 - [x] Podcasts: hide Unfollow on own.audio and Audiobookshelf shows until it works
 - [x] Podcasts: README lists only what ships; the rest goes under "Coming"
 
@@ -71,11 +71,11 @@ This is the biggest phase. Books is the model.
 Books is the model for all of these.
 
 - [x] Music + Podcasts: Continue Listening / Recently Played widget (App Group snapshot) — *Podcasts 2026-10-19, Music 2026-10-20*
-- [x] Music + Podcasts: Live Activity (lock screen and Dynamic Island, with buttons that work without opening the app) — *Podcasts 2026-10-19, Music 2026-10-20*
+- [x] Music + Podcasts: Live Activity (lock screen and Dynamic Island, with buttons that work without opening the app) — *Podcasts 2026-10-19, Music 2026-10-20; removed from Music 2026-10-24, the system's Now Playing controls stay*
 - [x] Music + Podcasts: Siri / App Intents ("Play … in own.music", "Continue my podcast"), phrases in English and Czech — *Podcasts 2026-10-19, Music 2026-10-20*
 - [x] Music + Podcasts: deep links (`ownmusic://`, `ownpodcast://`, plus `podcast://` and `feed://` for following a show) — *Podcasts 2026-10-19, Music 2026-10-20*
 - [x] Podcasts: CarPlay (lists: New Episodes, Downloads, Shows)
-- [ ] All three: try CarPlay, the widget and the Live Activity on a real device and in a car
+- [ ] All three: try CarPlay and the widget on a real device and in a car
 
 ## P6 — Browsing parity
 
