@@ -82,6 +82,12 @@ final class DownloadManager: NSObject {
     /// Songs handed to the session, or having their address worked out.
     private var running: [String: URLSessionDownloadTask?] = [:]
     private var resumeData: [String: Data] = [:]
+    /// Where own.audio storage is blocked on this network, songs come through the server's
+    /// media proxy (`StorageRoute`).
+    var storageRoute: ProxyMemory?
+    /// Songs whose download was blocked at storage and was started again the other way; a
+    /// second failure is shown.
+    private var rerouted: Set<String> = []
     private let registry: ClientRegistry
     private var session: URLSession!
     private static let parallelDownloads = 2
@@ -267,12 +273,7 @@ final class DownloadManager: NSObject {
             do {
                 let url = try await registry.downloadURL(trackId: item.trackId)
                 guard running[item.trackId] != nil, queue.contains(where: { $0.trackId == item.trackId }) else { return }
-                var request = URLRequest(url: url)
-                request.allowsCellularAccess = !wifiOnly
-                let task = session.downloadTask(with: request)
-                task.taskDescription = item.trackId
-                running[item.trackId] = task
-                task.resume()
+                launch(item.trackId, url: storageRoute?.route(url) ?? url)
             } catch {
                 running[item.trackId] = nil
                 guard queue.contains(where: { $0.trackId == item.trackId }) else { return }
@@ -282,8 +283,29 @@ final class DownloadManager: NSObject {
         }
     }
 
+    private func launch(_ trackId: String, url: URL) {
+        var request = URLRequest(url: url)
+        request.allowsCellularAccess = !wifiOnly
+        let task = session.downloadTask(with: request)
+        task.taskDescription = trackId
+        running[trackId] = task
+        task.resume()
+    }
+
+    /// A download of an own.audio link that was blocked at storage: once more the other way —
+    /// through the server's media proxy, or straight to storage when the proxy is what failed.
+    /// True when it was started.
+    private func rerouteIfBlocked(_ trackId: String, link: URL?, blocked: Bool) -> Bool {
+        guard blocked, let link, !rerouted.contains(trackId), queue.contains(where: { $0.trackId == trackId }),
+              let other = StorageRoute.alternate(to: link) else { return false }
+        rerouted.insert(trackId)
+        resumeData[trackId] = nil
+        launch(trackId, url: other)
+        return true
+    }
+
     /// The session finished a song: the file is checked, kept, and the next song goes.
-    private func finished(trackId: String, file: URL, response: URLResponse?) {
+    private func finished(trackId: String, file: URL, response: URLResponse?, link: URL?) {
         running[trackId] = nil
         defer { pump() }
         guard let item = queue.first(where: { $0.trackId == trackId }) else {
@@ -292,8 +314,16 @@ final class DownloadManager: NSObject {
         }
         do {
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                var blocked = false
+                if let link, let response { blocked = StorageRoute.isBlocked(response: response, link: link) }
+                if rerouteIfBlocked(trackId, link: link, blocked: blocked) {
+                    try? FileManager.default.removeItem(at: file)
+                    return
+                }
                 throw URLError(.badServerResponse)
             }
+            // The other way worked after this one was blocked: remembered for this network.
+            if rerouted.remove(trackId) != nil, let link { storageRoute?.worked(link) }
             let head = (try? FileHandle(forReadingFrom: file)).flatMap { handle in
                 defer { try? handle.close() }
                 return try? handle.read(upToCount: 12)
@@ -317,12 +347,18 @@ final class DownloadManager: NSObject {
             enforceCap()
         } catch {
             try? FileManager.default.removeItem(at: file)
+            rerouted.remove(trackId)
             states[trackId] = .failed(error.userMessage)
         }
     }
 
-    private func failed(trackId: String, error: Error, resume: Data?) {
+    private func failed(trackId: String, error: Error, resume: Data?, link: URL?, blocked: Bool) {
         running[trackId] = nil
+        if (error as NSError).code != NSURLErrorCancelled, rerouteIfBlocked(trackId, link: link, blocked: blocked) {
+            saveIndex()
+            return
+        }
+        rerouted.remove(trackId)
         if let resume { resumeData[trackId] = resume }
         if (error as NSError).code != NSURLErrorCancelled, queue.contains(where: { $0.trackId == trackId }) {
             states[trackId] = .failed(error.userMessage)
@@ -425,16 +461,19 @@ extension DownloadManager: URLSessionDownloadDelegate {
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let trackId = downloadTask.taskDescription ?? ""
         let response = downloadTask.response
+        let link = downloadTask.originalRequest?.url
         let holding = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try? FileManager.default.moveItem(at: location, to: holding)
-        Task { @MainActor in self.finished(trackId: trackId, file: holding, response: response) }
+        Task { @MainActor in self.finished(trackId: trackId, file: holding, response: response, link: link) }
     }
 
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard let error else { return }
         let trackId = task.taskDescription ?? ""
         let resume = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data
-        Task { @MainActor in self.failed(trackId: trackId, error: error, resume: resume) }
+        let link = task.originalRequest?.url
+        let blocked = link.map { StorageRoute.isBlocked(error: error, link: $0, current: task.currentRequest?.url) } ?? false
+        Task { @MainActor in self.failed(trackId: trackId, error: error, resume: resume, link: link, blocked: blocked) }
     }
 
     nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {

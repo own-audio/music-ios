@@ -100,6 +100,33 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    @Test("own.audio storage blocked on this network: the engine streams the song through the media proxy, and the next one too")
+    func playsThroughProxyWhenStorageBlocked() async throws {
+        let server = try StorageServer(fixture: "test-tone.mp3", type: "audio/mpeg")
+        let mock = await MockURLProtocol.makeStubbedSession { request in try server.respond(request) }
+        let memory = ProxyMemory(defaults: UserDefaults(suiteName: "route-\(UUID().uuidString)")!)
+        let fileCache = TrackFileCache(
+            remoteURL: { StorageServer.link($0) }, session: mock.urlSession,
+            cacheDirectory: FileManager.default.temporaryDirectory.appendingPathComponent("engine-tests-\(UUID().uuidString)", isDirectory: true),
+            storageRoute: memory
+        )
+        let engine = PlaybackEngine(
+            fileCache: fileCache,
+            nowPlayingController: NowPlayingController(),
+            settingsStore: PlaybackSettingsStore(defaults: UserDefaults(suiteName: "test.engine.settings.proxy-\(UUID().uuidString)")!),
+            equalizerStore: EqualizerStore(defaults: UserDefaults(suiteName: "test.engine.eq.proxy-\(UUID().uuidString)")!),
+            resumeStore: InMemoryResumeStore()
+        )
+        await engine.play(tracks: [makeTrack(id: "a"), makeTrack(id: "b")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(engine.errorMessage == nil)
+        #expect(memory.usesProxy(for: StorageServer.link("a")))
+        // The next song is fetched ahead and plays after the first.
+        try await waitUntil(timeout: 10) { engine.currentTrack?.id == "b" && engine.isPlaying }
+        #expect(server.servedHosts.allSatisfy { $0 == "media.example" } && server.servedHosts.count >= 2)
+        engine.stop()
+    }
+
     @Test("in a concert, next and previous move between its songs, and the last song ends next")
     func nextAndPreviousFollowChapters() async throws {
         let harness = try await makeHarness(suffix: "chapters", audioData: try fixtureData("test-tone.mp3"))

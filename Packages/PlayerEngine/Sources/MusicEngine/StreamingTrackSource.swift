@@ -62,7 +62,14 @@ public actor StreamingTrackSource {
         onFormatKnown: @Sendable (AudioStreamDecoder.FormatInfo) async -> Void = { _ in }
     ) async throws {
         let remoteURL = try await fileCache.resolveRemoteURL(trackId: trackId)
-        let (byteStream, response) = try await ChunkedDownload.start(remoteURL, session: session)
+        let session = session
+        let byteStream: AsyncThrowingStream<Data, Error>, response: URLResponse
+        if let storageRoute = fileCache.storageRoute {
+            // Where own.audio storage is blocked on this network, through the server's media proxy.
+            (byteStream, response) = try await storageRoute.fetch(remoteURL) { try await ChunkedDownload.start($0, session: session) }
+        } else {
+            (byteStream, response) = try await ChunkedDownload.start(remoteURL, session: session)
+        }
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw PlaybackError.network("Could not stream track \(trackId) (status \((response as? HTTPURLResponse)?.statusCode ?? -1))")
         }

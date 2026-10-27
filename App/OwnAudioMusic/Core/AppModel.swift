@@ -192,6 +192,8 @@ final class AppModel {
     @ObservationIgnored private let ownAudioSessions: OwnAudioSessions
     private let registry: ClientRegistry
     private let fileCache: TrackFileCache
+    /// Which way to own.audio storage works on each network (`ProxyMemory`).
+    private let storageRoute: ProxyMemory
     private var sources: [UUID: any MusicSource] = [:]
 
     private static let activeServerKey = "activeServerId"
@@ -263,7 +265,12 @@ final class AppModel {
         self.registry = registry
         covers = CoverArtLoader(registry: registry, offline: offlineSwitch)
         downloads = DownloadManager(registry: registry)
-        fileCache = TrackFileCache(remoteURL: { try await registry.streamURL(trackId: $0) }, session: Self.session)
+        // Where own.audio storage is blocked on a network (a company firewall), its files come
+        // through the server's media proxy instead, for streams and downloads alike.
+        let storageRoute = ProxyMemory()
+        self.storageRoute = storageRoute
+        downloads.storageRoute = storageRoute
+        fileCache = TrackFileCache(remoteURL: { try await registry.streamURL(trackId: $0) }, session: Self.session, storageRoute: storageRoute)
         playbackSettings = PlaybackSettingsStore()
         equalizer = EqualizerStore()
         resumeStore = UserDefaultsResumeStore()
@@ -301,6 +308,7 @@ final class AppModel {
         applyStreamQuality()
         network.onChange = { [weak self] connected in
             guard let self else { return }
+            self.storageRoute.network = self.network.signature
             self.applyOfflineState()
             self.applyStreamQuality()
             if connected {

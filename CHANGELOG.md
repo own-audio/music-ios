@@ -9,6 +9,24 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Networks that block cloud storage
+
+- An own.audio song plays on a network that blocks cloud storage (a company firewall, say).
+  The same change as in own.audio Books and Podcasts (`own-audio/book-ios`, "an own.audio book
+  plays on a network that blocks cloud storage"), copied by hand with the file names kept:
+  `StorageRoute` and `ProxyMemory` in `PlayerCore`. own.audio's stream link redirects to the
+  file in storage; when that host does not resolve, refuses or resets the connection, fails
+  TLS, or a proxy in between answers 403, 407 or 451, the same link is tried once more with
+  `route=proxy`, which the server (1.0.0-beta.43 and later) redirects to its media proxy on
+  its own domain; older servers ignore it. That the proxy worked is remembered per server and
+  network for a week, so later songs go straight to it; if the proxy fails there and storage
+  works again, it is forgotten. A 403 from the server itself is still an expired link. It
+  applies to streaming (`StreamingTrackSource`), the file cache that fetches the next song
+  ahead (`TrackFileCache`) and downloads; only own.audio stream links are ever changed, never
+  a Subsonic or Jellyfin address. `StorageRouteTests` (the decision, the cache, a stream decoded
+  through the proxy) and a `PlaybackEngineStreamingTests` case that plays two songs with
+  storage blocked.
+
 ### Battery
 
 - A paused player lets the phone sleep. The audio engine kept running after a pause or a stop,
