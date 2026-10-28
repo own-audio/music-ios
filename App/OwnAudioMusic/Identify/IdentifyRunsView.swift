@@ -183,6 +183,7 @@ struct IdentifyRunRow: View {
 
 struct IdentifyStatusBadge: View {
     let status: String
+    @AppStorage(AccentChoice.storageKey) private var accent: AccentChoice = .app
 
     var body: some View {
         Text(title)
@@ -209,7 +210,7 @@ struct IdentifyStatusBadge: View {
         case "ready": .green
         case "failed": .red
         case "waiting": .orange
-        default: .accentColor
+        default: accent.color
         }
     }
 }

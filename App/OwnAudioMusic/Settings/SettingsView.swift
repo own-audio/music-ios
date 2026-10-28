@@ -97,6 +97,8 @@ struct SettingsView: View {
                 }
             }
 
+            AccentColorPicker()
+
             Section {
                 Toggle("Report Plays to the Server", isOn: Binding(
                     get: { model.scrobblingEnabled },

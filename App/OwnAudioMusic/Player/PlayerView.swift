@@ -342,7 +342,7 @@ struct PlayerView: View {
             .contentShape(Rectangle())
         }
         .disabled(!isEnabled)
-        .foregroundStyle(!isEnabled ? Color.white.opacity(0.3) : isActive ? Color.accentColor : Color.white)
+        .foregroundStyle(!isEnabled ? AnyShapeStyle(Color.white.opacity(0.3)) : isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.white))
     }
 
     /// Off → All → One → Off, one button, like Apple Music.

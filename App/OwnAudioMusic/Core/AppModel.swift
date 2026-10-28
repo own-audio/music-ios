@@ -4,6 +4,7 @@ import Observation
 import UIKit
 import MusicEngine
 import MusicLibrary
+import enum OwnAudioKit.OwnAudioError
 
 /// The app's single source of truth: configured servers, which one is being browsed, and the
 /// one shared player. Built once, in the `App`.
@@ -816,6 +817,32 @@ final class AppModel {
         Task {
             await chooseAddresses()
             await syncCatalogues()
+        }
+    }
+
+    /// Deletes the own.audio account on the server, then the server from this iPhone. The
+    /// server's last admin can't: the server answers 400.
+    func deleteAccount(serverId id: UUID) async throws {
+        guard let client = ownAudioSource(serverId: id)?.client else { return }
+        do {
+            try await client.deleteAccount()
+        } catch OwnAudioError.http(400) {
+            throw AccountDeletionError.lastAdmin
+        } catch OwnAudioError.http(403) {
+            throw AccountDeletionError.refused
+        }
+        try await removeServer(id: id)
+    }
+
+    enum AccountDeletionError: LocalizedError {
+        case lastAdmin
+        /// The public demo's shared account, which nobody may change.
+        case refused
+        var errorDescription: String? {
+            switch self {
+            case .lastAdmin: String(localized: "This is the server's only admin account. Make someone else an admin on the server first, or delete the account there.")
+            case .refused: String(localized: "The server doesn't let this account be deleted. A shared demo account stays for everyone.")
+            }
         }
     }
 

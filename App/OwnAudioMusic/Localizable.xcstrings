@@ -2862,16 +2862,6 @@
         }
       }
     },
-    "Storage is paid from the family's prepaid credit, day by day; the family's admin tops it up." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Úložiště se platí z předplaceného kreditu rodiny, den po dni; dobíjí ho správce rodiny."
-          }
-        }
-      }
-    },
     "Streaming" : {
       "localizations" : {
         "cs" : {
@@ -2988,16 +2978,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aplikace sem zapisuje, když se něco nepovede."
-          }
-        }
-      }
-    },
-    "The credit has run out: the family's admin can top it up." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kredit došel: správce rodiny ho může dobít."
           }
         }
       }
@@ -6054,6 +6034,396 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dvě skladby začínají ve stejný čas."
+          }
+        }
+      }
+    },
+    "Accent Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barva zvýraznění"
+          }
+        }
+      }
+    },
+    "App Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barva aplikace"
+          }
+        }
+      }
+    },
+    "Blue" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modrá"
+          }
+        }
+      }
+    },
+    "Indigo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indigová"
+          }
+        }
+      }
+    },
+    "Purple" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fialová"
+          }
+        }
+      }
+    },
+    "Red" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Červená"
+          }
+        }
+      }
+    },
+    "Orange" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oranžová"
+          }
+        }
+      }
+    },
+    "Yellow" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Žlutá"
+          }
+        }
+      }
+    },
+    "Green" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zelená"
+          }
+        }
+      }
+    },
+    "Teal" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modrozelená"
+          }
+        }
+      }
+    },
+    "Brown" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hnědá"
+          }
+        }
+      }
+    },
+    "Graphite" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grafitová"
+          }
+        }
+      }
+    },
+    "For buttons, links and what's playing. The icon and the widgets keep the app's colour." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro tlačítka, odkazy a to, co hraje. Ikona a widgety si ponechají barvu aplikace."
+          }
+        }
+      }
+    },
+    "Delete Account…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat účet…"
+          }
+        }
+      }
+    },
+    "Delete Account" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat účet"
+          }
+        }
+      }
+    },
+    "Delete Your Account?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat váš účet?"
+          }
+        }
+      }
+    },
+    "Your account on %@ is deleted for good, with everything you added to it: music, audiobooks, podcasts, playlists and your listening history. What others in your family added stays with them." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Váš účet na %@ bude nevratně smazán se vším, co jste do něj přidali: hudbou, audioknihami, podcasty, playlisty i historií poslechu. Co přidali ostatní z rodiny, jim zůstane."
+          }
+        }
+      }
+    },
+    "This is the server's only admin account. Make someone else an admin on the server first, or delete the account there." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toto je jediný účet správce serveru. Nejdřív na serveru udělejte správcem někoho jiného, nebo účet smažte tam."
+          }
+        }
+      }
+    },
+    "Listening" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poslech"
+          }
+        }
+      }
+    },
+    "Period" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Období"
+          }
+        }
+      }
+    },
+    "Year" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rok"
+          }
+        }
+      }
+    },
+    "Listened" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poslechnuto"
+          }
+        }
+      }
+    },
+    "Days in a Row" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dní v řadě"
+          }
+        }
+      }
+    },
+    "Audiobooks Finished" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dokončené audioknihy"
+          }
+        }
+      }
+    },
+    "From every own.audio app signed in to this account." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ze všech aplikací own.audio přihlášených k tomuto účtu."
+          }
+        }
+      }
+    },
+    "Day" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den"
+          }
+        }
+      }
+    },
+    "min" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "min"
+          }
+        }
+      }
+    },
+    "Minutes listened per day" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minuty poslechu za den"
+          }
+        }
+      }
+    },
+    "By Kind" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podle druhu"
+          }
+        }
+      }
+    },
+    "Nothing yet in this period." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "V tomto období zatím nic."
+          }
+        }
+      }
+    },
+    "Deleted" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazáno"
+          }
+        }
+      }
+    },
+    "Private" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soukromé"
+          }
+        }
+      }
+    },
+    "As the family's admin you see the time of those who share it with you. Each member decides that in their own app." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jako správce rodiny vidíte čas těch, kdo ho s vámi sdílejí. Každý člen o tom rozhoduje ve své aplikaci."
+          }
+        }
+      }
+    },
+    "Share with the Family's Admin" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet se správcem rodiny"
+          }
+        }
+      }
+    },
+    "Lets the admin see how long you listen, and to what kind. Off, your listening stays yours." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Správce uvidí, jak dlouho a co za druh posloucháte. Když je vypnuto, váš poslech zůstane jen váš."
+          }
+        }
+      }
+    },
+    "Sign in to this server again." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlaste se k tomuto serveru znovu."
+          }
+        }
+      }
+    },
+    "The family's credit has run out." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kredit rodiny došel."
+          }
+        }
+      }
+    },
+    "Storage is paid from the family's prepaid credit, day by day." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úložiště se platí z předplaceného kreditu rodiny, den po dni."
+          }
+        }
+      }
+    },
+    "The server doesn't let this account be deleted. A shared demo account stays for everyone." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server nedovolí tento účet smazat. Sdílený ukázkový účet zůstává pro všechny."
           }
         }
       }

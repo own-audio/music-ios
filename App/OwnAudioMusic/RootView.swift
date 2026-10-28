@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var isShowingPlayer = false
     @State private var tab: AppTab = .home
+    @AppStorage(AccentChoice.storageKey) private var accent: AccentChoice = .app
 
     private enum AppTab: Hashable { case home, library, playlists, downloads, search }
 
@@ -41,6 +42,13 @@ struct RootView: View {
         // downloaded left in the queue: the full player isn't there to show why.
         .onChange(of: model.engine.errorMessage) { _, message in
             if let message, model.engine.currentTrack == nil { model.actionError = message }
+        }
+        .tint(accent.color)
+        // Alerts and menus are drawn by UIKit, which takes the window's tint.
+        .onChange(of: accent, initial: true) { _, choice in
+            for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+                for window in scene.windows { window.tintColor = UIColor(choice.color) }
+            }
         }
     }
 

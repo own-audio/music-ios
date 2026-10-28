@@ -9,6 +9,28 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Account, listening and colour
+
+- Delete Account on an own.audio server's page (Settings → the server → Account): asks once,
+  then deletes the account and everything it added on the server (`DELETE /api/v1/users/me`)
+  and the server from this iPhone. The server's last admin is told to hand over first; the
+  public demo's shared account is refused by the server and the app says so. App Store
+  guideline 5.1.1(v): an app that can create an account (own.audio's Apple and Google sign-in
+  can) must let it be deleted in the app.
+- Listening, on the same page: time listened in a week, month, year or ever, days in a row,
+  audiobooks finished, minutes per day as a chart, by kind and the most played, from every
+  own.audio app on the account (`/api/v1/stats/me`). The family's admin also sees each member's
+  total, or "Private" for those who don't share it (`/api/v1/stats/family`); everyone else gets
+  a switch to share theirs with the admin, on servers that say whether it is shared
+  (1.0.0-beta.49 and later). `OwnAudioKit/Account.swift`, copied to Books and Podcasts.
+- Accent Colour in Settings: the app's pink or one of ten others, for buttons, links and what's
+  playing; alerts and menus follow. The icon and the widgets keep the pink. Places that drew
+  in `Color.accentColor` now draw in the tint.
+- The family's credit is only shown, without telling who tops it up: an app that may not sell
+  anything shouldn't point to where it is sold.
+- UI test `DemoTests.testSettingsOnTheDemo`: the welcome screen's demo, the colours, Listening,
+  and the delete dialog (cancelled).
+
 ### Staying signed in
 
 - own.audio no longer signs the phone out after the app restarts. Saving a server for any

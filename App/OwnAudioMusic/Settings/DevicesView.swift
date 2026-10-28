@@ -17,7 +17,7 @@ struct DevicesView: View {
                     ForEach(sessions) { session in
                         HStack(spacing: Theme.Spacing.md) {
                             Image(systemName: Self.symbol(session.kind))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(.tint)
                                 .frame(width: 28)
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
@@ -28,8 +28,8 @@ struct DevicesView: View {
                                             .font(.caption2.weight(.semibold))
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Color.accentColor.opacity(0.15), in: Capsule())
-                                            .foregroundStyle(Color.accentColor)
+                                            .background(.tint.opacity(0.15), in: Capsule())
+                                            .foregroundStyle(.tint)
                                     }
                                 }
                                 Group {

@@ -70,8 +70,8 @@ struct HouseholdView: View {
                         Text("Credit")
                     } footer: {
                         Text(credit.isDepleted
-                             ? String(localized: "The credit has run out: the family's admin can top it up.")
-                             : String(localized: "Storage is paid from the family's prepaid credit, day by day; the family's admin tops it up."))
+                             ? String(localized: "The family's credit has run out.")
+                             : String(localized: "Storage is paid from the family's prepaid credit, day by day."))
                     }
                 }
 

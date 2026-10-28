@@ -15,6 +15,7 @@ struct ServerDetailView: View {
     @State private var newAddress = ""
     @State private var errorMessage: String?
     @State private var isSigningIn = false
+    @State private var confirmDeleteAccount = false
     /// own.audio's optional parts this server has switched on (`identify_library`, `billing`).
     @State private var modules: [String: Bool] = [:]
 
@@ -63,6 +64,11 @@ struct ServerDetailView: View {
                     }
                     Button("Sign In Again") { isSigningIn = true }
                         .accessibilityIdentifier("serverDetail.signInAgain")
+                    if server.kind == .ownAudio, case .ownAudio(_, _, .some) = server.auth {
+                        Button("Delete Account…", role: .destructive) { confirmDeleteAccount = true }
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("serverDetail.deleteAccount")
+                    }
 
                 } header: {
                     Text("Account")
@@ -80,6 +86,8 @@ struct ServerDetailView: View {
                         }
                         NavigationLink { DevicesView(serverId: server.id) } label: { Label("Devices", systemImage: "iphone.gen3") }
                             .accessibilityIdentifier("serverDetail.devices")
+                        NavigationLink { ListeningView(serverId: server.id) } label: { Label("Listening", systemImage: "chart.bar") }
+                            .accessibilityIdentifier("serverDetail.listening")
                     }
                 }
 
@@ -227,6 +235,15 @@ struct ServerDetailView: View {
                 }
             } message: {
                 Text("Its downloads leave this iPhone. Nothing changes on the server.")
+            }
+            .confirmationDialog("Delete Your Account?", isPresented: $confirmDeleteAccount, titleVisibility: .visible) {
+                Button("Delete Account", role: .destructive) {
+                    let id = server.id
+                    dismiss()
+                    model.perform { try await model.deleteAccount(serverId: id) }
+                }
+            } message: {
+                Text("Your account on \(server.host.host() ?? server.displayName) is deleted for good, with everything you added to it: music, audiobooks, podcasts, playlists and your listening history. What others in your family added stays with them.")
             }
         }
     }

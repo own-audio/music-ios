@@ -488,7 +488,7 @@ private struct EditionsSheet: View {
                                 }
                                 Spacer()
                                 if detail.chosen == edition.index {
-                                    Text("In Use").font(.caption.weight(.medium)).foregroundStyle(Color.accentColor)
+                                    Text("In Use").font(.caption.weight(.medium)).foregroundStyle(.tint)
                                 } else if choosing == edition.index {
                                     ProgressView()
                                 }

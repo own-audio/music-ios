@@ -80,11 +80,11 @@ struct MiniPlayerBar: View {
                 // the bar an edge.
                 RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer)
                     .fill(.regularMaterial)
-                    .overlay(RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer).fill(Color.accentColor.opacity(0.15)))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer).fill(.tint.opacity(0.15)))
             }
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer)
-                    .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
+                    .strokeBorder(.tint.opacity(0.35), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer))
             .padding(.horizontal, Theme.Spacing.screenEdge)
@@ -127,7 +127,7 @@ struct MiniPlayerBar: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer)
-                .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
+                .strokeBorder(.tint.opacity(0.35), lineWidth: 1)
         )
         .padding(.horizontal, Theme.Spacing.screenEdge)
         .padding(.bottom, Theme.Spacing.xs)
@@ -143,9 +143,9 @@ struct MiniPlayerBar: View {
             ZStack(alignment: .leading) {
                 Rectangle().fill(Color(.secondarySystemFill))
                 if buffered > played {
-                    Rectangle().fill(Color.accentColor.opacity(0.3)).frame(width: width * buffered)
+                    Rectangle().fill(.tint.opacity(0.3)).frame(width: width * buffered)
                 }
-                Rectangle().fill(Color.accentColor).frame(width: width * played)
+                Rectangle().fill(.tint).frame(width: width * played)
             }
         }
         .frame(height: 2)
