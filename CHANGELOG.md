@@ -9,6 +9,15 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Staying signed in
+
+- own.audio no longer signs the phone out after the app restarts. Saving a server for any
+  other reason (an address it learned on a new network, a chosen library, the move to https)
+  wrote back the tokens from when the app started, over the ones refreshed since; at the next
+  launch the app presented a refresh token the server had already rotated, which it treats as
+  theft and ends the device's sign-in. `ServerStore.update` now keeps the stored tokens unless
+  the save is a new sign-in (`signIn: true`). Test: `ServerStoreTokenTests`.
+
 ### Networks that block cloud storage
 
 - An own.audio song plays on a network that blocks cloud storage (a company firewall, say).

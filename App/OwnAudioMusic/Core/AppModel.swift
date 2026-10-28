@@ -796,7 +796,7 @@ final class AppModel {
         ownAudioSessions.forget(id)
         signInRefused.remove(id)
         catalogueErrors[id] = nil
-        try await update(server)
+        try await update(server, signIn: true)
         Task {
             await chooseAddresses()
             await syncCatalogues(force: true)
@@ -845,8 +845,8 @@ final class AppModel {
     func setLibrary(serverId: UUID, libraryId: String?) async throws {
         guard var record = servers.first(where: { $0.id == serverId }) else { return }
         record.libraryId = libraryId
-        try await store.update(record)
-        if let index = servers.firstIndex(where: { $0.id == serverId }) { servers[index] = record }
+        let saved = try await store.update(record)
+        if let index = servers.firstIndex(where: { $0.id == serverId }) { servers[index] = saved }
         responseCache.removeAll()
         await rebuildClients()
     }
@@ -1497,8 +1497,8 @@ final class AppModel {
     }
 
     /// Saves a changed server (addresses, connection mode) and uses it at once.
-    func update(_ record: ServerRecord) async throws {
-        try await store.update(record)
+    func update(_ record: ServerRecord, signIn: Bool = false) async throws {
+        let record = try await store.update(record, signIn: signIn)
         if let index = servers.firstIndex(where: { $0.id == record.id }) { servers[index] = record }
         if case .fixed(let url) = record.connection {
             activeAddresses[record.id] = url
