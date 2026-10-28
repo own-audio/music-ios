@@ -131,4 +131,32 @@ final class DemoTests: XCTestCase {
         more.tap()
         XCTAssertTrue(favorite.waitForExistence(timeout: 5), "still running, menu still opens")
     }
+
+    /// The family's admin sees each member's listening (or "Private") under Listening. Needs an
+    /// own.audio server where the account is the family's admin: ADMIN_HOST, ADMIN_USER and
+    /// ADMIN_PASSWORD (a local test stack's first admin will do).
+    func testFamilyListeningForTheAdmin() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let host = env["ADMIN_HOST"], let user = env["ADMIN_USER"], let password = env["ADMIN_PASSWORD"] else {
+            throw XCTSkip("ADMIN_HOST is not set")
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+                               "-debugServerHost", host, "-debugServerUser", user, "-debugServerPassword", password]
+        app.launchChecked()
+        let settings = app.buttons["home.settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 30))
+        settings.tap()
+        let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'servers.row.'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        let listening = app.buttons["serverDetail.listening"]
+        XCTAssertTrue(listening.waitForExistence(timeout: 10))
+        listening.tap()
+        XCTAssertTrue(app.staticTexts["Listened"].waitForExistence(timeout: 20))
+        let family = app.descendants(matching: .any).matching(identifier: "listening.member").firstMatch
+        for _ in 0..<5 where !family.exists { app.swipeUp() }
+        XCTAssertTrue(family.waitForExistence(timeout: 10), "the admin should see the family's members")
+        XCTAssertFalse(app.switches["listening.share"].exists, "the admin has nobody to share with")
+    }
 }
