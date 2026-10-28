@@ -8,6 +8,7 @@ struct AlbumDetailView: View {
     @State private var isAddingToPlaylist = false
     @State private var isChoosingCover = false
     @State private var identify: IdentifyRequest?
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         List {
@@ -38,94 +39,44 @@ struct AlbumDetailView: View {
         .navigationTitle(album.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                CollectionDownloadButton(
-                    collectionId: model.activeServerId.map { DownloadManager.collectionId(kind: .album, serverId: $0, itemId: album.id) },
-                    isEnabled: songs?.isEmpty == false
-                ) {
-                    if case .loaded(let loaded) = state { model.download(album: loaded.album, songs: loaded.songs) }
-                }
-            }
-            if let id = model.compositeId(album.id) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    let starred = model.isFavorite(id)
-                    Button {
-                        Haptics.selection()
-                        model.perform { try await model.toggleFavorite(id, kind: .album) }
-                    } label: {
-                        Image(systemName: starred ? "star.fill" : "star")
-                    }
-                    .accessibilityLabel(starred ? "Unfavorite Album" : "Favorite Album")
-                    .accessibilityIdentifier("album.star")
-                }
+            if sizeClass == .regular, let id = model.compositeId(album.id) {
+                // On the iPad the tab bar shares the top bar: three buttons there were folded
+                // into an overflow menu, with the album's menu a level below them.
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        if let songs, !songs.isEmpty {
-                            Button {
-                                model.enqueue(songs, next: true)
-                            } label: {
-                                Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
-                            }
-                            .accessibilityIdentifier("album.playNext")
-                            Button {
-                                model.enqueue(songs, next: false)
-                            } label: {
-                                Label("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
-                            }
-                            .accessibilityIdentifier("album.addToQueue")
+                        Section {
+                            favoriteButton(id)
+                            downloadMenuItem
                         }
-                        if model.capabilities.contains(.ratings) {
-                            RatingMenu(rating: model.ratings[id]) { rating in
-                                model.perform { try await model.setRating(id, kind: .album, rating: rating) }
-                            }
-                        }
-                        if model.capabilities.contains(.instantMix), !model.isOffline {
-                            Button {
-                                model.playInstantMix(itemId: album.id)
-                            } label: {
-                                Label("Instant Mix", systemImage: "wand.and.stars")
-                            }
-                        }
-                        Button {
-                            isAddingToPlaylist = true
-                        } label: {
-                            Label("Add Album to Playlist…", systemImage: "text.badge.plus")
-                        }
-                        .disabled(songs?.isEmpty ?? true)
-                        if model.artwork != nil, !model.isOffline, songs?.contains(where: { model.sharing(of: $0)?.isMine == true }) == true {
-                            Button {
-                                isChoosingCover = true
-                            } label: {
-                                Label("Choose Album Cover…", systemImage: "photo")
-                            }
-                        }
-                        // The listener's own songs on it, shared or kept to themselves together.
-                        if model.household != nil, !model.isOffline, let mine = songs?.filter({ model.sharing(of: $0)?.isMine == true }), !mine.isEmpty {
-                            if mine.allSatisfy({ model.sharing(of: $0) == .shared }) {
-                                Button {
-                                    model.setShared(mine, false)
-                                } label: {
-                                    Label("Stop Sharing My Songs", systemImage: "person")
-                                }
-                            } else {
-                                Button {
-                                    model.setShared(mine, true)
-                                } label: {
-                                    Label("Share My Songs with the Family", systemImage: "person.2")
-                                }
-                            }
-                        }
-                        if IdentifyAccess.shared.server(model) != nil, songs?.contains(where: { model.sharing(of: $0)?.isMine != false }) ?? true {
-                            Button {
-                                identify = .album(id: album.id, label: album.displayName)
-                            } label: {
-                                Label("Identify Album", systemImage: "waveform.badge.magnifyingglass")
-                            }
-                        }
+                        albumMenuItems(id)
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
                     .accessibilityLabel("More")
+                    .accessibilityIdentifier("album.more")
+                }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    CollectionDownloadButton(
+                        model: model,
+                        collectionId: collectionId,
+                        isEnabled: songs?.isEmpty == false
+                    ) {
+                        if case .loaded(let loaded) = state { model.download(album: loaded.album, songs: loaded.songs) }
+                    }
+                }
+                if let id = model.compositeId(album.id) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        favoriteButton(id)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            albumMenuItems(id)
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
+                        .accessibilityLabel("More")
+                    }
                 }
             }
         }
@@ -135,6 +86,117 @@ struct AlbumDetailView: View {
         .identifyStarter($identify)
         .artworkPicker(isPresented: $isChoosingCover) { .songs(songs ?? [], albumId: album.id) }
         .task { await load() }
+    }
+
+    private var collectionId: String? {
+        model.activeServerId.map { DownloadManager.collectionId(kind: .album, serverId: $0, itemId: album.id) }
+    }
+
+    private func favoriteButton(_ id: String) -> some View {
+        let starred = model.isFavorite(id)
+        return Button {
+            Haptics.selection()
+            model.perform { try await model.toggleFavorite(id, kind: .album) }
+        } label: {
+            if sizeClass == .regular {
+                Label(starred ? "Unfavorite Album" : "Favorite Album", systemImage: starred ? "star.fill" : "star")
+            } else {
+                Image(systemName: starred ? "star.fill" : "star")
+            }
+        }
+        .accessibilityLabel(starred ? "Unfavorite Album" : "Favorite Album")
+        .accessibilityIdentifier("album.star")
+    }
+
+    /// The iPad's menu entry for what `CollectionDownloadButton` shows on the iPhone.
+    @ViewBuilder private var downloadMenuItem: some View {
+        if let collectionId, let progress = model.downloads.progress(of: collectionId) {
+            if progress.done == progress.total {
+                Button(role: .destructive) {
+                    model.downloads.remove(collectionId: collectionId)
+                } label: {
+                    Label("Remove Download", systemImage: "trash")
+                }
+            } else {
+                Button {} label: {
+                    Label("Downloading \(progress.done) of \(progress.total)", systemImage: "arrow.down.circle.dotted")
+                }
+                .disabled(true)
+            }
+        } else {
+            Button {
+                if case .loaded(let loaded) = state { model.download(album: loaded.album, songs: loaded.songs) }
+            } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+            .disabled(songs?.isEmpty != false)
+        }
+    }
+
+    @ViewBuilder
+    private func albumMenuItems(_ id: String) -> some View {
+        if let songs, !songs.isEmpty {
+            Button {
+                model.enqueue(songs, next: true)
+            } label: {
+                Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+            }
+            .accessibilityIdentifier("album.playNext")
+            Button {
+                model.enqueue(songs, next: false)
+            } label: {
+                Label("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
+            }
+            .accessibilityIdentifier("album.addToQueue")
+        }
+        if model.capabilities.contains(.ratings) {
+            RatingMenu(rating: model.ratings[id]) { rating in
+                model.perform { try await model.setRating(id, kind: .album, rating: rating) }
+            }
+        }
+        if model.capabilities.contains(.instantMix), !model.isOffline {
+            Button {
+                model.playInstantMix(itemId: album.id)
+            } label: {
+                Label("Instant Mix", systemImage: "wand.and.stars")
+            }
+        }
+        Button {
+            isAddingToPlaylist = true
+        } label: {
+            Label("Add Album to Playlist…", systemImage: "text.badge.plus")
+        }
+        .disabled(songs?.isEmpty ?? true)
+        if model.artwork != nil, !model.isOffline, songs?.contains(where: { model.sharing(of: $0)?.isMine == true }) == true {
+            Button {
+                isChoosingCover = true
+            } label: {
+                Label("Choose Album Cover…", systemImage: "photo")
+            }
+        }
+        // The listener's own songs on it, shared or kept to themselves together.
+        if model.household != nil, !model.isOffline, let mine = songs?.filter({ model.sharing(of: $0)?.isMine == true }), !mine.isEmpty {
+            if mine.allSatisfy({ model.sharing(of: $0) == .shared }) {
+                Button {
+                    model.setShared(mine, false)
+                } label: {
+                    Label("Stop Sharing My Songs", systemImage: "person")
+                }
+            } else {
+                Button {
+                    model.setShared(mine, true)
+                } label: {
+                    Label("Share My Songs with the Family", systemImage: "person.2")
+                }
+            }
+        }
+        if IdentifyAccess.shared.server(model) != nil, songs?.contains(where: { model.sharing(of: $0)?.isMine != false }) ?? true {
+            Button {
+                identify = .album(id: album.id, label: album.displayName)
+            } label: {
+                Label("Identify Album", systemImage: "waveform.badge.magnifyingglass")
+            }
+        }
     }
 
     private var header: some View {

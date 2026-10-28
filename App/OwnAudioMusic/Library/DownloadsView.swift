@@ -220,7 +220,9 @@ struct DownloadedSongRow: View {
 /// The toolbar control for downloading an album or playlist: an arrow, then progress, then a
 /// filled check with a menu to remove it.
 struct CollectionDownloadButton: View {
-    @Environment(AppModel.self) private var model
+    /// Handed in, not read from the environment: on the iPad a toolbar item can be drawn in the
+    /// top bar's overflow menu, where the environment's model is missing and reading it crashed.
+    let model: AppModel
     let collectionId: String?
     let isEnabled: Bool
     let start: () -> Void

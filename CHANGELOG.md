@@ -9,6 +9,17 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### iPad album page
+
+- The album page on the iPad has one menu (⋯) with Favorite and Download at the top, instead of
+  three buttons that iPadOS folded into the top bar's overflow menu (the tab bar shares the top
+  bar there), which put the album's own menu a level deeper.
+- Fixed a crash on the iPad (TestFlight build 35, iPadOS 26.7.1): the download button in that
+  overflow read the app model from the environment, which is missing there, and SwiftUI stopped
+  the app when a song change updated the downloads. `CollectionDownloadButton` now takes the
+  model as a parameter. UI test `DemoTests.testAlbumMenuOnTheIPad` (iPad simulator); the demo
+  tests now find the iPad's library sidebar too.
+
 ### Account, listening and colour
 
 - Delete Account on an own.audio server's page (Settings → the server → Account): asks once,

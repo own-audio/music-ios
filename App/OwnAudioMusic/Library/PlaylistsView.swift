@@ -218,6 +218,7 @@ struct PlaylistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 CollectionDownloadButton(
+                    model: model,
                     collectionId: model.activeServerId.map { DownloadManager.collectionId(kind: .playlist, serverId: $0, itemId: playlist.id) },
                     isEnabled: songs?.isEmpty == false
                 ) {
