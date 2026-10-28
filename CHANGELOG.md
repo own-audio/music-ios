@@ -9,6 +9,11 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Accent Colour: the ring followed the first colour picked and then stayed on it while the
+  colour itself changed on (iOS 27). The picker now keeps its own choice and saves each change.
+
 ### Crossfade
 
 - With crossfade on, the next song's title, cover and time appear as the fade begins, and its

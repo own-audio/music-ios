@@ -159,4 +159,26 @@ final class DemoTests: XCTestCase {
         XCTAssertTrue(family.waitForExistence(timeout: 10), "the admin should see the family's members")
         XCTAssertFalse(app.switches["listening.share"].exists, "the admin has nobody to share with")
     }
+
+    /// A second colour moves the ring and colours the Settings sheet itself.
+    func testAccentColourChangesTwice() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchChecked()
+        app.buttons["addServer.demo"].tap()
+        let settings = app.buttons["home.settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 30))
+        settings.tap()
+        let green = app.buttons["settings.accent.green"], blue = app.buttons["settings.accent.blue"]
+        for _ in 0..<8 where !green.isHittable { app.swipeUp() }
+        green.tap()
+        add(XCTAttachment(screenshot: app.screenshot()))
+        XCTAssertTrue(green.isSelected)
+        blue.tap()
+        add(XCTAttachment(screenshot: app.screenshot()))
+        XCTAssertTrue(blue.isSelected, "the second choice should be marked")
+        XCTAssertFalse(green.isSelected, "the first choice should not be marked any more")
+        app.buttons["settings.accent.app"].tap()
+        XCTAssertTrue(app.buttons["settings.accent.app"].isSelected)
+    }
 }
