@@ -9,6 +9,17 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Crossfade
+
+- With crossfade on, the next song's title, cover and time appear as the fade begins, and its
+  time counts from its start through the fade. They used to wait for the fade's end, with the
+  time frozen meanwhile. Fetching the next song no longer counts as the fade either: if it
+  wasn't on the phone yet, the time stood still for the whole download. The current song's time
+  now runs on while the next one arrives, and if it ends first the ordinary end of the song moves
+  on and the late fade is dropped. A skip or seek mid-fade stops the outgoing song and restores
+  the volume. Test: "a crossfade shows the next track as it starts, and its position moves
+  through the fade".
+
 ### iPad album page
 
 - The album page on the iPad has one menu (⋯) with Favorite and Download at the top, instead of

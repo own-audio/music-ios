@@ -570,6 +570,28 @@ struct PlaybackEngineStreamingTests {
         engine.stop()
     }
 
+    @Test("a crossfade shows the next track as it starts, and its position moves through the fade")
+    func crossfadeShowsTheNextTrackAtOnce() async throws {
+        let harness = try await makeHarness(suffix: "fade-display", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        harness.settings.setCrossfadeEnabled(true)
+        harness.settings.setFadeDurationSecs(2)
+        for id in ["a", "b"] { _ = try await harness.fileCache.localURL(trackId: id) }
+
+        await engine.play(tracks: [makeTrack(id: "a"), makeTrack(id: "b")])
+        try await waitUntil(timeout: 15) { engine.currentTrack?.id == "b" }
+        // Switched when the fade began, not when it ended two seconds later.
+        #expect(engine.currentTime < 1, "b showed up \(engine.currentTime) s into itself")
+        var positions: [Double] = []
+        for _ in 0..<6 {
+            try await Task.sleep(nanoseconds: 300_000_000)
+            positions.append(engine.currentTime)
+        }
+        #expect(zip(positions, positions.dropFirst()).allSatisfy { $0 < $1 }, "the position stood still during the fade: \(positions)")
+        #expect(engine.currentTrack?.id == "b")
+        engine.stop()
+    }
+
     @Test("paused, the audio engine stops after the grace period; within it, it keeps running")
     func engineIdlesAfterGrace() async throws {
         let harness = try await makeHarness(suffix: "idle", audioData: try fixtureData("test-tone.mp3"))

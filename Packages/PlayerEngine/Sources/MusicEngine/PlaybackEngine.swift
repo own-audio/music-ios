@@ -238,6 +238,8 @@ public final class PlaybackEngine {
 
     private var queue: PlayQueue?
     private var isCrossfading = false
+    /// The next track's file is being fetched for a crossfade that hasn't started yet.
+    private var isPreparingCrossfade = false
     private var tickTask: Task<Void, Never>?
     private var crossfadeTask: Task<Void, Never>?
     private var prefetchNextTask: Task<Void, Never>?
@@ -634,6 +636,7 @@ public final class PlaybackEngine {
         playerB.stop()
         isPlaying = false
         isCrossfading = false
+        isPreparingCrossfade = false
         activeIsA = true
         boundaries = []
         stopTicking()
@@ -695,10 +698,16 @@ public final class PlaybackEngine {
     /// `loadAndPlay`'s own `activeNode.stop()` already handles stopping whichever node the fade
     /// had going; this only needs to stop the *other* one and drop the in-flight fade itself.
     private func cancelInFlightCrossfade() {
+        if isPreparingCrossfade {
+            crossfadeTask?.cancel()
+            isPreparingCrossfade = false
+        }
         guard isCrossfading else { return }
         crossfadeTask?.cancel()
         isCrossfading = false
+        // The outgoing track, which is the idle node once the fade has begun.
         idleNode.stop()
+        applyVolume()
     }
 
     public func setShuffled(_ shuffled: Bool) {
@@ -1468,40 +1477,37 @@ public final class PlaybackEngine {
     private func beginCrossfade() {
         // Sleeping at the end of this track: it plays to its end, unfaded.
         guard !sleepTimer.stopsAtEndOfItem else { return }
-        guard !isCrossfading, let queue, let next = queue.trackAfterCurrent(repeatMode: repeatMode) else { return }
-        isCrossfading = true
+        guard !isCrossfading, !isPreparingCrossfade, let queue, let next = queue.trackAfterCurrent(repeatMode: repeatMode),
+              let outgoingTrack = currentTrack
+        else { return }
         if let frames = elapsedFrames(of: activeNode), let boundary = boundaries.first {
             crossfadeBeganWithSecsLeft = Double(boundary.endFrame - frames) / boundary.sampleRate
         }
-        let outgoingNode = activeNode
-        let incomingNode = idleNode
         let fadeSecs = settingsStore.fadeDurationSecs
+        // Only "preparing" while the next file is fetched: the ticks go on showing the outgoing
+        // track. Setting `isCrossfading` here froze the position (and the title) for as long as
+        // the fetch took, a whole download when the next song wasn't on the phone yet.
+        isPreparingCrossfade = true
 
         crossfadeTask = Task { [weak self] in
             guard let self else { return }
-            guard let url = try? await fileCache.localURL(trackId: next.id),
-                  let file = try? AVAudioFile(forReading: url)
-            else {
-                // Without resetting this, a failed fetch/open left `isCrossfading` stuck `true`
-                // forever — silently disabling every future crossfade *and* `tick()`'s own
-                // position updates for the rest of the session (its guard at the top of this
-                // function skips both while `isCrossfading` is set).
-                self.isCrossfading = false
-                return
-            }
-            guard !Task.isCancelled else { return }
+            let url = try? await fileCache.localURL(trackId: next.id)
+            isPreparingCrossfade = false
+            guard let url, let file = try? AVAudioFile(forReading: url), !Task.isCancelled else { return }
+            // The outgoing track ended (or was left) while the file arrived: the ordinary end of
+            // track already moved on, and a fade now would start a third song over it.
+            guard isPlaying, currentTrack?.id == outgoingTrack.id,
+                  self.queue?.trackAfterCurrent(repeatMode: repeatMode)?.id == next.id
+            else { return }
 
+            let outgoingNode = activeNode
+            let incomingNode = idleNode
             incomingNode.stop()
             incomingNode.volume = 0
-            // Bumped here, before the fade even starts, for the same reason `loadAndPlay` bumps
-            // before its own `stop()`: `outgoingNode.stop()` below (once the fade completes) fires
-            // the completion handler still registered for whatever track that node was carrying —
-            // which, without this, would still match the *current* generation (nothing else
-            // changed it) and fire `handleActiveNodeConsumedSegment()` a second time, right on top
-            // of the bookkeeping this task already does by hand a few lines further down. Live
-            // symptom before this fix: the queue silently skipped an extra track immediately after
-            // every crossfade, with the freshly-started incoming track spuriously logged as
-            // "completed" from position 0 — which read as "the next song isn't loaded yet."
+            // Bumped before scheduling: `outgoingNode.stop()` once the fade completes fires the
+            // completion handler still registered for the outgoing track, which must not match
+            // the current generation — it would advance the queue a second time, skipping a song
+            // right after every crossfade.
             schedulingGeneration += 1
             let generation = schedulingGeneration
             incomingNode.scheduleFile(file, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
@@ -1510,39 +1516,44 @@ public final class PlaybackEngine {
                     self.handleActiveNodeConsumedSegment()
                 }
             }
+            isCrossfading = true
             applyGain(for: next, on: incomingNode)
             incomingNode.play()
+
+            // The incoming track is what plays from here: the title, cover and position switch
+            // now, as the fade starts, and the position counts from its start. They used to wait
+            // for the fade's end, with the position frozen meanwhile.
+            closeSpan(atPositionSecs: currentTime, reason: .completed)
+            activeIsA.toggle()
+            boundaries = [ScheduledBoundary(
+                trackId: next.id, startFrame: 0, endFrame: file.length,
+                sampleRate: file.processingFormat.sampleRate, trackPositionOffsetSecs: 0
+            )]
+            var queue = self.queue
+            queue?.advance()
+            self.queue = queue
+            currentTrack = next
+            currentTime = 0
+            duration = Double(next.durationSecs ?? 0)
+            adoptDurationFromFile(file)
+            loadArtwork(track: next)
+            pushNowPlayingInfo()
+            openSpan(atPositionSecs: 0)
 
             let steps = 20
             let stepNanos = UInt64((fadeSecs / Double(steps)) * 1_000_000_000)
             let targetVolume = self.isMuted ? 0 : self.volume
             for step in 1...steps {
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled else { return }
                 let fraction = Float(step) / Float(steps)
                 outgoingNode.volume = targetVolume * (1 - fraction)
                 incomingNode.volume = targetVolume * fraction
                 try? await Task.sleep(nanoseconds: stepNanos)
             }
             guard !Task.isCancelled else { return }
-
             outgoingNode.stop()
             outgoingNode.volume = targetVolume
-            activeIsA.toggle()
             isCrossfading = false
-            boundaries = [ScheduledBoundary(
-                trackId: next.id, startFrame: 0, endFrame: file.length,
-                sampleRate: file.processingFormat.sampleRate, trackPositionOffsetSecs: 0
-            )]
-
-            var queue = self.queue
-            queue?.advance()
-            self.queue = queue
-            currentTrack = next
-            duration = Double(next.durationSecs ?? 0)
-            adoptDurationFromFile(file)
-            loadArtwork(track: next)
-            pushNowPlayingInfo()
-            openSpan(atPositionSecs: 0)
         }
     }
 
@@ -1581,10 +1592,9 @@ public final class PlaybackEngine {
     }
 
     private func tick() async {
-        // During a crossfade, position tracking is skipped for this tick — two nodes are both
-        // live at once, and `boundaries` is mid-transition; the fade task itself sets the
-        // authoritative `currentTrack`/`duration` once it completes.
-        guard isPlaying, !isCrossfading else { return }
+        // During a crossfade the active node is already the incoming one, with its own
+        // boundary: the position is that track's, as the screen shows it.
+        guard isPlaying else { return }
         guard let nodeElapsedFrames = elapsedFrames(of: activeNode) else { return }
         guard let boundary = boundaries.first(where: {
             nodeElapsedFrames >= $0.startFrame && nodeElapsedFrames < $0.endFrame
@@ -1608,7 +1618,7 @@ public final class PlaybackEngine {
         // Not while the track is still arriving: its boundary then ends with the data so far,
         // and a playback that caught up with the network would be taken for the track's end —
         // a song skipped to faded out after its first ten seconds or so.
-        if settingsStore.crossfadeEnabled, !isCrossfading, hasNextTrack, !streamStillArriving {
+        if settingsStore.crossfadeEnabled, !isCrossfading, !isPreparingCrossfade, hasNextTrack, !streamStillArriving {
             let lead = remainingRealSecs - settingsStore.fadeDurationSecs
             if lead <= 0 {
                 beginCrossfade()
@@ -1620,7 +1630,7 @@ public final class PlaybackEngine {
                     try? await Task.sleep(nanoseconds: UInt64(lead * 1_000_000_000))
                     guard let self, !Task.isCancelled else { return }
                     self.crossfadeStartTask = nil
-                    guard self.isPlaying, !self.isCrossfading, self.currentTrack?.id == trackId else { return }
+                    guard self.isPlaying, !self.isCrossfading, !self.isPreparingCrossfade, self.currentTrack?.id == trackId else { return }
                     self.beginCrossfade()
                 }
             }
