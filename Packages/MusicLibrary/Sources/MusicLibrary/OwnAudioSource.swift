@@ -442,8 +442,8 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
 
     // MARK: - Streams, downloads and covers
 
-    /// What the player decodes as it streams; anything else the server makes into AAC (or
-    /// MP3) first. Ogg and Opus are not among them: Core Audio's stream parser can't read them.
+    /// What the player decodes as it streams; anything else the server makes into MP3 (or
+    /// AAC) first. Ogg and Opus are not among them: Core Audio's stream parser can't read them.
     static let playable = [
         "audio/mpeg", "audio/mp3", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/aac", "audio/aacp",
         "audio/flac", "audio/x-flac", "audio/wav", "audio/x-wav", "audio/wave", "audio/aiff", "audio/x-aiff",
@@ -452,7 +452,11 @@ public struct OwnAudioSource: MusicSource, ChangeFeedCatalogue, BatchedOfflineEd
     /// A link signed for this song, good for hours: asked for each time a song starts.
     public func streamURL(songId: String, maxBitrate: Int?) async throws -> URL {
         try await throughAPI {
-            let capabilities = PlaybackCapabilities(direct: Self.playable, transcode: ["aac", "mp3"], maxBitrateKbps: maxBitrate.map { $0 / 1000 })
+            // MP3 first, as for Subsonic and Jellyfin: ffmpeg's AAC writes digital silence as
+            // 13-byte frames, which Core Audio's decoders take for bad data (the decoder now
+            // rides over them, but a file read whole may not), and LAME's silence is a frame
+            // like any other.
+            let capabilities = PlaybackCapabilities(direct: Self.playable, transcode: ["mp3", "aac"], maxBitrateKbps: maxBitrate.map { $0 / 1000 })
             return try await client.playbackInfo(trackId: songId, capabilities: capabilities).url
         } else: { subsonic in
             subsonic.streamURL(songId: songId, maxBitrate: maxBitrate)

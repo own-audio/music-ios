@@ -180,7 +180,12 @@ final class AppModel {
         var bitrate: Int? = onMobileData && mobileData == .saver ? saverBitrate : nil
         if network.isConstrained { bitrate = min(bitrate ?? 128_000, 128_000) }
         let registry = registry
-        Task { await registry.setMaxBitrate(bitrate) }
+        let fileCache = fileCache
+        Task {
+            await registry.setMaxBitrate(bitrate)
+            // A smaller copy kept from mobile data is the song only while a smaller stream is wanted.
+            await fileCache.setAcceptsReducedCopies(bitrate != nil)
+        }
     }
 
     /// Report playback to the server: what is playing (shown on its dashboard), and plays.

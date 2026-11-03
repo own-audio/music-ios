@@ -139,6 +139,24 @@ struct StreamingTrackSourceTests {
         #expect((2.9...3.3).contains(seconds), "decoded \(seconds)s from 3.0s of tone after a silent frame")
     }
 
+    /// The same from Core Audio's AAC decoder: ffmpeg's encoder writes exact zeros as 13-byte
+    /// frames, and every server transcode of a song that opens quietly starts with a run of
+    /// them. On an iPhone the decoder failed on the first one with `'bada'`, and the app skipped
+    /// through a whole album on mobile data that way. The fixture is 1.5 s of zeros, then tone.
+    @Test("streams an AAC transcode that opens with digital silence")
+    func streamsAACOpeningWithSilence() async throws {
+        let source = makeSource(await serving(try fixtureData("test-tone-silent-start.aac"), contentType: "audio/aac"))
+
+        let counter = FrameCounter()
+        try await source.stream(trackId: "track-silent-start-aac") { decoded in
+            counter.total += AVAudioFramePosition(decoded.buffer.frameLength)
+        }
+
+        let format = try #require(await source.currentFormatInfo())
+        let seconds = Double(counter.total) / format.sampleRate
+        #expect((6.3...6.7).contains(seconds), "decoded \(seconds)s from 1.5 s of silence and 5 s of tone")
+    }
+
     /// An M4A/ALAC with its `moov` atom after the audio can't be parsed in pieces. That must
     /// turn into a playable local file, not a failure.
     @Test("falls back to a full local download for the trailing-moov M4A")

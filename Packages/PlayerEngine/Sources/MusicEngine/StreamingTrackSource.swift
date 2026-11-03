@@ -96,7 +96,7 @@ public actor StreamingTrackSource {
                 // Whole: it becomes the cached track now, whatever the decoder is doing. The
                 // reader's open handle goes on reading the same file under its new name.
                 if await relay.closeFile() {
-                    await fileCache.commitPartial(trackId: trackId, mimeType: mimeType)
+                    await fileCache.commitPartial(trackId: trackId, mimeType: mimeType, reduced: TrackFileCache.isReducedStream(remoteURL))
                 }
                 await relay.finish(nil)
             } catch {

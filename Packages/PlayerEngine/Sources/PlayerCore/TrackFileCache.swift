@@ -16,6 +16,9 @@ public actor TrackFileCache {
     private let remoteURL: RemoteURLResolver
     private var localFile: LocalFileLookup?
     private let session: URLSession
+    /// Whether a smaller copy the server made (Saver on mobile data) counts as the track. Off,
+    /// only the original does: a transcode kept from the train is not what Wi-Fi should play.
+    private var acceptsReducedCopies = false
     /// So a quick next/previous during a download doesn't start a second one.
     private var inFlight: [String: Task<URL, Error>] = [:]
     private let cacheDirectory: URL
@@ -33,6 +36,31 @@ public actor TrackFileCache {
 
     public func setLocalFileLookup(_ lookup: @escaping LocalFileLookup) {
         localFile = lookup
+    }
+
+    /// Whether the player is on a smaller stream now (Saver on mobile data), so a smaller copy
+    /// already here will do. The app sets it with the stream quality.
+    public func setAcceptsReducedCopies(_ accepts: Bool) {
+        acceptsReducedCopies = accepts
+    }
+
+    /// Whether `url` is a smaller stream the server makes rather than the original: an own.audio
+    /// link for a transcode (`f=aac`, `f=mp3`), a Subsonic `stream` with `maxBitRate` or a
+    /// `format`, a Jellyfin stream that is not `static`. What arrives from one is cached as a
+    /// reduced copy, kept apart from the original.
+    public nonisolated static func isReducedStream(_ url: URL) -> Bool {
+        guard !url.isFileURL, let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return false }
+        func value(_ name: String) -> String? {
+            items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.value
+        }
+        if url.path.hasSuffix("/api/v2/stream") {
+            return value("f").map { $0.lowercased() != "orig" } ?? false
+        }
+        if let rate = value("maxBitRate") ?? value("audioBitRate") ?? value("maxStreamingBitrate"), (Int(rate) ?? 0) > 0 {
+            return true
+        }
+        if let format = value("format"), !["", "raw"].contains(format.lowercased()) { return true }
+        return value("static")?.lowercased() == "false"
     }
 
     public func resolveRemoteURL(trackId: String) async throws -> URL {
@@ -79,10 +107,36 @@ public actor TrackFileCache {
             .replacingOccurrences(of: "+", with: "-")
     }
 
+    /// A reduced copy is named apart from the original (`<id>~reduced.aac`).
+    private static let reducedSuffix = "~reduced"
+
     private func existingCachedFile(trackId: String) -> URL? {
         let name = cacheFileName(trackId: trackId)
-        return try? FileManager.default.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: nil)
-            .first { $0.deletingPathExtension().lastPathComponent == name && $0.pathExtension != "part" }
+        let files = (try? FileManager.default.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: nil)) ?? []
+        let stems = files.filter { $0.pathExtension != "part" }.map { ($0, $0.deletingPathExtension().lastPathComponent) }
+        if let original = stems.first(where: { $0.1 == name })?.0 { return original }
+        guard acceptsReducedCopies else { return nil }
+        return stems.first { $0.1 == name + Self.reducedSuffix }?.0
+    }
+
+    private func cachedDestination(trackId: String, ext: String, reduced: Bool) -> URL {
+        cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId))\(reduced ? Self.reducedSuffix : "").\(ext)")
+    }
+
+    /// Puts `file` in the cache as the track, or as its reduced copy. The original replaces a
+    /// reduced copy; a reduced copy never replaces the original.
+    private func keep(_ file: URL, trackId: String, ext: String, reduced: Bool) throws -> URL {
+        let destination = cachedDestination(trackId: trackId, ext: ext, reduced: reduced)
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: file, to: destination)
+        if !reduced {
+            let name = cacheFileName(trackId: trackId) + Self.reducedSuffix
+            for old in (try? FileManager.default.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: nil)) ?? []
+            where old.deletingPathExtension().lastPathComponent == name {
+                try? FileManager.default.removeItem(at: old)
+            }
+        }
+        return destination
     }
 
     // MARK: - A stream kept as it passes
@@ -97,8 +151,8 @@ public actor TrackFileCache {
     }
 
     /// The stream arrived whole: the partial file becomes the cached track, named by what the
-    /// bytes say it is, as a download would be.
-    public func commitPartial(trackId: String, mimeType: String?) {
+    /// bytes say it is, as a download would be — or its reduced copy, when the stream was one.
+    public func commitPartial(trackId: String, mimeType: String?, reduced: Bool = false) {
         let partial = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).part")
         guard FileManager.default.fileExists(atPath: partial.path) else { return }
         let head = (try? FileHandle(forReadingFrom: partial)).flatMap { handle in
@@ -110,9 +164,7 @@ public actor TrackFileCache {
             return
         }
         let ext = Self.fileExtension(prefix: head) ?? Self.fileExtension(mimeType: mimeType) ?? "audio"
-        let destination = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).\(ext)")
-        try? FileManager.default.removeItem(at: destination)
-        try? FileManager.default.moveItem(at: partial, to: destination)
+        _ = try? keep(partial, trackId: trackId, ext: ext, reduced: reduced)
     }
 
     public func discardPartial(trackId: String) {
@@ -145,10 +197,7 @@ public actor TrackFileCache {
             return try? handle.read(upToCount: 12)
         } ?? Data()
         let ext = Self.fileExtension(prefix: head) ?? Self.fileExtension(mimeType: http.mimeType) ?? "audio"
-        let destination = cacheDirectory.appendingPathComponent("\(cacheFileName(trackId: trackId)).\(ext)")
-        try? FileManager.default.removeItem(at: destination)
-        try FileManager.default.moveItem(at: tempURL, to: destination)
-        return destination
+        return try keep(tempURL, trackId: trackId, ext: ext, reduced: Self.isReducedStream(url))
     }
 
     public static func fileExtension(prefix: Data) -> String? {
@@ -162,6 +211,9 @@ public actor TrackFileCache {
         if starts("OggS") { return "ogg" }
         if starts("RIFF") { return "wav" }
         if starts("FORM") { return "aiff" }
+        // ADTS AAC (a server's transcode on mobile data) shares MP3's frame sync; its layer bits
+        // are 00, which no MP3 frame has. Saved as .mp3 it would not open at all.
+        if bytes.count >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0 { return "aac" }
         if starts("ID3") || (bytes.count >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) { return "mp3" }
         return nil
     }
@@ -170,7 +222,8 @@ public actor TrackFileCache {
         switch mimeType?.lowercased() {
         case "audio/mpeg", "audio/mp3": "mp3"
         case "audio/flac", "audio/x-flac": "flac"
-        case "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac": "m4a"
+        case "audio/mp4", "audio/m4a", "audio/x-m4a": "m4a"
+        case "audio/aac", "audio/aacp": "aac"
         case "audio/ogg", "audio/opus": "ogg"
         case "audio/wav", "audio/x-wav", "audio/wave": "wav"
         case "audio/aiff", "audio/x-aiff": "aiff"

@@ -219,10 +219,12 @@ public actor AudioStreamDecoder {
         let status = AudioConverterFillComplexBuffer(
             converter, audioConverterInputProc, selfPointer, &packetCount, buffer.mutableAudioBufferList, nil
         )
-        // Core Audio's FLAC decoder takes a frame of digital silence in FLAC's shortest form
-        // (every subframe CONSTANT, 14 bytes) for bad data. Such frames open and close many
-        // tracks; that one frame becomes the silence it is, and decoding goes on.
-        if status == Self.badDataStatus, flacFramer != nil, let frames = lastSuppliedFrames {
+        // Core Audio's decoders take the shortest encodings of digital silence for bad data:
+        // FLAC's (every subframe CONSTANT, 14 bytes) and the 13-byte AAC frames ffmpeg writes
+        // for exact zeros, which open every server transcode of a song that starts quietly.
+        // Such frames open and close many tracks; the packet becomes the silence it is, and
+        // decoding goes on. One packet is consumed per failure, so this always moves forward.
+        if status == Self.badDataStatus, let frames = lastSuppliedFrames {
             AudioConverterReset(converter)
             buffer.frameLength = min(frames, frameCapacity)
             for channel in 0..<Int(outputFormat.channelCount) {
@@ -247,9 +249,13 @@ public actor AudioStreamDecoder {
     /// `'bada'`, the converter's "bad data".
     static let badDataStatus: OSStatus = 1_650_549_857
 
-    /// How many samples the packet last handed to the converter holds, where that can be read
-    /// (a FLAC frame header says it).
+    /// How many samples the packet last handed to the converter holds, where that can be read:
+    /// a FLAC frame header says it, and AAC and MP3 have a fixed count per packet.
     private nonisolated(unsafe) var lastSuppliedFrames: AVAudioFrameCount?
+    /// The stream's fixed samples per packet (AAC 1024, MP3 1152), 0 where it varies (FLAC).
+    /// Set with the converter, read by its input callback — the same single-call-stack rule as
+    /// `pendingPackets`.
+    private nonisolated(unsafe) var framesPerPacket: AVAudioFrameCount = 0
 
     /// Whether the parser has seen enough of the stream to describe its format and start
     /// producing packets. Exposed mainly for tests measuring *when* that happens relative to
@@ -318,6 +324,7 @@ public actor AudioStreamDecoder {
 
         converter = newConverter
         outputFormat = format
+        framesPerPacket = sourceFormat.mFramesPerPacket
     }
 
     /// Moves everything the parser handed to `context.packets` (written from the C callback,
@@ -362,7 +369,7 @@ public actor AudioStreamDecoder {
 
         let (data, description) = pendingPackets[packetsConsumed]
         packetsConsumed += 1
-        lastSuppliedFrames = FLACFramer.blockSize(of: data)
+        lastSuppliedFrames = FLACFramer.blockSize(of: data) ?? (framesPerPacket > 0 ? framesPerPacket : nil)
         inputCallbackDataHolder = data
         // `description.mStartOffset` was captured relative to the *original* parse buffer the
         // packets callback received, not to `data` — `data` is this one packet's bytes copied

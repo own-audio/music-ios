@@ -11,6 +11,21 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- **Saver on mobile data against an own.audio server failed on song after song** ("Could not
+  load this track", the app skipping through the album). The server's AAC transcode of a song
+  that opens with digital silence starts with 13-byte frames — how ffmpeg encodes exact zeros —
+  and Core Audio's streaming decoder rejects the first of them as bad data (`'bada'`), as it
+  already did FLAC's shortest silent frame. The decoder now turns such a packet into the silence
+  it is and goes on, for AAC and MP3 as for FLAC; and own.audio servers are asked for MP3 before
+  AAC, as Subsonic and Jellyfin servers already were. Test: "streams an AAC transcode that opens
+  with digital silence" (the fixture is the server's own encoding of 1.5 s of silence and a tone).
+- A song streamed on mobile data with Saver on stayed in the player's cache as the song: back on
+  Wi-Fi, and for every seek, it played the 128–320 kbps transcode instead of the original, and the
+  format badge said so. A smaller stream (own.audio's transcode link, Subsonic `maxBitRate`,
+  Jellyfin's non-static stream) is now kept as a reduced copy, used only while Saver is on; the
+  original replaces it when it arrives. Tests: "a smaller stream is known by its link", "a
+  transcode kept from mobile data is the track only while a smaller stream is wanted", "a download
+  from a smaller stream is a reduced copy, fetched again as the original on Wi-Fi".
 - Accent Colour: the ring followed the first colour picked and then stayed on it while the
   colour itself changed on (iOS 27). The picker now keeps its own choice and saves each change.
 
