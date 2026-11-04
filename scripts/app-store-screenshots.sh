@@ -18,7 +18,8 @@ DERIVED="${TEST_OUTPUT:-/tmp/music-ios-tests}/DerivedData"
 
 xcodegen generate >/dev/null
 for device in "${DEVICES[@]}"; do
-  id=$(xcrun simctl list devices available | grep -F "$device (" | head -1 | grep -oE '[0-9A-F-]{36}')
+  # The newest device of that name: an older one may sit on a runtime that is no longer installed.
+  id=$(xcrun simctl list devices available | grep -F "$device (" | tail -1 | grep -oE '[0-9A-F-]{36}')
   xcrun simctl boot "$id" 2>/dev/null || true
   xcrun simctl status_bar "$id" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
     --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
