@@ -9,6 +9,13 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- The build number uploaded to TestFlight is the commit count again, as `scripts/testflight.sh`
+  intends: the Info.plist had a fixed `1`, so 1.0.0's first upload is build 1.
+- App Store screenshots on the iPad: the test waits for the server form to close after Connect and
+  taps again if the keyboard took the tap, instead of going on with the wrong server shown.
+
 ## [1.0.0] - 2026-11-04
 
 The first App Store release.

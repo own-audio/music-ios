@@ -164,8 +164,15 @@ final class AppStoreScreenshots: XCTestCase {
         type(password, into: app.secureTextFields["addServer.password"])
         // The library's title is the server's name; a plain one reads better than an address.
         type(name, into: app.textFields["addServer.name"])
-        app.buttons["addServer.connect"].tap()
-        sleep(4)
+        let connect = app.buttons["addServer.connect"]
+        connect.tap()
+        // On the iPad the form sheet sits above the keyboard, and a tap can land while it is
+        // still moving; the form is gone once the sign-in has worked.
+        for _ in 0..<3 where !waitUntil(timeout: 15, { !connect.exists }) {
+            if connect.exists && connect.isHittable { connect.tap() }
+        }
+        XCTAssertFalse(connect.exists, "the server form should close after signing in to \(host)")
+        sleep(2)
         dismissSavePasswordPrompt(app)
     }
 
