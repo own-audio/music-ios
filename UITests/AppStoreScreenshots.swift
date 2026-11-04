@@ -77,11 +77,22 @@ final class AppStoreScreenshots: XCTestCase {
         let toggle = app.switches["equalizer.enabled"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         if (toggle.value as? String) != "1" { toggle.switches.firstMatch.tap() }
-        app.buttons["equalizer.preset.Loudness"].tap()
+        // The iPad's form sheet is shorter than the equalizer: the presets start below the fold.
+        let loudness = app.buttons["equalizer.preset.Loudness"]
+        for _ in 0..<4 where !loudness.exists {
+            app.swipeUp()
+            sleep(1)
+        }
+        loudness.tap()
         sleep(1)
         save(app, "8-equalizer")
         app.buttons[t("Reset", "Obnovit")].tap()
-        toggle.switches.firstMatch.tap()
+        // Back up to the switch: scrolled away, its row still "exists" but holds no switch.
+        // Off again where the switch is still on screen (iPhone). On the iPad it has scrolled
+        // away, and a swipe to bring it back lands on a slider; leaving the equalizer on changes
+        // nothing in the screenshots that follow.
+        let onOff = toggle.switches.firstMatch
+        if onOff.exists { onOff.tap() }
         app.buttons[t("Done", "Hotovo")].tap()
         app.buttons["player.close"].tap()
 

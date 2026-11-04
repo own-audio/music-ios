@@ -15,6 +15,7 @@ DEVICES=("iPhone 17 Pro Max" "iPad Pro 13-inch (M5)")
 ALBUM="${SCREENSHOT_ALBUM:-The Run}"
 IDENTIFY_ALBUM="${SCREENSHOT_IDENTIFY_ALBUM:-Jazz Sampler}"
 DERIVED="${TEST_OUTPUT:-/tmp/music-ios-tests}/DerivedData"
+# Half an hour per run: the iPad simulator's keyboard sometimes types a field in minutes, not seconds.
 
 xcodegen generate >/dev/null
 for device in "${DEVICES[@]}"; do
@@ -35,7 +36,7 @@ for device in "${DEVICES[@]}"; do
     TEST_RUNNER_SCREENSHOT_IDENTIFY_ALBUM="$IDENTIFY_ALBUM" \
       xcodebuild test -project OwnAudioMusic.xcodeproj -scheme OwnAudioMusic -destination "id=$id" \
         -derivedDataPath "$DERIVED" -only-testing:OwnAudioMusicUITests/AppStoreScreenshots \
-        -test-timeouts-enabled YES -default-test-execution-time-allowance 600 2>&1 \
+        -test-timeouts-enabled YES -default-test-execution-time-allowance 1800 -maximum-test-execution-time-allowance 1800 2>&1 \
       | grep -E "Test Case.*(passed|failed)|\*\* TEST"
   done
   xcrun simctl status_bar "$id" clear
