@@ -23,7 +23,7 @@ targets:
       path: App/OwnAudioMusic/Info.plist
       properties:
         CFBundleDisplayName: own.music
-        CFBundleShortVersionString: "0.1.0"
+        CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
         UIBackgroundModes: [audio, fetch]
@@ -89,7 +89,7 @@ targets:
       path: Widgets/Info.plist
       properties:
         CFBundleDisplayName: own.music
-        CFBundleShortVersionString: "0.1.0"
+        CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension

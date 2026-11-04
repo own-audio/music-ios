@@ -9,6 +9,10 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-04
+
+The first App Store release.
+
 ### Fixed
 
 - **Saver on mobile data against an own.audio server failed on song after song** ("Could not
