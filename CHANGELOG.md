@@ -11,6 +11,11 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Shuffle, repeat, Play Next and queue edits while a song plays no longer make the player
+  flicker: with the next song already lined up on the audio node, the rest of the current song is
+  scheduled again from where it is, instead of being reloaded through a seek that jumped the
+  position back, started and paused a paused player, and counted as a seek in the listening
+  report.
 - The build number uploaded to TestFlight is the commit count again, as `scripts/testflight.sh`
   intends: the Info.plist had a fixed `1`, so 1.0.0's first upload is build 1.
 - App Store screenshots on the iPad: the test waits for the server form to close after Connect and

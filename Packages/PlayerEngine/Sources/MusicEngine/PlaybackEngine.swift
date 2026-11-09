@@ -769,11 +769,61 @@ public final class PlaybackEngine {
             let generation = schedulingGeneration
             Task {
                 guard currentTrack?.id == trackId, schedulingGeneration == generation else { return }
-                await seek(to: currentTime)
+                await rescheduleRemainder()
             }
         } else {
             schedulePrefetchAndChainNext()
         }
+    }
+
+    /// Schedules what is left of the current track again, alone, from where it is, so that a
+    /// changed next track can be chained after it. Only the node's schedule changes: the
+    /// position, the playing state, the format shown and the listening report stay as they
+    /// are. This used to be a seek to the current position, which reloads the track: the
+    /// position jumped back to the last tick, a paused player started and paused again, and a
+    /// stop and a start were reported -- every shuffle or repeat tap made the player flicker.
+    private func rescheduleRemainder() async {
+        guard let track = currentTrack, let boundary = boundaries.first(where: { $0.trackId == track.id }) else { return }
+        // The node's own clock where it runs; `currentTime` moves only four times a second, and
+        // a paused node has no clock, so paused it is the position the screen shows.
+        var positionSecs = currentTime
+        if let frames = elapsedFrames(of: activeNode) {
+            positionSecs = boundary.trackPositionOffsetSecs + max(0, Double(frames - boundary.startFrame) / boundary.sampleRate)
+        }
+        let generation = schedulingGeneration
+        let url = await fileCache.existingLocalURL(trackId: track.id)
+        // A newer load while the cache answered owns the node now.
+        guard schedulingGeneration == generation, currentTrack?.id == track.id else { return }
+        guard let url, let file = try? AVAudioFile(forReading: url) else {
+            // Not yet a file on the device: the reload it always was.
+            await seek(to: positionSecs)
+            return
+        }
+        let startFrame = AVAudioFramePosition(positionSecs * file.processingFormat.sampleRate)
+        let remaining = file.length - startFrame
+        // At the very end: the track finishes and its end loads whatever comes next.
+        guard remaining > 0 else { return }
+
+        // Bumped before `stop()`, which fires the completion of every file it cancels.
+        schedulingGeneration += 1
+        let newGeneration = schedulingGeneration
+        activeNode.stop()
+        boundaries = []
+        activeNode.scheduleSegment(
+            file, startingFrame: startFrame, frameCount: AVAudioFrameCount(remaining), at: nil,
+            completionCallbackType: .dataPlayedBack
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.schedulingGeneration == newGeneration else { return }
+                self.handleActiveNodeConsumedSegment()
+            }
+        }
+        boundaries = [ScheduledBoundary(
+            trackId: track.id, startFrame: 0, endFrame: remaining,
+            sampleRate: file.processingFormat.sampleRate, trackPositionOffsetSecs: positionSecs
+        )]
+        if isPlaying { activeNode.play() }
+        schedulePrefetchAndChainNext()
     }
 
     /// Installs or removes the real-time tap driving `spectrum` — never left running

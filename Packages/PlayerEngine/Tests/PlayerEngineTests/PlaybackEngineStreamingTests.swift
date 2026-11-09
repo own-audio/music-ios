@@ -347,6 +347,72 @@ struct PlaybackEngineStreamingTests {
         harness.engine.stop()
     }
 
+    /// Repeat (or shuffle) once the next track is already chained onto the node: the rest of
+    /// the current track is scheduled again from where it is, not reloaded. The position goes
+    /// on, nothing is reported as stopped or started, and the new next track follows.
+    @Test("a repeat change after the next track is chained keeps playing where it is, unreported")
+    func repeatChangeAfterChainIsQuiet() async throws {
+        let harness = try await makeHarness(suffix: "repeat-chain", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        var started: [String] = []
+        var stopped: [String] = []
+        engine.onPlaybackStarted = { track, _ in started.append(track.id) }
+        engine.onPlaybackStopped = { track, _, reason in stopped.append("\(track.id):\(reason)") }
+
+        await engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "second")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        // Long enough for "second" to be fetched and chained.
+        try await Task.sleep(for: .seconds(1.5))
+        let before = engine.currentTime
+        engine.setRepeatMode(.one)
+        try await Task.sleep(for: .seconds(0.5))
+
+        #expect(engine.isPlaying)
+        #expect(engine.currentTime > before, "the position went on: \(before) then \(engine.currentTime)")
+        #expect(engine.currentTime < before + 1, "without a jump: \(before) then \(engine.currentTime)")
+        #expect(started == ["first"], "no restart reported: \(started)")
+        #expect(stopped.isEmpty, "no seek reported: \(stopped)")
+
+        // Repeat one: "first" again, not the "second" that had been chained.
+        try await waitUntil(timeout: 10) { started.count == 2 }
+        #expect(started == ["first", "first"], "\(started)")
+        #expect(stopped == ["first:completed"], "\(stopped)")
+        engine.stop()
+    }
+
+    /// The same while paused: a reload started playback for a moment and paused again, which
+    /// showed on the transport and reported a start. Paused stays paused, and Play goes on from
+    /// the same place.
+    @Test("a repeat change while paused, with the next track chained, stays paused")
+    func repeatChangeWhilePausedStaysPaused() async throws {
+        let harness = try await makeHarness(suffix: "repeat-paused", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        var started: [String] = []
+        engine.onPlaybackStarted = { track, _ in started.append(track.id) }
+
+        await engine.play(tracks: [makeTrack(id: "first"), makeTrack(id: "second")])
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        try await Task.sleep(for: .seconds(1.5))
+        engine.pause()
+        let position = engine.currentTime
+        started = []
+        engine.setRepeatMode(.one)
+        try await Task.sleep(for: .seconds(0.5))
+
+        #expect(!engine.isPlaying)
+        #expect(engine.currentTime == position)
+        #expect(started.isEmpty, "nothing started: \(started)")
+
+        engine.togglePlayPause()
+        try await waitUntil(timeout: 5) { engine.isPlaying }
+        #expect(started == ["first"])
+        try await Task.sleep(for: .seconds(0.5))
+        #expect(engine.currentTime >= position, "goes on from the pause: \(position) then \(engine.currentTime)")
+        try await waitUntil(timeout: 10) { started.count == 2 }
+        #expect(started == ["first", "first"], "repeated, not the chained second: \(started)")
+        engine.stop()
+    }
+
     /// A skip while the next track is still being fetched to follow the current one: the fetch
     /// belongs to the old schedule and must not chain anything onto the new one.
     @Test("a skip while the next track is still downloading: each track plays once, in order")
