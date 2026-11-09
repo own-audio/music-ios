@@ -196,6 +196,61 @@ final class IdentifyTests: XCTestCase {
         screenshot(app, "identify-11-put-back")
     }
 
+    /// The same from the player: the song playing is identified in your own words from its
+    /// Identify button, and put back from the same menu.
+    func testIdentifyTheSongPlayingFromThePlayer() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestReset"] + Self.english
+        app.launchChecked()
+        signIn(app)
+        openTab(app, ["Library", "Knihovna"])
+        let albums = app.buttons["library.albums"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 20))
+        albums.tap()
+        let album = findAlbum(app)
+        XCTAssertTrue(album.exists, "The album should be in the Library")
+        album.tap()
+        let song = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'album.song.'")).firstMatch
+        XCTAssertTrue(song.waitForExistence(timeout: 15))
+        song.tap()
+        let miniPlayer = app.buttons["miniPlayer"]
+        XCTAssertTrue(miniPlayer.waitForExistence(timeout: 15))
+        miniPlayer.tap()
+        // Paused: with the position moving, XCTest waits a minute for the app to go idle at
+        // every step.
+        let playPause = app.buttons["player.playPause"]
+        XCTAssertTrue(playPause.waitForExistence(timeout: 10))
+        playPause.tap()
+
+        let identifyMenu = app.buttons["player.identify"]
+        XCTAssertTrue(identifyMenu.waitForExistence(timeout: 10), "The player should offer Identify for the listener's own song")
+        // At the end of the tools row, off a phone's screen until the row is scrolled; XCTest
+        // can't even say whether an element out there is hittable.
+        app.buttons["Lyrics"].swipeLeft()
+        let title = app.textFields["picker.title"]
+        chooseFromPlayerIdentifyMenu(app, "Identify…", screenshotName: "identify-12-player-menu") { title.exists }
+
+        app.buttons["picker.title.clear"].tap()
+        title.tap()
+        title.typeText("Yesterday")
+        let artist = app.textFields["picker.artist"]
+        app.buttons["picker.artist.clear"].tap()
+        artist.tap()
+        artist.typeText("The Beatles")
+        app.buttons["picker.search"].tap()
+        let result = app.buttons["picker.result"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 30), "MusicBrainz should find Yesterday")
+        result.tap()
+        XCTAssertTrue(waitUntil(timeout: 20) { !title.exists }, "Choosing closes the picker")
+
+        // Put it back, from the player too.
+        let confirm = app.buttons.matching(NSPredicate(format: "label == 'Undo Identify'")).firstMatch
+        chooseFromPlayerIdentifyMenu(app, "Undo Identify…") { confirm.exists }
+        confirm.tap()
+        sleep(2)
+        screenshot(app, "identify-13-player-put-back")
+    }
+
     /// The More menus on an artist and an album start a run (or say why not).
     func testMoreMenusStartARun() throws {
         let app = XCUIApplication()
@@ -307,6 +362,26 @@ final class IdentifyTests: XCTestCase {
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
+    }
+
+    /// Opens the player's Identify menu and taps `item`, until `opened` says it took. The item
+    /// leaves with the menu as it is tapped, which XCTest's own tap reports as a failure even
+    /// when the sheet is already up; a coordinate tap is not checked that way, but can land
+    /// while the menu is still appearing.
+    private func chooseFromPlayerIdentifyMenu(_ app: XCUIApplication, _ item: String, screenshotName: String? = nil, opened: () -> Bool) {
+        let menu = app.buttons["player.identify"]
+        for attempt in 0..<3 {
+            if !app.buttons[item].exists {
+                XCTAssertTrue(menu.waitForExistence(timeout: 10), "The player should offer Identify")
+                menu.tap()
+                XCTAssertTrue(app.buttons[item].waitForExistence(timeout: 5), "The menu should offer \(item)")
+            }
+            if attempt == 0, let screenshotName { screenshot(app, screenshotName) }
+            sleep(1)
+            app.buttons[item].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            if waitUntil(timeout: 10, opened) { return }
+        }
+        XCTFail("\(item) did not open what it should")
     }
 
     private func screenshot(_ app: XCUIApplication, _ name: String) {

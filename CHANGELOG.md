@@ -9,6 +9,12 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Added
+
+- Identify the song playing from the player: an Identify button in the tools row, with the same
+  search in your own words and Undo Identify as a song's More menu, shown on an own.audio server
+  that identifies and for the listener's own songs.
+
 ### Fixed
 
 - Shuffle, repeat, Play Next and queue edits while a song plays no longer make the player

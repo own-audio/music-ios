@@ -5,15 +5,26 @@ import SwiftUI
 /// transport, and a row of tools (shuffle, repeat, crossfade, sleep timer, queue, AirPlay).
 struct PlayerView: View {
     private enum ActiveSheet: Identifiable {
-        case queue, sleepTimer, crossfade, lyrics, equalizer, chapters
+        case queue, sleepTimer, crossfade, lyrics, equalizer, chapters, identify
         var id: Self { self }
     }
 
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var activeSheet: ActiveSheet?
+    @State private var isUndoingIdentify = false
 
     private var engine: PlaybackEngine { model.engine }
+
+    /// The song playing, where it can be identified: on the active own.audio server with the
+    /// module, and the listener's own -- the server identifies no one else's songs.
+    private var identifiable: (server: IdentifyAccess.Server, songId: String)? {
+        guard let track = engine.currentTrack, let (serverId, songId) = TrackID.parse(track.id),
+              serverId == model.activeServerId, let server = IdentifyAccess.shared.server(model),
+              server.searches, model.mayIdentify(songId: songId)
+        else { return nil }
+        return (server, songId)
+    }
 
     var body: some View {
         NavigationStack {
@@ -60,6 +71,27 @@ struct PlayerView: View {
             case .lyrics: LyricsView()
             case .equalizer: EqualizerView(store: model.equalizer)
             case .chapters: ChaptersSheet()
+            case .identify:
+                if let identifiable, let track = engine.currentTrack {
+                    let client = identifiable.server.client
+                    let songId = identifiable.songId
+                    RecordingPicker(
+                        songTitle: track.title, songArtist: track.artist, songAlbum: track.album,
+                        durationSecs: track.durationSecs,
+                        search: { try await client.searchRecordings(track: songId, $0) },
+                        choose: { recording, release in
+                            try await client.identify(track: songId, recording: recording, release: release)
+                        }
+                    )
+                }
+            }
+        }
+        .confirmationDialog("Put this song back as its file says, with no MusicBrainz match?", isPresented: $isUndoingIdentify, titleVisibility: .visible) {
+            Button("Undo Identify", role: .destructive) {
+                guard let identifiable else { return }
+                let client = identifiable.server.client
+                let songId = identifiable.songId
+                model.perform { try await undoIdentify(client, songId) }
             }
         }
         .onChange(of: engine.currentTrack == nil) { _, isEmpty in
@@ -313,6 +345,25 @@ struct PlayerView: View {
                     tool("list.bullet", "Queue", isEnabled: engine.currentTrack != nil) {
                         activeSheet = .queue
                     }
+                    if identifiable != nil {
+                        // The same two actions as a song's More menu, for the song playing.
+                        Menu {
+                            Button {
+                                activeSheet = .identify
+                            } label: {
+                                Label("Identify…", systemImage: "magnifyingglass")
+                            }
+                            Button(role: .destructive) {
+                                isUndoingIdentify = true
+                            } label: {
+                                Label("Undo Identify…", systemImage: "arrow.uturn.backward")
+                            }
+                        } label: {
+                            toolLabel("waveform.badge.magnifyingglass", "Identify")
+                        }
+                        .foregroundStyle(.white)
+                        .accessibilityIdentifier("player.identify")
+                    }
                     AirPlayRouteButton()
                         .frame(width: Theme.minTarget, height: Theme.minTarget)
                         .accessibilityLabel("AirPlay")
@@ -334,15 +385,19 @@ struct PlayerView: View {
             Haptics.impact(.soft)
             action()
         } label: {
-            VStack(spacing: 2) {
-                Image(systemName: systemImage).font(.title3)
-                Text(label).font(.caption2)
-            }
-            .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
-            .contentShape(Rectangle())
+            toolLabel(systemImage, label)
         }
         .disabled(!isEnabled)
         .foregroundStyle(!isEnabled ? AnyShapeStyle(Color.white.opacity(0.3)) : isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.white))
+    }
+
+    private func toolLabel(_ systemImage: String, _ label: LocalizedStringKey) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: systemImage).font(.title3)
+            Text(label).font(.caption2)
+        }
+        .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+        .contentShape(Rectangle())
     }
 
     /// Off → All → One → Off, one button, like Apple Music.

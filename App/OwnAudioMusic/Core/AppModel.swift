@@ -1217,6 +1217,12 @@ final class AppModel {
         return songs.contains { sharing(of: $0)?.isMine == true }
     }
 
+    /// Whether the listener owns the song; true when that isn't known.
+    func mayIdentify(songId: String) -> Bool {
+        guard let song = activeCatalogue?.songs.first(where: { $0.id == songId }), song.sharing != nil else { return true }
+        return sharing(of: song)?.isMine == true
+    }
+
     // MARK: - The listener's own pictures (own.audio)
 
     /// Covers changed here, by composite artwork id: how many times, so their views load again.
