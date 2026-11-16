@@ -49,6 +49,5 @@ and sends plays and changes that were waiting. iOS decides when, and whether, it
 ## CarPlay
 
 The app has CarPlay support, with **Recently Played**, **Recently Added**, **Downloads**,
-**Playlists**, **Artists** and **Favorites**, and the system's Now Playing screen. It has not
-been tried in a car yet, so treat it as untested. If no server is added, it says **Add a server
-on your iPhone**.
+**Playlists**, **Artists** and **Favorites**, and the system's Now Playing screen. If no server
+is added, it says **Add a server on your iPhone**.

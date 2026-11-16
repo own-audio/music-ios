@@ -39,8 +39,7 @@ Free on the App Store for iPhone and iPad since 6 November 2026; runs on iOS 18 
 - Downloads and an offline mode: with no network it shows and plays what is on the phone
 - Synced lyrics, volume leveling, equalizer
 - Favorites, ratings, playlists, play reporting
-- Several servers at once, each with its home and outside addresses; iPad; CarPlay (entitled;
-  not yet tried in a car)
+- Several servers at once, each with its home and outside addresses; iPad; CarPlay
 - With own.audio: smart playlists, identifying the library with MusicBrainz, and a library on
   the phone that follows the server's changes
 - English and Czech
