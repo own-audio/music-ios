@@ -79,4 +79,4 @@ for a **Week**, **Month**, **Year** or **All**:
 
 **Share with the Family's Admin** lets the admin see how long you listen, and to what kind.
 Off, your listening stays yours. The admin sees a **Family** section with the time of those who
-share it, and **Private** for the others.
+share it, and **Not Shared** for the others.

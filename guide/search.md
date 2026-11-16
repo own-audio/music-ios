@@ -14,7 +14,7 @@ its page. Tapping a song plays just that song; use its **⋯** menu for **Play N
 Queue** and the other song actions (see [Library](library.md#a-songs-menu)).
 
 Offline, Search looks through what is on the phone instead: your downloads, or, with **Whole
-Library When Offline** on in Settings, the copy of the server's catalogue kept on the phone.
+Library When Offline** on in Settings, the copy of the server's catalog kept on the phone.
 Matches are found in titles, artists and album names.
 
 To find an artist in a long list without leaving the Library, use **Filter Artists** at the top

@@ -59,9 +59,9 @@ struct SettingsView: View {
                 .accessibilityIdentifier("settings.offlineWholeLibrary")
             } footer: {
                 if Platform.isMac {
-                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
+                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalog kept on this device; what isn't downloaded is grayed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
                 } else {
-                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
+                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalog kept on this device; what isn't downloaded is grayed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
                 }
             }
 

@@ -118,7 +118,7 @@ struct ListeningView: View {
                     if let seconds = member.totalSeconds {
                         Text(Self.duration(seconds))
                     } else {
-                        Text("Private").foregroundStyle(.secondary)
+                        Text("Not Shared").foregroundStyle(.secondary)
                     }
                 }
                 .accessibilityIdentifier("listening.member")

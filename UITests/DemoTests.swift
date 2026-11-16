@@ -132,7 +132,7 @@ final class DemoTests: XCTestCase {
         XCTAssertTrue(favorite.waitForExistence(timeout: 5), "still running, menu still opens")
     }
 
-    /// The family's admin sees each member's listening (or "Private") under Listening. Needs an
+    /// The family's admin sees each member's listening (or "Not Shared") under Listening. Needs an
     /// own.audio server where the account is the family's admin: ADMIN_HOST, ADMIN_USER and
     /// ADMIN_PASSWORD (a local test stack's first admin will do).
     func testFamilyListeningForTheAdmin() throws {

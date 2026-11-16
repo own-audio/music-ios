@@ -2272,7 +2272,7 @@
         }
       }
     },
-    "Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
+    "Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalog kept on this device; what isn't downloaded is grayed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -2282,7 +2282,7 @@
         }
       }
     },
-    "Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
+    "Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalog kept on this device; what isn't downloaded is grayed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -2817,7 +2817,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Odhlásit všude"
+            "value" : "Odhlásit se všude"
           }
         }
       }
@@ -2827,7 +2827,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Odhlásit všude?"
+            "value" : "Odhlásit se všude?"
           }
         }
       }
@@ -6038,7 +6038,7 @@
         }
       }
     },
-    "Accent Colour" : {
+    "Accent Color" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -6048,7 +6048,7 @@
         }
       }
     },
-    "App Colour" : {
+    "App Color" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -6158,7 +6158,7 @@
         }
       }
     },
-    "For buttons, links and what's playing. The icon and the widgets keep the app's colour." : {
+    "For buttons, links and what's playing. The icon and the widgets keep the app's color." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -6348,12 +6348,12 @@
         }
       }
     },
-    "Private" : {
+    "Not Shared" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Soukromé"
+            "value" : "Nesdíleno"
           }
         }
       }

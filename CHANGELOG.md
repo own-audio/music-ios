@@ -21,6 +21,10 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Changed
 
+- Wording follows the shared own.audio glossary, in American English: **Accent Color** and
+  **App Color** in Settings (were Colour), "catalog" and "grayed out" in the Offline Mode note. A
+  family member who doesn't share their listening shows **Not Shared** (Czech "Nesdíleno")
+  instead of Private. Czech says "Odhlásit se všude" for signing out everywhere.
 - On a Mac, Settings no longer shows the mobile-data choices (**Download on Wi-Fi Only** and the
   **Streaming** section), and the line above the mini player says "Metered connection" instead of
   mobile data.

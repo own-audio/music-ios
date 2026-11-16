@@ -25,7 +25,7 @@ Your servers, the selected one with a checkmark. Tap one for its page, swipe to 
 | **Offline Mode** | Shows and plays only what is on this device, as the app does on its own with no network. Saves mobile data. | Off |
 | **Download on Wi-Fi Only** | Downloads wait for Wi-Fi instead of using mobile data. Not shown on a Mac. | On |
 | **Keep at Most** | The most space downloads may take: 1, 2, 5, 10, 20 or 50 GB. Over the limit, the songs not played for longest go first, never the one playing. | No Limit |
-| **Whole Library When Offline** | Offline screens list everything on the server, from a copy of its catalogue kept on the phone; what isn't downloaded is greyed out. | Off |
+| **Whole Library When Offline** | Offline screens list everything on the server, from a copy of its catalog kept on the phone; what isn't downloaded is grayed out. | Off |
 
 More in [Downloads and offline](downloads.md).
 
@@ -51,11 +51,11 @@ data, so this section isn't shown there.
 
 Crossfade and the equalizer are also in the player's tools row. See [The player](player.md).
 
-## Accent Colour
+## Accent Color
 
-The colour of buttons, links and what's playing: **App Colour** (the app's pink, the default),
+The color of buttons, links and what's playing: **App Color** (the app's pink, the default),
 **Blue**, **Indigo**, **Purple**, **Red**, **Orange**, **Yellow**, **Green**, **Teal**,
-**Brown** or **Graphite**. The icon and the widgets keep the app's colour.
+**Brown** or **Graphite**. The icon and the widgets keep the app's color.
 
 ## Report Plays to the Server
 

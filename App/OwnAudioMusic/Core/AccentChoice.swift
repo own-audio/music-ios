@@ -27,7 +27,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .app: "App Colour"
+        case .app: "App Color"
         case .blue: "Blue"
         case .indigo: "Indigo"
         case .purple: "Purple"
@@ -46,7 +46,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     }
 }
 
-/// Settings → Accent Colour: a row of swatches, the chosen one ringed.
+/// Settings → Accent Color: a row of swatches, the chosen one ringed.
 struct AccentColorPicker: View {
     @AppStorage(AccentChoice.storageKey) private var stored: AccentChoice = .app
     /// What the ring shows. Drawn from `stored` alone, the ring followed the first change and
@@ -77,9 +77,9 @@ struct AccentColorPicker: View {
             }
             .padding(.vertical, Theme.Spacing.xs)
         } header: {
-            Text("Accent Colour")
+            Text("Accent Color")
         } footer: {
-            Text("For buttons, links and what's playing. The icon and the widgets keep the app's colour.")
+            Text("For buttons, links and what's playing. The icon and the widgets keep the app's color.")
         }
     }
 }

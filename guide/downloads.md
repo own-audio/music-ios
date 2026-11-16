@@ -62,9 +62,9 @@ Offline:
 ### Whole library offline
 
 With **Whole Library When Offline** on in Settings, the offline screens list everything on the
-server, not just the downloads, from the copy of its catalogue the app keeps on the phone
+server, not just the downloads, from the copy of its catalog the app keeps on the phone
 (see **Library on This Device** on the [server's page](getting-started.md#the-servers-page)).
-What isn't downloaded is greyed out. Albums open offline either way.
+What isn't downloaded is grayed out. Albums open offline either way.
 
 ## Mobile data
 

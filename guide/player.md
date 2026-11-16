@@ -62,7 +62,7 @@ Under the controls is a row of tools. If it doesn't fit, scroll it sideways.
 | AirPlay | Picks where the sound plays: the iPhone, headphones, an AirPlay speaker. |
 
 A tool that is on (shuffle, repeat, crossfade, the equalizer, a running sleep timer) is drawn
-in the accent colour.
+in the accent color.
 
 ## Lyrics
 
@@ -81,7 +81,7 @@ it depends on the server whether it gives lyrics at all.
 - **Now Playing**;
 - **Up Next**: tap a song to jump to it. Tap **Edit** to drag songs into another order, and
   swipe a song to remove it;
-- **Played**: what played before, greyed; tap one to go back to it.
+- **Played**: what played before, grayed; tap one to go back to it.
 
 To add to the queue from anywhere, use **Play Next** or **Add to Queue** in a song's or an
 album's menu. Starting an album, a playlist or a list of songs replaces the queue.
