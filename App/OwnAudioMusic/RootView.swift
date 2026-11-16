@@ -21,7 +21,9 @@ struct RootView: View {
             }
         }
         .fullScreenCover(isPresented: $isShowingPlayer) {
-            PlayerView()
+            // On a Mac (an iPad app there) the cover is not given the window's environment, and
+            // the player found no model: opening it ended the app. Passed in on purpose.
+            PlayerView().environment(model)
         }
         // The widget's links.
         .onOpenURL { url in

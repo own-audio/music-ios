@@ -9,6 +9,8 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-16
+
 ### Added
 
 - Identify the song playing from the player: an Identify button in the tools row, with the same
@@ -17,6 +19,9 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- On a Mac (the iPad app on Apple silicon), opening the full player no longer quits the app: the
+  full-screen player was not handed the app's state there. In a short window the cover now
+  shrinks so the playback buttons stay on screen.
 - Music comes back after a phone call or Siri: iOS stops the audio engine during an interruption
   and the song's scheduled audio went with it, so playback resumed with the time running but no
   sound until the next song. The song is now loaded again from where it stopped.

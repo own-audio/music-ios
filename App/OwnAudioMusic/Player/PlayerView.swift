@@ -150,7 +150,11 @@ struct PlayerView: View {
                 Rectangle().fill(Color.white.opacity(0.1))
             }
         }
-        .frame(width: PlayerLayout.coverSide, height: PlayerLayout.coverSide)
+        // A square up to the usual size, smaller when the height runs out: in a short Mac
+        // window a fixed cover pushed the transport and the tools out of sight.
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: PlayerLayout.coverSide, maxHeight: PlayerLayout.coverSide)
+        .layoutPriority(-1)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.cover))
         .shadow(radius: 16)
         // Swipe the cover left for the next track, right for the previous one. The minimum
