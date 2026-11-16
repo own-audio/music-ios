@@ -1,6 +1,7 @@
 ---
 title: Favorites and ratings
 nav_order: 7
+description: "You can make songs, albums and artists favorites. They are kept on the server, so other apps signed in to the same account see them too."
 ---
 
 # Favorites and ratings

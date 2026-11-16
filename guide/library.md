@@ -1,6 +1,7 @@
 ---
 title: Library
 nav_order: 3
+description: "Home, albums, artists, genres, songs and concerts in own.audio Music: how to browse your library, sort it, and what every menu does."
 ---
 
 # Library

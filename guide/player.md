@@ -1,6 +1,7 @@
 ---
 title: The player
 nav_order: 5
+description: "While something is playing, a bar sits above the tab bar with the cover, title and artist, Play/Pause and Next."
 ---
 
 # The player

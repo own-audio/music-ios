@@ -1,6 +1,7 @@
 ---
 title: Identify (own.audio)
 nav_order: 9
+description: "On an own.audio server that offers it, the app can have the server compare your songs with MusicBrainz and put their titles, albums and artists right."
 ---
 
 # Identify (own.audio)

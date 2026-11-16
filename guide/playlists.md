@@ -1,6 +1,7 @@
 ---
 title: Playlists and smart playlists
 nav_order: 6
+description: "The Playlists tab lists the server's playlists, with their number of songs. A playlist someone else made says whose it is ('by …')."
 ---
 
 # Playlists and smart playlists

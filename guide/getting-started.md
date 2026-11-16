@@ -1,6 +1,7 @@
 ---
 title: Getting started
 nav_order: 2
+description: "How to add your first server to own.audio Music — own.audio, Navidrome or another Subsonic server, or Jellyfin — try the public demo, and switch between servers."
 ---
 
 # Getting started

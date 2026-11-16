@@ -1,6 +1,7 @@
 ---
 title: iPad
 nav_order: 13
+description: "The app works the same on iPad, in any orientation, with a few differences in layout."
 ---
 
 # iPad

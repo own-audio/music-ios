@@ -1,6 +1,7 @@
 ---
 title: Search
 nav_order: 4
+description: "The Search tab searches the selected server's artists, albums and songs."
 ---
 
 # Search

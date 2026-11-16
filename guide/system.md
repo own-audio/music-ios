@@ -1,6 +1,7 @@
 ---
 title: Lock screen, widgets, Siri, AirPlay and CarPlay
 nav_order: 12
+description: "own.audio Music outside the app: the lock screen and Control Center, AirPlay, the widget, Siri and Shortcuts, and CarPlay."
 ---
 
 # Lock screen, widgets, Siri, AirPlay and CarPlay

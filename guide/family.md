@@ -1,6 +1,7 @@
 ---
 title: Family (own.audio)
 nav_order: 10
+description: "On own.audio, a library belongs to a family: several people on one server, each with their own account."
 ---
 
 # Family and your own.audio account

@@ -1,6 +1,7 @@
 ---
 title: Downloads and offline
 nav_order: 8
+description: "Downloads keep going with the app in the background, and pick up where they stopped the next time you open it."
 ---
 
 # Downloads and offline
