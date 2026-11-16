@@ -74,7 +74,7 @@ server's page says so, and **Sign In Again** switches it over. See
 - [Family (own.audio)](family.md)
 - [Settings](settings.md)
 - [Lock screen, widgets, Siri, AirPlay and CarPlay](system.md)
-- [iPad](ipad.md)
+- [iPad and Mac](ipad.md)
 - [Privacy](privacy.md)
 
 The app is open source under the MPL-2.0:

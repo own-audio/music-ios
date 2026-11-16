@@ -22,8 +22,8 @@ Your servers, the selected one with a checkmark. Tap one for its page, swipe to 
 | Setting | What it does | Default |
 |---|---|---|
 | **Downloads** | Shows how much space downloads take; opens the downloads list. | |
-| **Offline Mode** | Shows and plays only what is on this iPhone, as the app does on its own with no network. Saves mobile data. | Off |
-| **Download on Wi-Fi Only** | Downloads wait for Wi-Fi instead of using mobile data. | On |
+| **Offline Mode** | Shows and plays only what is on this device, as the app does on its own with no network. Saves mobile data. | Off |
+| **Download on Wi-Fi Only** | Downloads wait for Wi-Fi instead of using mobile data. Not shown on a Mac. | On |
 | **Keep at Most** | The most space downloads may take: 1, 2, 5, 10, 20 or 50 GB. Over the limit, the songs not played for longest go first, never the one playing. | No Limit |
 | **Whole Library When Offline** | Offline screens list everything on the server, from a copy of its catalogue kept on the phone; what isn't downloaded is greyed out. | Off |
 
@@ -37,7 +37,8 @@ More in [Downloads and offline](downloads.md).
 | **Saver Quality** | 320, 192 or 128 kbps. Shown with Saver chosen. | 192 kbps |
 
 Servers that can't make a smaller stream send the original. With iOS Low Data Mode on, streams
-are kept at 128 kbps. Wi-Fi and downloads always get the original file.
+are kept at 128 kbps. Wi-Fi and downloads always get the original file. A Mac has no mobile
+data, so this section isn't shown there.
 
 ## Playback
 

@@ -209,7 +209,7 @@ struct OnboardingView: View {
 
     private var notes: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            note("checkmark.shield", "Your sign-in stays in this iPhone's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept.")
+            note("checkmark.shield", "Your sign-in stays in this device's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept.")
             note("info.circle", "own.audio: sign in with your account's email and password.")
             note("network", "Without http:// or https://, the app tries https and then http, so a server at home works as typed.")
         }

@@ -35,11 +35,14 @@ struct SettingsView: View {
                     set: { model.downloadedOnly = $0 }
                 ))
                 .accessibilityIdentifier("settings.downloadedOnly")
-                Toggle("Download on Wi-Fi Only", isOn: Binding(
-                    get: { model.downloadsWifiOnly },
-                    set: { model.downloadsWifiOnly = $0 }
-                ))
-                .accessibilityIdentifier("settings.wifiOnly")
+                // A Mac has no mobile data, so the mobile-data choices are left out there.
+                if !Platform.isMac {
+                    Toggle("Download on Wi-Fi Only", isOn: Binding(
+                        get: { model.downloadsWifiOnly },
+                        set: { model.downloadsWifiOnly = $0 }
+                    ))
+                    .accessibilityIdentifier("settings.wifiOnly")
+                }
                 Picker("Keep at Most", selection: Binding(
                     get: { model.downloadsCapBytes },
                     set: { model.downloadsCapBytes = $0 }
@@ -55,34 +58,41 @@ struct SettingsView: View {
                 ))
                 .accessibilityIdentifier("settings.offlineWholeLibrary")
             } footer: {
-                Text("Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
+                if Platform.isMac {
+                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
+                } else {
+                    Text("Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing.")
+                }
             }
 
-            Section {
-                Picker("On Mobile Data", selection: Binding(
-                    get: { model.mobileData },
-                    set: { model.mobileData = $0 }
-                )) {
-                    Text("Original").tag(AppModel.MobileData.original)
-                    Text("Saver").tag(AppModel.MobileData.saver)
-                    Text("Downloaded Only").tag(AppModel.MobileData.downloadedOnly)
-                }
-                .accessibilityIdentifier("settings.mobileData")
-                if model.mobileData == .saver {
-                    Picker("Saver Quality", selection: Binding(
-                        get: { model.saverBitrate },
-                        set: { model.saverBitrate = $0 }
+            // Every choice here is about mobile data.
+            if !Platform.isMac {
+                Section {
+                    Picker("On Mobile Data", selection: Binding(
+                        get: { model.mobileData },
+                        set: { model.mobileData = $0 }
                     )) {
-                        ForEach(AppModel.saverBitrateChoices, id: \.self) { bitrate in
-                            Text("\(bitrate / 1000) kbps").tag(bitrate)
-                        }
+                        Text("Original").tag(AppModel.MobileData.original)
+                        Text("Saver").tag(AppModel.MobileData.saver)
+                        Text("Downloaded Only").tag(AppModel.MobileData.downloadedOnly)
                     }
-                    .accessibilityIdentifier("settings.saverBitrate")
+                    .accessibilityIdentifier("settings.mobileData")
+                    if model.mobileData == .saver {
+                        Picker("Saver Quality", selection: Binding(
+                            get: { model.saverBitrate },
+                            set: { model.saverBitrate = $0 }
+                        )) {
+                            ForEach(AppModel.saverBitrateChoices, id: \.self) { bitrate in
+                                Text("\(bitrate / 1000) kbps").tag(bitrate)
+                            }
+                        }
+                        .accessibilityIdentifier("settings.saverBitrate")
+                    }
+                } header: {
+                    Text("Streaming")
+                } footer: {
+                    Text("Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this device while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file.")
                 }
-            } header: {
-                Text("Streaming")
-            } footer: {
-                Text("Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this iPhone while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file.")
             }
 
             CrossfadeSettings(settings: model.playbackSettings)
@@ -131,7 +141,7 @@ struct SettingsView: View {
         ) { server in
             Button("Remove", role: .destructive) { model.perform { try await model.removeServer(id: server.id) } }
         } message: { _ in
-            Text("Its downloads leave this iPhone. Nothing changes on the server.")
+            Text("Its downloads leave this device. Nothing changes on the server.")
         }
         .navigationTitle("Settings")
     }

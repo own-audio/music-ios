@@ -96,19 +96,19 @@ extension ServerSetup {
 
     /// Email and password, through the server's own API.
     public static func ownAudioSignIn(
-        host: URL, email: String, password: String, deviceName: String, urlSession: URLSession
+        host: URL, email: String, password: String, deviceName: String, deviceKind: String = "ios", urlSession: URLSession
     ) async throws -> OwnAudioSignInResult {
         try await finish(host: host, urlSession: urlSession) {
-            try await OwnAudioClient.signIn(host: host, email: email, password: password, device: .init(name: deviceName), session: urlSession)
+            try await OwnAudioClient.signIn(host: host, email: email, password: password, device: .init(name: deviceName, kind: deviceKind), session: urlSession)
         }
     }
 
     /// Apple's or Google's id token, through the server's own API.
     public static func ownAudioSignIn(
-        host: URL, provider: String, idToken: String, fullName: String?, deviceName: String, urlSession: URLSession
+        host: URL, provider: String, idToken: String, fullName: String?, deviceName: String, deviceKind: String = "ios", urlSession: URLSession
     ) async throws -> OwnAudioSignInResult {
         try await finish(host: host, urlSession: urlSession) {
-            try await OwnAudioClient.signIn(host: host, provider: provider, idToken: idToken, fullName: fullName, device: .init(name: deviceName), session: urlSession)
+            try await OwnAudioClient.signIn(host: host, provider: provider, idToken: idToken, fullName: fullName, device: .init(name: deviceName, kind: deviceKind), session: urlSession)
         }
     }
 

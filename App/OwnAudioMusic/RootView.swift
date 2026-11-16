@@ -74,7 +74,7 @@ struct RootView: View {
                 }
                 .miniPlayerInset { isShowingPlayer = true }
             }
-            // What is on this iPhone: where a downloaded album or playlist is found, and what
+            // What is on this device: where a downloaded album or playlist is found, and what
             // still plays with no network.
             Tab("Downloads", systemImage: "arrow.down.circle", value: AppTab.downloads) {
                 NavigationStack {
@@ -91,6 +91,7 @@ struct RootView: View {
             }
         }
         .searchOpensWithItsTab()
+        .playerKeyboardShortcuts()
         // Switching servers starts every tab over: their screens belong to the old library.
         .id(model.activeServerId)
     }
@@ -160,6 +161,10 @@ private struct OfflineBanner: View {
                 Image(systemName: "wifi.slash")
                 if model.downloadedOnly || !model.isOfflineByChoice {
                     Text(model.isOfflineByChoice ? "Offline mode · downloaded music only" : "No network · downloaded music only")
+                } else if Platform.isMac {
+                    // A Mac has no mobile data; a network macOS marks as expensive, such as a
+                    // phone's hotspot, is what lands here.
+                    Text("Metered connection · downloaded music only")
                 } else {
                     Text("Mobile data · downloaded music only")
                 }

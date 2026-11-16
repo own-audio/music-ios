@@ -32,8 +32,8 @@ only for own.audio servers the app talks to through own.audio's own API.
 
 The family's admin sees **Invitations**. **Invite Someone** makes an invitation: a code for one
 person, shown with a QR code of its link and **Share Invitation**. They sign in to the same
-server and enter the code, or open its link. Tap an invitation to show it again; **Withdraw**
-cancels it.
+server and enter the code, or open its link. Tap an invitation to show it again; **Withdraw**,
+in its menu or by swiping it, cancels it.
 
 ### Joining another family
 
@@ -64,8 +64,8 @@ sends the picture to the server at most 1600 pixels on its longest side.
 ## Devices
 
 **Devices** lists every device signed in to your account, with **This device** marked, and when
-each was last used. Swipe a device to **Sign Out** of it. **Sign Out Everywhere** ends every
-session, this iPhone's too, and asks for a fresh sign-in.
+each was last used. Swipe a device, or open its menu, to **Sign Out** of it. **Sign Out
+Everywhere** ends every session, this device's too, and asks for a fresh sign-in.
 
 ## Listening
 

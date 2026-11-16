@@ -44,19 +44,17 @@ struct DevicesView: View {
                             }
                         }
                         .swipeActions {
-                            if !session.isThisDevice {
-                                Button(role: .destructive) {
-                                    signOut(session)
-                                } label: {
-                                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                                }
-                            }
+                            if !session.isThisDevice { signOutButton(session) }
+                        }
+                        // A pointer can't swipe: on a Mac this is the right-click way to it.
+                        .contextMenu {
+                            if !session.isThisDevice { signOutButton(session) }
                         }
                         .accessibilityIdentifier("devices.\(session.isThisDevice ? "this" : session.id)")
                     }
                 }
             } footer: {
-                Text("Swipe a device to sign it out. Signing out everywhere ends every session, this iPhone's too, and asks for a fresh sign-in.")
+                Text("Swipe a device, or open its menu, to sign it out. Signing out everywhere ends every session, this device's too, and asks for a fresh sign-in.")
             }
             Section {
                 Button("Sign Out Everywhere", role: .destructive) { isConfirmingAll = true }
@@ -97,6 +95,14 @@ struct DevicesView: View {
             state = .loaded(sessions)
         } catch {
             state = .failed(error.userMessage)
+        }
+    }
+
+    private func signOutButton(_ session: DeviceSession) -> some View {
+        Button(role: .destructive) {
+            signOut(session)
+        } label: {
+            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
         }
     }
 

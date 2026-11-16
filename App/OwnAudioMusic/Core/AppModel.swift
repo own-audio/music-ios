@@ -222,7 +222,7 @@ final class AppModel {
             return id
         }()
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-        return ClientInfo(client: "own.audio Music", device: UIDevice.current.model, deviceId: deviceId, version: version)
+        return ClientInfo(client: "own.audio Music", device: Platform.deviceModel, deviceId: deviceId, version: version)
     }()
 
     /// UI tests check offline behaviour by starting the app as if there were no network.
@@ -483,7 +483,7 @@ final class AppModel {
                 let result: OwnAudioSignInResult
                 do {
                     result = try await ServerSetup.ownAudioSignIn(
-                        host: host, email: username, password: password, deviceName: UIDevice.current.name, urlSession: Self.session
+                        host: host, email: username, password: password, deviceName: Platform.deviceName, deviceKind: Platform.deviceKind, urlSession: Self.session
                     )
                 } catch SourceError.signInRejected {
                     throw AddServerError.rejected
@@ -549,7 +549,7 @@ final class AppModel {
             }
             guard provider == "apple" ? info.signInWithApple : info.signInWithGoogle else { throw AddServerError.providerOff }
             let result = try await ServerSetup.ownAudioSignIn(
-                host: host, provider: provider, idToken: idToken, fullName: fullName, deviceName: UIDevice.current.name, urlSession: Self.session
+                host: host, provider: provider, idToken: idToken, fullName: fullName, deviceName: Platform.deviceName, deviceKind: Platform.deviceKind, urlSession: Self.session
             )
             try await finishOwnAudio(result, host: host, info: info, name: name)
             return
@@ -560,12 +560,12 @@ final class AppModel {
             guard info.signInWithApple else { throw AddServerError.providerOff }
             token = try await ServerSetup.ownAudioAppleSignIn(
                 host: host, identityToken: identityToken, fullName: fullName,
-                deviceName: UIDevice.current.name, urlSession: Self.session
+                deviceName: Platform.deviceName, deviceKind: Platform.deviceKind, urlSession: Self.session
             )
         case .google(let idToken):
             guard info.signInWithGoogle else { throw AddServerError.providerOff }
             token = try await ServerSetup.ownAudioGoogleSignIn(
-                host: host, idToken: idToken, deviceName: UIDevice.current.name, urlSession: Self.session
+                host: host, idToken: idToken, deviceName: Platform.deviceName, deviceKind: Platform.deviceKind, urlSession: Self.session
             )
         }
         let (username, key) = try await ServerSetup.ownAudioSubsonicKey(host: host, token: token, urlSession: Self.session)
@@ -1694,7 +1694,7 @@ enum AddServerError: LocalizedError {
         switch self {
         case .invalidAddress: String(localized: "That doesn't look like a server address.")
         case .rejected: String(localized: "The server didn't accept that username and password.")
-        case .unreachable: String(localized: "Couldn't reach the server. Check the address, and that this phone can reach it.")
+        case .unreachable: String(localized: "Couldn't reach the server. Check the address, and that this device can reach it.")
         case .notOwnAudio: String(localized: "This isn't an own.audio server. Sign in with Apple or Google works only there; use the server's username and password.")
         case .providerOff: String(localized: "This own.audio server doesn't offer that sign-in. Use your email and password, or the other button.")
         case .twoFactorNeeded: String(localized: "Enter the code from your authenticator app.")

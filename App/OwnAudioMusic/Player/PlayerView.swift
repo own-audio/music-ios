@@ -33,6 +33,7 @@ struct PlayerView: View {
                 content
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+            .playerKeyboardShortcuts { dismiss() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {

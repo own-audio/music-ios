@@ -9,6 +9,26 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Added
+
+- Keyboard shortcuts, for an iPad with a keyboard and for the app on a Mac: Space plays and
+  pauses, ⌘→ and ⌘← skip to the next and previous song, and Esc closes the full player. They
+  step aside while a text field such as search has the keyboard.
+- Signing out a device, withdrawing a family invitation and removing a server address are also
+  in the row's menu (right-click on a Mac, touch and hold on iPhone and iPad), not only a swipe.
+
+### Changed
+
+- On a Mac, Settings no longer shows the mobile-data choices (**Download on Wi-Fi Only** and the
+  **Streaming** section), and the line above the mini player says "Metered connection" instead of
+  mobile data.
+- On a Mac, own.audio's device list shows the app as a Mac (kind `macos`) for sign-ins from now
+  on, and Jellyfin's dashboard names the device "Mac". The exported log says macOS.
+- Text that named the iPhone or "this phone" now says "this device", which is also right on iPad
+  and Mac: **On This Device** in Downloads, **Library on This Device** on a server's page, the
+  Keychain notes, removing a server and the address error. The favorites hints no longer say
+  "Tap".
+
 ## [1.0.1] - 2026-11-16
 
 ### Added

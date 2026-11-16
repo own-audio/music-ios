@@ -1,7 +1,7 @@
 import MusicLibrary
 import SwiftUI
 
-/// What is on the phone. Works with no network: everything here comes from the download index.
+/// What is on the device. Works with no network: everything here comes from the download index.
 struct DownloadsView: View {
     @Environment(AppModel.self) private var model
     @State private var isConfirmingRemoveAll = false
@@ -26,7 +26,7 @@ struct DownloadsView: View {
                 .listRowSeparator(.hidden)
             } else {
                 Section {
-                    LabeledContent("On this phone", value: ByteCountFormatter.string(fromByteCount: downloads.totalBytes, countStyle: .file))
+                    LabeledContent("On This Device", value: ByteCountFormatter.string(fromByteCount: downloads.totalBytes, countStyle: .file))
                     if downloads.pendingCount > 0 {
                         LabeledContent("Downloading", value: "\(downloads.pendingCount)")
                     }

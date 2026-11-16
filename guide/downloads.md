@@ -28,7 +28,7 @@ left out of iCloud backups: they can always be downloaded again. Deleting the ap
 
 **Downloads** lists what is on the phone:
 
-- **On this phone**: how much space the downloads take;
+- **On This Device**: how much space the downloads take;
 - **Downloading**: how many songs are still waiting;
 - **Retry … Failed**, if some failed;
 - **Albums**, **Playlists** and loose **Songs**, each with the server it came from.
@@ -61,12 +61,13 @@ Offline:
 
 With **Whole Library When Offline** on in Settings, the offline screens list everything on the
 server, not just the downloads, from the copy of its catalogue the app keeps on the phone
-(see **Library on This iPhone** on the [server's page](getting-started.md#the-servers-page)).
+(see **Library on This Device** on the [server's page](getting-started.md#the-servers-page)).
 What isn't downloaded is greyed out. Albums open offline either way.
 
 ## Mobile data
 
-**On Mobile Data** in Settings decides what happens away from Wi-Fi:
+**On Mobile Data** in Settings decides what happens away from Wi-Fi (on iPhone and iPad; a Mac
+has no mobile data, and the setting isn't there):
 
 - **Original**: streams the original files.
 - **Saver** (the default): asks the server for a smaller MP3 of each song as it plays, at

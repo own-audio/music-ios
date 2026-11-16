@@ -24,7 +24,7 @@ The first time you open the app it asks for a server. Fill in:
 Then tap **Connect**. The app finds out by itself whether the server is own.audio, Subsonic or
 Jellyfin, and checks the sign-in before it saves anything.
 
-Your sign-in stays in the iPhone's Keychain. A Subsonic server gets a one-time token made from
+Your sign-in stays in the device's Keychain. A Subsonic server gets a one-time token made from
 the password with each request; Jellyfin and own.audio give the app a token, and the password
 is not kept.
 
@@ -122,7 +122,7 @@ to date within seconds. Tap **Name** to rename the server.
 
 **Identify Library (own.audio).** Shown when the server offers it. See [Identify](identify.md).
 
-**Library on This iPhone.** The app keeps a list of everything on the server, without the
+**Library on This Device.** The app keeps a list of everything on the server, without the
 music itself, so albums open and the library can be browsed offline. It shows the number of
 songs and albums and when it was last updated. It is updated in the background on Wi-Fi; **Update
 Now** does it at once.
@@ -137,7 +137,7 @@ server (**Home network**, **VPN** or **Internet**) and where it came from (**add
 server, **from the server**, or **added by you**).
 
 - **Add Address** adds another one, for example `http://192.168.1.20:4533`.
-- Swipe an address to remove it. The address you added the server with can't be removed.
+- Swipe an address, or open its menu, to remove it. The address you added the server with can't be removed.
 
 Under **Connection**, **Automatic** lets the app pick: on each network it uses the fastest
 address that answers as this server, and remembers which one worked where. You can also pick

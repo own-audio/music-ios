@@ -60,7 +60,7 @@ struct FavoritesView: View {
     @ViewBuilder
     private func albums(_ albums: [Album]) -> some View {
         if albums.isEmpty {
-            empty("No favorite albums", hint: "Tap the star on an album.")
+            empty("No favorite albums", hint: "Mark an album with the star.")
         } else {
             ForEach(albums) { album in
                 NavigationLink(value: Route.album(album)) {
@@ -81,7 +81,7 @@ struct FavoritesView: View {
     @ViewBuilder
     private func artists(_ artists: [Artist]) -> some View {
         if artists.isEmpty {
-            empty("No favorite artists", hint: "Tap the star on an artist.")
+            empty("No favorite artists", hint: "Mark an artist with the star.")
         } else {
             ForEach(artists) { artist in
                 NavigationLink(value: Route.artist(artist)) {

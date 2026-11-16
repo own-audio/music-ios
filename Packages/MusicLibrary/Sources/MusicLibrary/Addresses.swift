@@ -248,13 +248,13 @@ extension ServerSetup {
     /// app's bundle id is in its `AUTH__APPLE__CLIENT_IDS`. `fullName` exists only on the
     /// first authorization; Apple never sends it again.
     public static func ownAudioAppleSignIn(
-        host: URL, identityToken: String, fullName: String?, deviceName: String, urlSession: URLSession
+        host: URL, identityToken: String, fullName: String?, deviceName: String, deviceKind: String = "ios", urlSession: URLSession
     ) async throws -> String {
         struct Login: Decodable { let token: String }
         var request = URLRequest(url: host.appending(path: "api/v1/auth/apple"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var body = ["identity_token": identityToken, "device_name": deviceName, "device_kind": "ios"]
+        var body = ["identity_token": identityToken, "device_name": deviceName, "device_kind": deviceKind]
         if let fullName, !fullName.isEmpty { body["full_name"] = fullName }
         request.httpBody = try JSONEncoder().encode(body)
         let (data, response) = try await data(for: request, urlSession)
@@ -272,13 +272,13 @@ extension ServerSetup {
     /// accepts it only if the token's audience (this app's iOS client) is in its
     /// `AUTH__GOOGLE__CLIENT_IDS`.
     public static func ownAudioGoogleSignIn(
-        host: URL, idToken: String, deviceName: String, urlSession: URLSession
+        host: URL, idToken: String, deviceName: String, deviceKind: String = "ios", urlSession: URLSession
     ) async throws -> String {
         struct Login: Decodable { let token: String }
         var request = URLRequest(url: host.appending(path: "api/v1/auth/google"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(["id_token": idToken, "device_name": deviceName, "device_kind": "ios"])
+        request.httpBody = try JSONEncoder().encode(["id_token": idToken, "device_name": deviceName, "device_kind": deviceKind])
         let (data, response) = try await data(for: request, urlSession)
         switch (response as? HTTPURLResponse)?.statusCode {
         case 200: break

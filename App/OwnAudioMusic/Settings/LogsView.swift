@@ -90,7 +90,7 @@ struct LogsView: View {
 
     /// A text file to share: the app's version and the iOS version first.
     private func export(_ lines: [Line]) -> URL {
-        let header = "own.music \(Self.appVersion), iOS \(UIDevice.current.systemVersion)\n\n"
+        let header = "own.music \(Self.appVersion), \(Platform.systemDescription)\n\n"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("own-music-log.txt")
         try? (header + lines.map(\.text).joined(separator: "\n")).write(to: url, atomically: true, encoding: .utf8)
         return url

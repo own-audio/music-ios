@@ -484,12 +484,12 @@
         }
       }
     },
-    "Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this iPhone then stays up to date within seconds." : {
+    "Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this device then stays up to date within seconds." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přidáno dřív, než aplikace uměla vlastní API own.audio, nebo ze staršího serveru. Přihlaste se znovu, aby ho používala: knihovna v tomto iPhonu pak bude aktuální během pár sekund."
+            "value" : "Přidáno dřív, než aplikace uměla vlastní API own.audio, nebo ze staršího serveru. Přihlaste se znovu, aby ho používala: knihovna v tomto zařízení pak bude aktuální během pár sekund."
           }
         }
       }
@@ -1088,12 +1088,12 @@
         }
       }
     },
-    "Couldn't reach the server. Check the address, and that this phone can reach it." : {
+    "Couldn't reach the server. Check the address, and that this device can reach it." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Server není dostupný. Zkontrolujte adresu a jestli se k němu tento telefon dostane."
+            "value" : "Server není dostupný. Zkontrolujte adresu a jestli se k němu toto zařízení dostane."
           }
         }
       }
@@ -1781,12 +1781,12 @@
         }
       }
     },
-    "Its downloads leave this iPhone. Nothing changes on the server." : {
+    "Its downloads leave this device. Nothing changes on the server." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jeho stažené položky z tohoto iPhonu zmizí. Na serveru se nic nezmění."
+            "value" : "Jeho stažené položky z tohoto zařízení zmizí. Na serveru se nic nezmění."
           }
         }
       }
@@ -1891,6 +1891,16 @@
         }
       }
     },
+    "Library on This Device" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovna v tomto zařízení"
+          }
+        }
+      }
+    },
     "License: MPL 2.0" : {
       "localizations" : {
         "cs" : {
@@ -1982,6 +1992,26 @@
         }
       }
     },
+    "Mark an album with the star." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Označte album hvězdičkou."
+          }
+        }
+      }
+    },
+    "Mark an artist with the star." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Označte interpreta hvězdičkou."
+          }
+        }
+      }
+    },
     "Measure" : {
       "localizations" : {
         "cs" : {
@@ -1998,6 +2028,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Členové"
+          }
+        }
+      }
+    },
+    "Metered connection · downloaded music only" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Měřené připojení · jen stažená hudba"
           }
         }
       }
@@ -2232,6 +2272,26 @@
         }
       }
     },
+    "Offline Mode shows and plays only what is on this device, as it does on its own with no network.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto zařízení, stejně jako bez sítě.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto zařízení; co není stažené, je zašedlé. Alba se offline otevřou v obou případech.\n\nNad limitem jdou první skladby, které nehrály nejdéle; nikdy ne ta, která hraje."
+          }
+        }
+      }
+    },
+    "Offline Mode shows and plays only what is on this device, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this device; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto zařízení, stejně jako bez sítě. Šetří mobilní data.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto zařízení; co není stažené, je zašedlé. Alba se offline otevřou v obou případech.\n\nNad limitem jdou první skladby, které nehrály nejdéle; nikdy ne ta, která hraje."
+          }
+        }
+      }
+    },
     "Offline mode · downloaded music only" : {
       "localizations" : {
         "cs" : {
@@ -2262,12 +2322,12 @@
         }
       }
     },
-    "On mobile data, a server that can (Jellyfin today) makes a smaller MP3 of each song as it plays. On Wi-Fi, and for downloads, it's always the original file." : {
+    "On This Device" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Na mobilních datech může server, který to umí (dnes Jellyfin), při přehrávání vytvářet z každé skladby menší MP3. Na Wi-Fi a při stahování je to vždy původní soubor."
+            "value" : "V tomto zařízení"
           }
         }
       }
@@ -2632,6 +2692,16 @@
         }
       }
     },
+    "Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this device while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úsporně: server pošle každou skladbu jako menší MP3; server, který to neumí, pošle originál. Jen stažené: na mobilních datech hraje jen to, co je v tomto zařízení. Se zapnutým režimem nízkých dat v iOS se streamuje nejvýš 128 kb/s. Na Wi-Fi a při stahování jde vždy originální soubor."
+          }
+        }
+      }
+    },
     "Scanned or typed in, it lets one person join your family." : {
       "localizations" : {
         "cs" : {
@@ -2772,12 +2842,12 @@
         }
       }
     },
-    "Signed in as %@. Downloads and the library on this iPhone stay as they are." : {
+    "Signed in as %@. Downloads and the library on this device stay as they are." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přihlášeno jako %@. Stažené skladby a knihovna v tomto iPhonu zůstanou, jak jsou."
+            "value" : "Přihlášeno jako %@. Stažené skladby a knihovna v tomto zařízení zůstanou, jak jsou."
           }
         }
       }
@@ -2892,12 +2962,12 @@
         }
       }
     },
-    "Swipe a device to sign it out. Signing out everywhere ends every session, this iPhone's too, and asks for a fresh sign-in." : {
+    "Swipe a device, or open its menu, to sign it out. Signing out everywhere ends every session, this device's too, and asks for a fresh sign-in." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přejetím zařízení odhlásíte. Odhlášení všude ukončí všechny relace včetně tohoto iPhonu a vyžádá si nové přihlášení."
+            "value" : "Zařízení odhlásíte přejetím nebo z jeho nabídky. Odhlášení všude ukončí všechny relace včetně tohoto zařízení a vyžádá si nové přihlášení."
           }
         }
       }
@@ -3292,22 +3362,22 @@
         }
       }
     },
+    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this device's Keychain.\n\nown.audio: sign in with your account's email and password." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic i s Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto zařízení.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
+          }
+        }
+      }
+    },
     "You're offline, and none of these songs are downloaded." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jste offline a žádná z těchto skladeb není stažená."
-          }
-        }
-      }
-    },
-    "Your sign-in stays in this iPhone's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přihlášení zůstává v klíčence iPhonu. Servery Subsonic dostávají jednorázový token vytvořený z hesla; Jellyfin vydá token a heslo se neukládá."
           }
         }
       }
@@ -3639,16 +3709,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
-          }
-        }
-      }
-    },
-    "On this phone" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "V tomto telefonu"
           }
         }
       }
@@ -4234,26 +4294,6 @@
         }
       }
     },
-    "Tap the star on an album." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klepněte na hvězdičku u alba."
-          }
-        }
-      }
-    },
-    "Tap the star on an artist." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klepněte na hvězdičku u interpreta."
-          }
-        }
-      }
-    },
     "That Didn't Work" : {
       "localizations" : {
         "cs" : {
@@ -4565,16 +4605,6 @@
         }
       }
     },
-    "Your password stays in this iPhone's Keychain. Only a one-time token made from it is sent." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Heslo zůstává v klíčence tohoto iPhonu. Odesílá se jen jednorázový token z něj vytvořený."
-          }
-        }
-      }
-    },
     "Saver" : {
       "localizations" : {
         "cs" : {
@@ -4625,16 +4655,6 @@
         }
       }
     },
-    "Saver asks the server for a smaller MP3 of each song as it plays; servers that can't make one send the original. Downloaded Only plays just what's on this iPhone while on mobile data. With iOS Low Data Mode on, streams are kept at 128 kbps. Wi-Fi and downloads always get the original file." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Úsporně: server pošle každou skladbu jako menší MP3; server, který to neumí, pošle originál. Jen stažené: na mobilních datech hraje jen to, co je v tomto iPhonu. Se zapnutým režimem nízkých dat v iOS se streamuje nejvýš 128 kb/s. Na Wi-Fi a při stahování jde vždy originální soubor."
-          }
-        }
-      }
-    },
     "No server yet?" : {
       "localizations" : {
         "cs" : {
@@ -4675,42 +4695,12 @@
         }
       }
     },
-    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this phone's Keychain.\n\nown.audio: sign in with your account's email and password." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic i s Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto telefonu.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
-          }
-        }
-      }
-    },
     "Whole Library When Offline" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Celá knihovna offline"
-          }
-        }
-      }
-    },
-    "Offline Mode shows and plays only what is on this iPhone, as it does on its own with no network. Saves mobile data.\n\nWith Whole Library, the offline screens list everything on the server, from a copy of its catalogue kept on this iPhone; what isn't downloaded is greyed out. Albums open offline either way.\n\nOver the limit, the songs not played for longest go first; never the one playing." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Režim offline zobrazuje a přehrává jen to, co je v tomto iPhonu, stejně jako bez sítě. Šetří mobilní data.\n\nS celou knihovnou ukazují offline obrazovky vše, co je na serveru, z kopie jeho katalogu uložené v tomto iPhonu; co není stažené, je zašedlé. Alba se offline otevřou v obou případech.\n\nNad limitem jdou první skladby, které nehrály nejdéle; nikdy ne ta, která hraje."
-          }
-        }
-      }
-    },
-    "Library on This iPhone" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Knihovna v tomto iPhonu"
           }
         }
       }
@@ -6004,6 +5994,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nepodařilo se uložit"
+          }
+        }
+      }
+    },
+    "Your sign-in stays in this device's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlášení zůstává v klíčence tohoto zařízení. Servery Subsonic dostávají jednorázový token vytvořený z hesla; Jellyfin vydá token a heslo se neukládá."
           }
         }
       }

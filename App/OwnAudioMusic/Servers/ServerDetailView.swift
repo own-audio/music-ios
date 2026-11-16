@@ -73,7 +73,7 @@ struct ServerDetailView: View {
                 } header: {
                     Text("Account")
                 } footer: {
-                    Text("Signed in as \(server.auth.username). Downloads and the library on this iPhone stay as they are.")
+                    Text("Signed in as \(server.auth.username). Downloads and the library on this device stay as they are.")
                 }
 
                 // The account's family and signed-in devices, on its server's page as in the
@@ -113,7 +113,7 @@ struct ServerDetailView: View {
                     }
                 } footer: {
                     if server.kind == .ownAudio, case .subsonic = server.auth {
-                        Text("Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this iPhone then stays up to date within seconds.")
+                        Text("Added before this app spoke own.audio's own API, or from an older server. Sign in again to use it: the library on this device then stays up to date within seconds.")
                     }
                 }
 
@@ -136,13 +136,11 @@ struct ServerDetailView: View {
                     ForEach(server.candidateAddresses) { address in
                         addressRow(address)
                             .swipeActions {
-                                if address.origin != .added {
-                                    Button(role: .destructive) {
-                                        remove(address, from: server)
-                                    } label: {
-                                        Label("Remove", systemImage: "trash")
-                                    }
-                                }
+                                if address.origin != .added { removeButton(address, from: server) }
+                            }
+                            // A pointer can't swipe: on a Mac this is the right-click way to it.
+                            .contextMenu {
+                                if address.origin != .added { removeButton(address, from: server) }
                             }
                     }
                     Button {
@@ -179,7 +177,7 @@ struct ServerDetailView: View {
                     .disabled(model.syncingCatalogues.contains(server.id) || model.isOffline)
                     .accessibilityIdentifier("serverDetail.syncCatalogue")
                 } header: {
-                    Text("Library on This iPhone")
+                    Text("Library on This Device")
                 } footer: {
                     Text("A list of everything on the server, without the music itself, so albums open and the library can be browsed offline. Updated in the background, on Wi-Fi.")
                 }
@@ -234,7 +232,7 @@ struct ServerDetailView: View {
                     model.perform { try await model.removeServer(id: id) }
                 }
             } message: {
-                Text("Its downloads leave this iPhone. Nothing changes on the server.")
+                Text("Its downloads leave this device. Nothing changes on the server.")
             }
             .confirmationDialog("Delete Your Account?", isPresented: $confirmDeleteAccount, titleVisibility: .visible) {
                 Button("Delete Account", role: .destructive) {
@@ -369,6 +367,14 @@ struct ServerDetailView: View {
         Task {
             try? await model.update(updated)
             await model.chooseAddresses()
+        }
+    }
+
+    private func removeButton(_ address: ServerAddress, from server: ServerRecord) -> some View {
+        Button(role: .destructive) {
+            remove(address, from: server)
+        } label: {
+            Label("Remove", systemImage: "trash")
         }
     }
 
