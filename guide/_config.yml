@@ -1,0 +1,14 @@
+title: own.audio Music
+description: The user guide for own.audio Music, the music player for iPhone and iPad.
+url: https://own-audio.github.io
+baseurl: /music-ios
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+plugins:
+  - jekyll-remote-theme
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+aux_links:
+  "App on GitHub": https://github.com/own-audio/music-ios
+  "own.audio": https://www.own.audio
+footer_content: "Made by <a href=\"https://www.own.audio\">own.audio</a>. The app is open source under the MPL-2.0."
