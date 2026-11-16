@@ -4,8 +4,10 @@ A native iPhone and iPad music player for your own server: **own.audio, Subsonic
 OpenSubsonic servers (Navidrome, Gonic, Airsonic…) and Jellyfin**, side by side in one app.
 Swift and SwiftUI, no web views, no third-party dependencies — a few megabytes.
 
-On TestFlight, heading for the App Store; the plan is in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+[<img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" height="40">](https://apps.apple.com/app/own-audio-music/id6821355751)
+
+Free on the [App Store](https://apps.apple.com/app/own-audio-music/id6821355751) for iPhone and iPad
+since 6 November 2026. The plan is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 - Gapless playback and crossfade, on AVAudioEngine
 - Streams while it downloads, with its own Core Audio decoder
