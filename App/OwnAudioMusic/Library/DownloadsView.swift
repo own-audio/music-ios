@@ -44,6 +44,12 @@ struct DownloadsView: View {
                                 collectionRow(collection)
                             }
                             .accessibilityIdentifier("downloads.album.\(collection.name)")
+                            .contextMenu {
+                                // The swipe's action, for a pointer: a Mac has no swipe.
+                                Button(role: .destructive) { downloads.remove(collectionId: collection.id) } label: {
+                                    Label("Remove Download", systemImage: "trash")
+                                }
+                            }
                         }
                         .onDelete { offsets in offsets.map { albums[$0].id }.forEach(downloads.remove(collectionId:)) }
                     }
@@ -55,6 +61,12 @@ struct DownloadsView: View {
                                 DownloadedCollectionView(collectionId: collection.id)
                             } label: {
                                 collectionRow(collection)
+                            }
+                            .contextMenu {
+                                // The swipe's action, for a pointer: a Mac has no swipe.
+                                Button(role: .destructive) { downloads.remove(collectionId: collection.id) } label: {
+                                    Label("Remove Download", systemImage: "trash")
+                                }
                             }
                         }
                         .onDelete { offsets in offsets.map { playlists[$0].id }.forEach(downloads.remove(collectionId:)) }
@@ -70,6 +82,12 @@ struct DownloadsView: View {
                                 DownloadedSongRow(item: item, showsSource: true)
                             }
                             .buttonStyle(.plain)
+                            .contextMenu {
+                                // The swipe's action, for a pointer: a Mac has no swipe.
+                                Button(role: .destructive) { downloads.remove(trackId: item.trackId) } label: {
+                                    Label("Remove Download", systemImage: "trash")
+                                }
+                            }
                         }
                         .onDelete { offsets in offsets.map { loose[$0].trackId }.forEach(downloads.remove(trackId:)) }
                     }

@@ -34,7 +34,9 @@ left out of iCloud backups: they can always be downloaded again. Deleting the ap
 - **Albums**, **Playlists** and loose **Songs**, each with the server it came from.
 
 A downloaded album or playlist opens even with no network, and has **Remove Download** at the
-top. **Remove All** at the top of the tab removes every download; they stay on the server.
+top. To remove one row from the tab, swipe it, or touch and hold it (right-click on a Mac) and
+choose **Remove Download**. **Remove All** at the top of the tab removes every download; they
+stay on the server.
 
 **Keep at Most** in Settings limits how much space downloads may take (1 GB to 50 GB, or **No
 Limit**, the default). Over the limit, the songs not played for longest go first, never the one

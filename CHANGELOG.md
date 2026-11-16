@@ -11,6 +11,8 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- Downloads: an album, playlist or song can be removed from its menu too (right-click on a Mac,
+  touch and hold on iOS), not only with a swipe.
 - Keyboard shortcuts, for an iPad with a keyboard and for the app on a Mac: Space plays and
   pauses, ⌘→ and ⌘← skip to the next and previous song, and Esc closes the full player. They
   step aside while a text field such as search has the keyboard.
