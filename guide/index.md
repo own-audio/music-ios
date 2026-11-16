@@ -4,6 +4,9 @@ nav_order: 1
 description: The user guide for own.audio Music, the music player for iPhone and iPad.
 ---
 
+<img class="app-icon only-light" src="assets/images/app-icon.svg" alt="own.audio Music app icon" width="96" height="96">
+<img class="app-icon only-dark" src="assets/images/app-icon-dark.svg" alt="own.audio Music app icon" width="96" height="96">
+
 # own.audio Music
 
 own.audio Music is a music player for iPhone and iPad that plays from your own server. It
