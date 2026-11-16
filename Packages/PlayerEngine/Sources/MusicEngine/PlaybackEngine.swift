@@ -463,6 +463,7 @@ public final class PlaybackEngine {
             pauseAudioOnly()
             // iOS has stopped the audio already; no grace for a call.
             idleEngineNow()
+            if currentTrack != nil { scheduleLostToInterruption = true }
         case .ended:
             guard let optionsValue else { return }
             if AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
@@ -585,8 +586,22 @@ public final class PlaybackEngine {
         scheduleEngineIdle()
     }
 
+    /// Set when a call or Siri took the audio. iOS stops the engine itself then, not with our
+    /// `pause()`, and the nodes come back without what was scheduled on them: `play()` ran the
+    /// clock on silence until the next song scheduled something new.
+    private var scheduleLostToInterruption = false
+
     private func resumeAudioOnly() {
-        guard currentTrack != nil, !isPlaying else { return }
+        guard let track = currentTrack, !isPlaying else { return }
+        if scheduleLostToInterruption {
+            let position = currentTime
+            Task { [weak self] in
+                guard let self, !self.isPlaying, self.currentTrack?.id == track.id else { return }
+                self.cancelInFlightCrossfade()
+                await self.loadAndPlay(track: track, seekTo: position)
+            }
+            return
+        }
         wireRemoteCommands()
         onWillStartPlaying?()
         try? startEngineIfNeeded()
@@ -935,6 +950,7 @@ public final class PlaybackEngine {
 
     private func loadAndPlay(track: Track, seekTo: Double = 0) async {
         Logger.playback.info("load \(track.id, privacy: .public) at \(seekTo, format: .fixed(precision: 1), privacy: .public)")
+        scheduleLostToInterruption = false
         // Whatever was being fetched to follow the previous schedule no longer follows anything.
         prefetchNextTask?.cancel()
         prefetchNextTask = nil

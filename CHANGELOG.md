@@ -17,6 +17,9 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Fixed
 
+- Music comes back after a phone call or Siri: iOS stops the audio engine during an interruption
+  and the song's scheduled audio went with it, so playback resumed with the time running but no
+  sound until the next song. The song is now loaded again from where it stopped.
 - Shuffle, repeat, Play Next and queue edits while a song plays no longer make the player
   flicker: with the next song already lined up on the audio node, the rest of the current song is
   scheduled again from where it is, instead of being reloaded through a seek that jumped the
