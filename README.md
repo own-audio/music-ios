@@ -1,13 +1,37 @@
-# own.audio Music
+<p align="center">
+  <img src="Design/AppIcon.svg" alt="own.audio Music app icon" width="112" height="112">
+</p>
+
+<h1 align="center">own.audio Music</h1>
+
+<p align="center">A native music player for iPhone and iPad that plays from your own server.</p>
+
+<p align="center">
+  <a href="https://apps.apple.com/app/own-audio-music/id6821355751"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" height="44"></a>
+</p>
+
+<p align="center">
+  <a href="https://apps.apple.com/app/own-audio-music/id6821355751">App Store</a> ·
+  <a href="https://www.own.audio">Website</a> ·
+  <a href="PRIVACY.md">Privacy</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="https://github.com/own-audio/music-ios/issues">Report a problem</a>
+</p>
+
+<p align="center">
+  <img src="docs/readme/1-albums.jpg" alt="Album grid" width="200">
+  <img src="docs/readme/2-player.jpg" alt="Player" width="200">
+  <img src="docs/readme/5-servers.jpg" alt="Several servers in one app" width="200">
+  <img src="docs/readme/8-equalizer.jpg" alt="Equalizer" width="200">
+</p>
 
 A native iPhone and iPad music player for your own server: **own.audio, Subsonic and
 OpenSubsonic servers (Navidrome, Gonic, Airsonic…) and Jellyfin**, side by side in one app.
 Swift and SwiftUI, no web views, no third-party dependencies — a few megabytes.
 
-[<img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" height="40">](https://apps.apple.com/app/own-audio-music/id6821355751)
+Free on the App Store for iPhone and iPad since 6 November 2026; runs on iOS 18 and later.
 
-Free on the [App Store](https://apps.apple.com/app/own-audio-music/id6821355751) for iPhone and iPad
-since 6 November 2026. The plan is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+## What it does
 
 - Gapless playback and crossfade, on AVAudioEngine
 - Streams while it downloads, with its own Core Audio decoder
@@ -20,9 +44,30 @@ since 6 November 2026. The plan is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PL
   the phone that follows the server's changes
 - English and Czech
 
-Made by [own.audio](https://www.own.audio). Free, no account needed, no tracking.
+## Why you can trust it
+
+- **It collects nothing.** No account with us, no analytics, no ads, no tracking. The App
+  Store privacy label says "Data Not Collected", and [PRIVACY.md](PRIVACY.md) lists the
+  only places the app talks to: the servers you add, and Apple or Google if you sign in with
+  them.
+- **The code is all here.** Every line of the app is in this repository under the
+  [MPL-2.0](LICENSE), with no third-party dependencies — only Apple's frameworks and the
+  packages in `Packages/`. The App Store builds come from this repository with
+  `scripts/testflight.sh`, and the build number is the commit count.
+- **Your library stays yours.** The app plays from your server; your files are not copied
+  anywhere else. Downloads stay on the phone and are removed with the app.
+- **Free, with nothing to unlock.** No in-app purchases and no subscription. The only paid
+  thing in own.audio is the optional hosted storage at [own.audio](https://www.own.audio),
+  paid on the website.
+- **Try it before you set anything up.** "Try the Demo Library" on the first screen signs
+  in to a public demo server, no account needed.
+- **Made by a person you can reach.** own.audio Music is built by
+  [Kornel Maráz](https://www.own.audio/about/). Problems and questions go to
+  [the issues](https://github.com/own-audio/music-ios/issues), or to hello@own.audio.
 
 ## Build
+
+The plan is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 Developed with Xcode 27 and [XcodeGen](https://github.com/yonaskolb/XcodeGen); runs on iOS 18
 and later.
