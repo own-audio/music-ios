@@ -11,6 +11,11 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- The welcome screen starts with own.audio's hosted service, for someone without a server:
+  **Create an own.audio Account** (name, email and password, then signed in straight away),
+  **Sign In** (fills in own.audio's address in the server form), and **Try the Demo Library**,
+  which moved up from the bottom of the screen. Sign-up uses `POST /api/v2/auth/register` and
+  falls back to `/api/v1/auth/register` on a server without it. New strings in Czech.
 - Downloads: an album, playlist or song can be removed from its menu too (right-click on a Mac,
   touch and hold on iOS), not only with a swipe.
 - Keyboard shortcuts, for an iPad with a keyboard and for the app on a Mac: Space plays and
@@ -21,6 +26,11 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Changed
 
+- The welcome screen looks like own.audio Books' and Podcasts': the own.audio hero behind it,
+  the animated mark and the rotating wordmark, the fields on material.
+- The own.audio mark matches the master mark on own.audio's website: two short arcs under the
+  core instead of two near-full rings, the family's colors (#FABB05, #29ABE2, #FF3B30, #FFCC00,
+  #34C759) on a #6E44FF core, and a 6-second spin. Shown at 120 pt.
 - Wording follows the shared own.audio glossary, in American English: **Accent Color** and
   **App Color** in Settings (were Colour), "catalog" and "grayed out" in the Offline Mode note. A
   family member who doesn't share their listening shows **Not Shared** (Czech "Nesdíleno")

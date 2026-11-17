@@ -674,6 +674,16 @@
         }
       }
     },
+    "At least 12 characters. A few words are fine." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alespoň 12 znaků. Klidně několik slov."
+          }
+        }
+      }
+    },
     "At Most %lld per Artist" : {
       "localizations" : {
         "cs" : {
@@ -1118,6 +1128,26 @@
         }
       }
     },
+    "Create Account" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vytvořit účet"
+          }
+        }
+      }
+    },
+    "Create an own.audio Account" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vytvořit účet own.audio"
+          }
+        }
+      }
+    },
     "Credit" : {
       "localizations" : {
         "cs" : {
@@ -1414,6 +1444,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zadejte kód z ověřovací aplikace."
+          }
+        }
+      }
+    },
+    "Enter your name." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadejte své jméno."
           }
         }
       }
@@ -2202,6 +2242,16 @@
         }
       }
     },
+    "No server? Use own.audio" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nemáte server? Použijte own.audio"
+          }
+        }
+      }
+    },
     "Not available offline." : {
       "localizations" : {
         "cs" : {
@@ -2342,6 +2392,16 @@
         }
       }
     },
+    "Or connect your own server" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebo připojte vlastní server"
+          }
+        }
+      }
+    },
     "Or sign in with the Apple or Google account you use on this own.audio server." : {
       "localizations" : {
         "cs" : {
@@ -2368,6 +2428,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Původní"
+          }
+        }
+      }
+    },
+    "own.audio Account" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Účet own.audio"
+          }
+        }
+      }
+    },
+    "own.audio didn't create the account." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio účet nevytvořil."
+          }
+        }
+      }
+    },
+    "own.audio emails you a link to confirm the address. By creating an account you agree to the [Terms](https://www.own.audio/terms/) and the [Privacy Policy](https://www.own.audio/privacy/)." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio vám e-mailem pošle odkaz k potvrzení adresy. Vytvořením účtu souhlasíte s [podmínkami](https://www.own.audio/terms/) a [zásadami ochrany osobních údajů](https://www.own.audio/privacy/)."
+          }
+        }
+      }
+    },
+    "own.audio isn't taking new accounts right now." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio teď nové účty nepřijímá."
+          }
+        }
+      }
+    },
+    "own.audio keeps your music for you. Upload it once and play it here." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "own.audio vaši hudbu uchová za vás. Jednou ji nahrajte a přehrávejte ji tady."
           }
         }
       }
@@ -2658,6 +2768,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Připravené"
+          }
+        }
+      }
+    },
+    "Sample music on a shared own.audio server, no account needed." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ukázková hudba na sdíleném serveru own.audio, bez účtu."
           }
         }
       }
@@ -3032,6 +3152,16 @@
         }
       }
     },
+    "That doesn't look like an email address." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tohle nevypadá jako e-mailová adresa."
+          }
+        }
+      }
+    },
     "That is on another server. Switch to it in Settings first." : {
       "localizations" : {
         "cs" : {
@@ -3058,6 +3188,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Knihovna ukazuje vybraný server."
+          }
+        }
+      }
+    },
+    "The password needs at least 12 characters. A few words are fine." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heslo musí mít alespoň 12 znaků. Klidně několik slov."
           }
         }
       }
@@ -3118,6 +3258,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Není v čem pokračovat; nejdřív něco pusťte v own.music."
+          }
+        }
+      }
+    },
+    "There's already an account with this email. Sign in instead." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Účet s tímto e-mailem už existuje. Přihlaste se k němu."
           }
         }
       }
@@ -5994,6 +6144,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nepodařilo se uložit"
+          }
+        }
+      }
+    },
+    "Your Name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaše jméno"
           }
         }
       }

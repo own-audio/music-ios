@@ -1,7 +1,7 @@
 ---
 title: Getting started
 nav_order: 2
-description: "How to add your first server to own.audio Music — own.audio, Navidrome or another Subsonic server, or Jellyfin — try the public demo, and switch between servers."
+description: "How to start with own.audio Music: make an own.audio account, add your own server — Navidrome or another Subsonic server, or Jellyfin — or try the public demo, and switch between servers."
 ---
 
 # Getting started
@@ -12,7 +12,24 @@ description: "How to add your first server to own.audio Music — own.audio, Nav
 
 ## The first screen
 
-The first time you open the app it asks for a server. Fill in:
+The first screen offers two ways in: an account on own.audio's hosted service, or a server of
+your own.
+
+### No server? Use own.audio
+
+The card at the top is for someone without a server. own.audio keeps your music for you.
+
+- **Create an own.audio Account** asks for **Your Name**, **Email** and a **Password** of at
+  least 12 characters (a few words are fine), then **Create Account**. The app signs in to the
+  new account straight away. own.audio emails you a link to confirm the address.
+- **Sign In** fills in own.audio's address in the form below, for an account you already have.
+- **Try the Demo Library** signs in to a shared own.audio server with sample music, with no account
+  needed. The server is called **own.audio demo** in the app. Remove it in Settings when you
+  add your own.
+
+### Or connect your own server
+
+For a server you run yourself, fill in:
 
 - **Server address**: for example `music.example.com`, or an address on your home network such
   as `192.168.1.10:4533`. Without `http://` or `https://`, the app tries https first and then
@@ -27,12 +44,6 @@ Jellyfin, and checks the sign-in before it saves anything.
 Your sign-in stays in the device's Keychain. A Subsonic server gets a one-time token made from
 the password with each request; Jellyfin and own.audio give the app a token, and the password
 is not kept.
-
-### Try the Demo Library
-
-No server yet? Under **No server yet?**, tap **Try the Demo Library**. It signs in to a shared
-own.audio server with sample music, with no account needed. The server is called
-**own.audio demo** in the app. Remove it in Settings when you add your own.
 
 ### Sign in with Apple or Google
 

@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The first screen: what the app is, and the one thing it needs, a server.
+/// The first screen, over the own.audio hero like Books and Podcasts: the mark, the wordmark,
+/// an own.audio account for someone without a server, and the server form.
 struct OnboardingView: View {
     @Environment(AppModel.self) private var model
     @State private var address = ""
@@ -14,6 +15,7 @@ struct OnboardingView: View {
     @State private var appleError: String?
     @State private var isQuickConnecting = false
     @State private var isTryingDemo = false
+    @State private var isSigningUp = false
     @FocusState private var focus: Field?
 
     private enum Field { case address, username, password, name }
@@ -24,15 +26,23 @@ struct OnboardingView: View {
     }
 
     var body: some View {
+        ZStack {
+        HeroBackground()
         ScrollView {
             VStack(spacing: Theme.Spacing.xl) {
                 header
+                ownAudioAccount
+                Text("Or connect your own server")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, -Theme.Spacing.md)
                 form
                 CanaryServerButton(address: $address)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Theme.Colors.error)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("addServer.error")
                 }
@@ -46,7 +56,7 @@ struct OnboardingView: View {
                     if providers.google { GoogleSignInButton(address: address, name: name, isWorking: $isConnecting, errorMessage: $appleError) }
                     Text(providers.apple || providers.google ? "Or sign in with the Apple or Google account you use on this own.audio server." : "")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.Colors.muted)
                         .multilineTextAlignment(.center)
                 }
                 // Asked once typing pauses: whether an own.audio server answers there, and which sign-ins it takes.
@@ -58,7 +68,6 @@ struct OnboardingView: View {
                     let found = await model.ownAudioProviders(address: address)
                     if !Task.isCancelled { providers = found }
                 }
-                demo
                 notes
                 Link(destination: URL(string: "https://github.com/own-audio/music-ios")!) {
                     Text("Free and open source · MPL-2.0")
@@ -68,39 +77,81 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, Theme.Spacing.xl)
             .padding(.vertical, Theme.Spacing.xxl)
-            .frame(maxWidth: 480)
+            .frame(maxWidth: 420)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
+        }
+        .sheet(isPresented: $isSigningUp) { SignUpView() }
         .sheet(isPresented: $isQuickConnecting) {
             QuickConnectView(address: address, name: name)
         }
         .sheet(item: model.pendingTwoFactorBinding) { _ in
             TwoFactorView()
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
     private var header: some View {
         VStack(spacing: Theme.Spacing.md) {
-            Image("AppLogo")
-                .resizable()
-                .frame(width: 96, height: 96)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
-                .accessibilityHidden(true)
-            Text(verbatim: "own.audio Music")
-                .font(.largeTitle.bold())
+            OwnAudioMark.tribe(size: 120)
+            RotatingWordmark()
             Text("Your music, from your own server.")
-                .font(.title3)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .foregroundStyle(Theme.Colors.muted)
                 .multilineTextAlignment(.center)
             Text(verbatim: "own.audio · Navidrome · Jellyfin · Gonic · Airsonic · LMS · Ampache")
                 .font(.footnote)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Theme.Colors.muted)
                 .multilineTextAlignment(.center)
         }
         .padding(.bottom, Theme.Spacing.sm)
+    }
+
+    /// own.audio's hosted service first: an account there is a server, with nothing to run.
+    private var ownAudioAccount: some View {
+        VStack(spacing: Theme.Spacing.md) {
+            VStack(spacing: Theme.Spacing.xs) {
+                Text("No server? Use own.audio")
+                    .font(.headline)
+                Text("own.audio keeps your music for you. Upload it once and play it here.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.Colors.muted)
+                    .multilineTextAlignment(.center)
+            }
+            Button {
+                isSigningUp = true
+            } label: {
+                Text("Create an own.audio Account").bold().frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .accessibilityIdentifier("addServer.signUp")
+            Button {
+                address = AppModel.ownAudioService.absoluteString
+                focus = .username
+            } label: {
+                Text("Sign In").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .accessibilityIdentifier("addServer.ownAudioSignIn")
+            // Someone not ready for an account can still see what the app does.
+            Button {
+                tryDemo()
+            } label: {
+                if isTryingDemo { ProgressView() } else { Text("Try the Demo Library") }
+            }
+            .font(.subheadline.weight(.semibold))
+            .disabled(isConnecting || isTryingDemo)
+            .accessibilityIdentifier("addServer.demo")
+            Text("Sample music on a shared own.audio server, no account needed.")
+                .font(.footnote)
+                .foregroundStyle(Theme.Colors.muted)
+                .multilineTextAlignment(.center)
+                .padding(.top, -Theme.Spacing.sm)
+        }
+        .padding(Theme.Spacing.lg)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer, style: .continuous))
     }
 
     private var form: some View {
@@ -143,13 +194,13 @@ struct OnboardingView: View {
                     .accessibilityIdentifier("addServer.name")
             }
         }
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.miniPlayer, style: .continuous))
     }
 
     private func row<Field: View>(_ symbol: String, @ViewBuilder field: () -> Field) -> some View {
         HStack(spacing: Theme.Spacing.md) {
             Image(systemName: symbol)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.Colors.muted)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             field()
@@ -177,36 +228,6 @@ struct OnboardingView: View {
         .accessibilityIdentifier("addServer.connect")
     }
 
-    /// Someone without a server yet can still see what the app does.
-    private var demo: some View {
-        VStack(spacing: Theme.Spacing.xs) {
-            Divider().padding(.vertical, Theme.Spacing.sm)
-            Text("No server yet?")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Button {
-                tryDemo()
-            } label: {
-                Group {
-                    if isTryingDemo {
-                        ProgressView()
-                    } else {
-                        Text("Try the Demo Library")
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .disabled(isConnecting || isTryingDemo)
-            .accessibilityIdentifier("addServer.demo")
-            Text("A shared own.audio server with sample music. Remove it in Settings when you add your own.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-    }
-
     private var notes: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             note("checkmark.shield", "Your sign-in stays in this device's Keychain. Subsonic servers get a one-time token made from the password; Jellyfin gives a token and the password isn't kept.")
@@ -218,9 +239,9 @@ struct OnboardingView: View {
 
     private func note(_ symbol: String, _ text: LocalizedStringKey) -> some View {
         Label {
-            Text(text).font(.footnote).foregroundStyle(.secondary)
+            Text(text).font(.footnote).foregroundStyle(Theme.Colors.muted)
         } icon: {
-            Image(systemName: symbol).foregroundStyle(.secondary).font(.footnote)
+            Image(systemName: symbol).foregroundStyle(Theme.Colors.muted).font(.footnote)
         }
     }
 

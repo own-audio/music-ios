@@ -631,6 +631,23 @@ final class AppModel {
         }
     }
 
+    /// own.audio's hosted service, where someone without a server of their own can make an account.
+    static let ownAudioService = URL(string: "https://api.own.audio")!
+
+    /// A new account on own.audio's hosted service, then signed in to it as a server.
+    func createOwnAudioAccount(name: String, email: String, password: String) async throws {
+        let email = email.trimmingCharacters(in: .whitespaces)
+        do {
+            try await ServerSetup.ownAudioRegister(
+                host: Self.ownAudioService, email: email, password: password,
+                displayName: name.trimmingCharacters(in: .whitespaces), urlSession: Self.session
+            )
+        } catch SourceError.network {
+            throw AddServerError.unreachable
+        }
+        try await addServer(address: Self.ownAudioService.absoluteString, username: email, password: password, name: "")
+    }
+
     /// The public own.audio demo, signed in with the account it offers to anyone.
     static let demoServer = URL(string: "https://demopi.own.audio")!
 
@@ -1700,6 +1717,19 @@ enum AddServerError: LocalizedError {
         case .twoFactorNeeded: String(localized: "Enter the code from your authenticator app.")
         case .wrongCode: String(localized: "That code isn't right, or it has expired. Try the current one.")
         case .differentServer: String(localized: "That address now answers as a different server. Add it as a new server instead.")
+        }
+    }
+}
+
+extension SignUpError: @retroactive LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .invalidEmail: String(localized: "That doesn't look like an email address.")
+        case .weakPassword: String(localized: "The password needs at least 12 characters. A few words are fine.")
+        case .missingName: String(localized: "Enter your name.")
+        case .closed: String(localized: "own.audio isn't taking new accounts right now.")
+        case .emailTaken: String(localized: "There's already an account with this email. Sign in instead.")
+        case .refused(let message): message ?? String(localized: "own.audio didn't create the account.")
         }
     }
 }

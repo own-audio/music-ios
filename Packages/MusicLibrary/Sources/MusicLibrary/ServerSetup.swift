@@ -79,6 +79,13 @@ public enum ServerSetup {
 
 public typealias OwnAudioTokens = OwnAudioKit.Tokens
 
+/// Why an own.audio server turned down a new account.
+public enum SignUpError: Error, Sendable, Equatable {
+    case invalidEmail, weakPassword, missingName, closed, emailTaken
+    /// Another reason, in the server's words when it gave any.
+    case refused(String?)
+}
+
 /// How a sign-in to an own.audio server through its own API ended.
 public enum OwnAudioSignInResult: Sendable {
     /// Signed in: the account's email, and the API's tokens.
@@ -92,6 +99,26 @@ extension ServerSetup {
     /// Whether the own.audio server at `host` speaks its own API (1.0.0-beta.7 and later).
     public static func ownAudioSpeaksV2(host: URL, urlSession: URLSession) async -> Bool {
         (try? await OwnAudioClient.discover(host: host, session: urlSession))?.v2 != nil
+    }
+
+    /// A new account with a password on the own.audio server at `host`. Sign in afterwards.
+    public static func ownAudioRegister(host: URL, email: String, password: String, displayName: String, urlSession: URLSession) async throws {
+        do {
+            try await OwnAudioClient.register(host: host, email: email, password: password, displayName: displayName, session: urlSession)
+        } catch OwnAudioError.problem(let p) {
+            throw switch p.code {
+            case "invalid_email": SignUpError.invalidEmail
+            case "weak_password": SignUpError.weakPassword
+            case "invalid_display_name": SignUpError.missingName
+            case "registration_closed": SignUpError.closed
+            case "email_taken": SignUpError.emailTaken
+            default: SignUpError.refused(p.detail)
+            }
+        } catch OwnAudioError.network {
+            throw SourceError.network
+        } catch let error as OwnAudioError {
+            throw OwnAudioSource.sourceError(error)
+        }
     }
 
     /// Email and password, through the server's own API.
