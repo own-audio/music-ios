@@ -113,7 +113,7 @@ struct OwnAudioMark: View {
 
 /// "own." with a slot that cycles through what own.audio is for.
 struct RotatingWordmark: View {
-    static let defaultWords = ["audio", "music", "family", "song", "album", "voice", "night", "road"]
+    static let defaultWords = ["audio", "music", "family", "playlist", "song", "beat", "dance", "party"]
     private let words: [String]
     private let interval: Duration
     @State private var index = 0

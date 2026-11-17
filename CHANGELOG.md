@@ -26,6 +26,8 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Changed
 
+- The wordmark's rotating word: after audio, the app's own word and family, five words of
+  this app's own (playlist, song, beat, dance, party), none shared with the other two apps.
 - The welcome screen looks like own.audio Books' and Podcasts': the own.audio hero behind it,
   the animated mark and the rotating wordmark, the fields on material.
 - The own.audio mark matches the master mark on own.audio's website: two short arcs under the
