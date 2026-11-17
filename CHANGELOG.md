@@ -11,9 +11,15 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Added
 
+- Create Account and Sign In on the welcome screen open one sheet for own.audio's hosted
+  service: **Continue with Apple** and **Continue with Google** at the top (either makes the
+  account on first use), then email and password (and a name for a new account). A fixed
+  **Server: own.audio** row shows where it goes (`https://api.own.audio`); the sheet has no
+  address field, no test server and no demo. An account with two-factor sign-in is asked for
+  its code.
 - The welcome screen starts with own.audio's hosted service, for someone without a server:
   **Create an own.audio Account** (name, email and password, then signed in straight away),
-  **Sign In** (fills in own.audio's address in the server form), and **Try the Demo Library**,
+  **Sign In**, and **Try the Demo Library**,
   which moved up from the bottom of the screen. Sign-up uses `POST /api/v2/auth/register` and
   falls back to `/api/v1/auth/register` on a server without it. New strings in Czech.
 - Downloads: an album, playlist or song can be removed from its menu too (right-click on a Mac,
@@ -26,6 +32,17 @@ package, merged into this repository — is in `docs/history/`.
 
 ### Changed
 
+- The Apple and Google buttons look alike everywhere they appear (welcome screen, sign-in
+  sheet, Settings): **Continue with Apple**, drawn by the app in the same font and size as
+  **Continue with Google** instead of by `SignInWithAppleButton`; the Google "G" at 17 pt like
+  the Apple logo; white with a grey outline on a light screen and near-black with a lighter
+  outline on a dark one, Google's two themes, on both buttons.
+- Czech: "Continue with Google" is "Pokračovat přes Google", as in own.audio Books and
+  Podcasts (was "Pokračovat pomocí Googlu").
+- The servers named in the app, the guide and the README are the ones tested with it:
+  own.audio, Navidrome and Jellyfin (the welcome screen also listed Gonic, Airsonic, LMS and
+  Ampache; Ampache refuses the app's Subsonic sign-in). Other Subsonic servers can still be
+  added by address.
 - The wordmark's rotating word: after audio, the app's own word and family, five words of
   this app's own (playlist, song, beat, dance, party), none shared with the other two apps.
 - The welcome screen looks like own.audio Books' and Podcasts': the own.audio hero behind it,
@@ -46,6 +63,11 @@ package, merged into this repository — is in `docs/history/`.
   and Mac: **On This Device** in Downloads, **Library on This Device** on a server's page, the
   Keychain notes, removing a server and the address error. The favorites hints no longer say
   "Tap".
+
+### Removed
+
+- The **own.audio canary (testing)** button, on the welcome screen and in Add a Server (shown
+  only in TestFlight and development builds). A test server is added by typing its address.
 
 ## [1.0.1] - 2026-11-16
 

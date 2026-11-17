@@ -1026,6 +1026,16 @@
         }
       }
     },
+    "Continue with Apple" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovat přes Apple"
+          }
+        }
+      }
+    },
     "Control Playback" : {
       "localizations" : {
         "cs" : {
@@ -2402,12 +2412,32 @@
         }
       }
     },
+    "Or create an account with your email." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebo si účet vytvořte e-mailem."
+          }
+        }
+      }
+    },
     "Or sign in with the Apple or Google account you use on this own.audio server." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nebo se přihlaste účtem Apple nebo Google, který na tomto serveru own.audio používáte."
+          }
+        }
+      }
+    },
+    "Or sign in with your email." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebo se přihlaste e-mailem."
           }
         }
       }
@@ -2908,6 +2938,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přihlásit se znovu"
+          }
+        }
+      }
+    },
+    "Sign In to own.audio" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přihlásit se k own.audio"
           }
         }
       }
@@ -3512,12 +3552,12 @@
         }
       }
     },
-    "Works with own.audio, Navidrome and other Subsonic servers, and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this device's Keychain.\n\nown.audio: sign in with your account's email and password." : {
+    "Works with own.audio, Navidrome and Jellyfin; the app finds out which. Without http:// or https://, it tries https and then http. Your sign-in stays in this device's Keychain.\n\nown.audio: sign in with your account's email and password." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Funguje s own.audio, Navidrome a dalšími servery Subsonic i s Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto zařízení.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
+            "value" : "Funguje s own.audio, Navidrome a Jellyfinem; aplikace sama pozná, o který jde. Bez http:// nebo https:// zkusí nejdřív https a pak http. Přihlašovací údaje zůstávají v klíčence tohoto zařízení.\n\nown.audio: přihlaste se e-mailem a heslem ke svému účtu."
           }
         }
       }
@@ -4940,7 +4980,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pokračovat pomocí Googlu"
+            "value" : "Pokračovat přes Google"
           }
         }
       }

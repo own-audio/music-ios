@@ -15,7 +15,7 @@ struct OnboardingView: View {
     @State private var appleError: String?
     @State private var isQuickConnecting = false
     @State private var isTryingDemo = false
-    @State private var isSigningUp = false
+    @State private var account: OwnAudioAccountView.Mode?
     @FocusState private var focus: Field?
 
     private enum Field { case address, username, password, name }
@@ -38,7 +38,6 @@ struct OnboardingView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, -Theme.Spacing.md)
                 form
-                CanaryServerButton(address: $address)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
@@ -82,7 +81,7 @@ struct OnboardingView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         }
-        .sheet(isPresented: $isSigningUp) { SignUpView() }
+        .sheet(item: $account) { OwnAudioAccountView(mode: $0) }
         .sheet(isPresented: $isQuickConnecting) {
             QuickConnectView(address: address, name: name)
         }
@@ -99,7 +98,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.Colors.muted)
                 .multilineTextAlignment(.center)
-            Text(verbatim: "own.audio · Navidrome · Jellyfin · Gonic · Airsonic · LMS · Ampache")
+            Text(verbatim: "own.audio · Navidrome · Jellyfin")
                 .font(.footnote)
                 .foregroundStyle(Theme.Colors.muted)
                 .multilineTextAlignment(.center)
@@ -119,7 +118,7 @@ struct OnboardingView: View {
                     .multilineTextAlignment(.center)
             }
             Button {
-                isSigningUp = true
+                account = .signUp
             } label: {
                 Text("Create an own.audio Account").bold().frame(maxWidth: .infinity)
             }
@@ -127,8 +126,7 @@ struct OnboardingView: View {
             .controlSize(.large)
             .accessibilityIdentifier("addServer.signUp")
             Button {
-                address = AppModel.ownAudioService.absoluteString
-                focus = .username
+                account = .signIn
             } label: {
                 Text("Sign In").frame(maxWidth: .infinity)
             }

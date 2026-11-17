@@ -26,8 +26,8 @@
   <img src="docs/readme/8-equalizer.jpg" alt="Equalizer" width="200">
 </p>
 
-A native iPhone and iPad music player for your own server: **own.audio, Subsonic and
-OpenSubsonic servers (Navidrome, Gonic, Airsonic…) and Jellyfin**, side by side in one app.
+A native iPhone and iPad music player for your own server: **own.audio, Navidrome and
+Jellyfin**, side by side in one app.
 Swift and SwiftUI, no web views, no third-party dependencies — a few megabytes.
 
 Free on the App Store for iPhone and iPad since 6 November 2026; runs on iOS 18 and later.

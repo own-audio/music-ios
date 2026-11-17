@@ -13,7 +13,7 @@ own.audio Music is a music player for iPhone and iPad that plays from your own s
 works with:
 
 - **own.audio** servers, the hosted service or one you run yourself;
-- **Subsonic and OpenSubsonic** servers: Navidrome, Gonic, Airsonic, LMS, Ampache and others;
+- **Navidrome**;
 - **Jellyfin**.
 
 You can add several servers and switch between them. The app is free, has no in-app

@@ -19,13 +19,19 @@ your own.
 
 The card at the top is for someone without a server. own.audio keeps your music for you.
 
-- **Create an own.audio Account** asks for **Your Name**, **Email** and a **Password** of at
-  least 12 characters (a few words are fine), then **Create Account**. The app signs in to the
-  new account straight away. own.audio emails you a link to confirm the address.
-- **Sign In** fills in own.audio's address in the form below, for an account you already have.
+- **Create an own.audio Account** opens a sheet with **Continue with Apple** and **Continue
+  with Google** at the top: either makes the account on first use. Or fill in **Your Name**,
+  **Email** and a **Password** of at least 12 characters (a few words are fine), then **Create
+  Account**. The app signs in to the new account straight away. own.audio emails you a link to
+  confirm the address.
+- **Sign In** opens the same sheet for an account you already have: Apple, Google, or your
+  **Email** and **Password**.
 - **Try the Demo Library** signs in to a shared own.audio server with sample music, with no account
   needed. The server is called **own.audio demo** in the app. Remove it in Settings when you
   add your own.
+
+Both sheets show **Server: own.audio** and can't be pointed anywhere else; for another
+own.audio server, use the server form.
 
 ### Or connect your own server
 
@@ -48,7 +54,7 @@ is not kept.
 ### Sign in with Apple or Google
 
 When the address you typed is an own.audio server that takes Apple or Google sign-in, the
-buttons **Sign in with Apple** and **Continue with Google** appear under the form, with the note
+buttons **Continue with Apple** and **Continue with Google** appear under the form, with the note
 "Or sign in with the Apple or Google account you use on this own.audio server." Use the same way
 you signed up.
 
