@@ -31,7 +31,8 @@ public final class NowPlayingController {
         configureRemoteCommands()
     }
 
-    private func configureAudioSession() {
+    /// Also after the media server was reset, which forgets the category.
+    public func configureAudioSession() {
         #if os(iOS)
         // `.default`, not `.spokenAudio`: the latter applies speech processing music doesn't want.
         // Playback still works without it; only background and lock-screen integration would suffer.
@@ -41,11 +42,13 @@ public final class NowPlayingController {
 
     /// Takes the audio over from other apps. Called when playback starts, not at launch: opening
     /// the app to browse must not stop what another app is playing.
-    public func activateSession() {
-        isSessionActive = true
+    /// Throws when iOS refuses, as it can in the background right after a call — playing on
+    /// then would only run the clock over silence.
+    public func activateSession() throws {
         #if os(iOS)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        try AVAudioSession.sharedInstance().setActive(true)
         #endif
+        isSessionActive = true
     }
 
     /// Gives the audio back once playback has stopped, so an app the listener paused for this

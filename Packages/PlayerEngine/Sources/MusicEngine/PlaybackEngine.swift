@@ -355,15 +355,9 @@ public final class PlaybackEngine {
     /// Not iOS-gated, unlike `observeAudioSessionNotifications()` below: `AVAudioEngine`'s own
     /// configuration-change notification exists on both platforms — switching output to a USB
     /// DAC or an AirPlay device fires it.
-    /// Both can renegotiate the hardware's sample rate mid-playback, which silently stops
-    /// `AVAudioEngine`'s render graph without this — every node here was connected with
-    /// `format: nil` (`buildGraph()`), so they renegotiate against the new hardware format on
-    /// their own; the only thing actually required is restarting the engine if the change
-    /// stopped it. Not rescheduling `boundaries`/the already-queued buffers on top of that: a
-    /// config change mid-track is rare enough that the existing schedule surviving a restart
-    /// intact is the reasonable default, reasoned from Apple's own documented behavior for this
-    /// notification -- not verified against real AirPlay hardware, since none was available to
-    /// confirm it directly.
+    /// So does Bluetooth in a car switching to the hands-free profile for a call and back.
+    /// The engine stops itself, and the player nodes lose everything scheduled on them, so
+    /// restarting the engine alone left the clock running over silence.
     private func observeEngineConfigurationChanges() {
         NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
@@ -374,12 +368,47 @@ public final class PlaybackEngine {
         }
     }
 
+    private var configurationReloadTask: Task<Void, Never>?
+    private var configurationReloads: [Date] = []
+
     private func handleEngineConfigurationChange() {
-        // Paused, the engine stays stopped: the next play starts it. Restarting it here kept a
-        // paused player rendering silence after every headphone or Bluetooth change, and iOS
-        // never suspends an app whose audio engine runs.
-        guard !engine.isRunning, isPlaying || isLoading else { return }
-        try? engine.start()
+        Logger.playback.info("audio configuration changed at \(self.currentTime, format: .fixed(precision: 1), privacy: .public), playing: \(self.isPlaying, privacy: .public)")
+        guard currentTrack != nil else { return }
+        if isLoading {
+            // The load schedules its audio after this; it only needs the engine running.
+            if !engine.isRunning, isPlaying { try? engine.start() }
+            return
+        }
+        guard isPlaying else {
+            // Paused, the engine stays stopped: a running one renders silence and iOS never
+            // suspends the app. The next play loads the song again.
+            scheduleLost = true
+            return
+        }
+        // The node has been reset, so the clock can no longer be read from it.
+        let position = currentTime
+        let trackId = currentTrack?.id
+        stopTicking()
+        scheduleLost = true
+        // A route change arrives as a burst of these; and loading may change the sample rate,
+        // which fires another. A few reloads in a row at most, never a loop.
+        let now = Date()
+        configurationReloads = configurationReloads.filter { now.timeIntervalSince($0) < 10 } + [now]
+        guard configurationReloads.count <= 3 else {
+            Logger.playback.error("audio configuration keeps changing; pausing")
+            isPlaying = false
+            pushNowPlayingInfo()
+            closeSpan(atPositionSecs: position, reason: .stopped)
+            return
+        }
+        configurationReloadTask?.cancel()
+        configurationReloadTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled, let self, self.isPlaying,
+                  let track = self.currentTrack, track.id == trackId else { return }
+            self.cancelInFlightCrossfade()
+            await self.loadAndPlay(track: track, seekTo: position)
+        }
     }
 
     // MARK: - Engine idle
@@ -392,6 +421,13 @@ public final class PlaybackEngine {
 
     /// For tests: whether the audio engine itself is running, apart from the player nodes.
     var isAudioEngineRunning: Bool { engine.isRunning }
+
+    /// For tests: what a change of output does to a playing engine — it stops by itself, then
+    /// says so.
+    func simulateOutputChange() {
+        engine.stop()
+        NotificationCenter.default.post(name: .AVAudioEngineConfigurationChange, object: engine)
+    }
 
     private func scheduleEngineIdle() {
         idleTask?.cancel()
@@ -417,8 +453,13 @@ public final class PlaybackEngine {
         idleTask?.cancel()
         idleTask = nil
         guard !engine.isRunning else { return }
-        nowPlayingController.activateSession()
-        try engine.start()
+        do {
+            try nowPlayingController.activateSession()
+            try engine.start()
+        } catch {
+            Logger.playback.error("audio could not start: \(String(describing: error), privacy: .public)")
+            throw error
+        }
     }
 
     #if os(iOS) || os(tvOS)
@@ -449,6 +490,13 @@ public final class PlaybackEngine {
                 self?.handleRouteChange(reasonValue: reasonValue)
             }
         }
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.handleMediaServicesReset()
+            }
+        }
     }
 
     /// A phone call, Siri, or another app taking the audio session pauses playback. `.ended`
@@ -460,12 +508,19 @@ public final class PlaybackEngine {
         guard let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
         switch type {
         case .began:
+            playingBeforeInterruption = isPlaying || playingBeforeInterruption
+            configurationReloadTask?.cancel()
             pauseAudioOnly()
-            // iOS has stopped the audio already; no grace for a call.
-            idleEngineNow()
-            if currentTrack != nil { scheduleLostToInterruption = true }
+            // Stopped, not paused: the notification can come late, with the engine still
+            // running, and the song is loaded again on resume anyway.
+            idleTask?.cancel()
+            idleTask = nil
+            engine.stop()
+            if currentTrack != nil { scheduleLost = true }
         case .ended:
-            guard let optionsValue else { return }
+            let resume = playingBeforeInterruption
+            playingBeforeInterruption = false
+            guard let optionsValue, resume else { return }
             if AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
                 resumeAudioOnly()
             }
@@ -480,6 +535,23 @@ public final class PlaybackEngine {
     private func handleRouteChange(reasonValue: UInt) {
         guard let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue), reason == .oldDeviceUnavailable else { return }
         pauseAudioOnly()
+    }
+
+    /// Paused by an interruption, as opposed to already paused when it came: only the first
+    /// goes on by itself when it ends.
+    private var playingBeforeInterruption = false
+
+    /// The media server crashed and came back: the session's settings are gone and the engine
+    /// is stopped. Paused here; play sets the session up again and loads the song anew.
+    private func handleMediaServicesReset() {
+        Logger.playback.error("media services were reset")
+        configurationReloadTask?.cancel()
+        pauseAudioOnly()
+        idleTask?.cancel()
+        idleTask = nil
+        engine.stop()
+        nowPlayingController.configureAudioSession()
+        if currentTrack != nil { scheduleLost = true }
     }
     #endif
 
@@ -586,14 +658,17 @@ public final class PlaybackEngine {
         scheduleEngineIdle()
     }
 
-    /// Set when a call or Siri took the audio. iOS stops the engine itself then, not with our
-    /// `pause()`, and the nodes come back without what was scheduled on them: `play()` ran the
-    /// clock on silence until the next song scheduled something new.
-    private var scheduleLostToInterruption = false
+    /// Set when a call, Siri or a change of output (Bluetooth switching profile for a call)
+    /// stopped the engine. The nodes come back without what was scheduled on them: `play()`
+    /// ran the clock on silence until the next song scheduled something new.
+    private(set) var scheduleLost = false
 
     private func resumeAudioOnly() {
         guard let track = currentTrack, !isPlaying else { return }
-        if scheduleLostToInterruption {
+        if scheduleLost {
+            // The session first: refused, it stays paused rather than loading into silence,
+            // or reading the refusal as a broken song and skipping it.
+            do { try startEngineIfNeeded() } catch { return }
             let position = currentTime
             Task { [weak self] in
                 guard let self, !self.isPlaying, self.currentTrack?.id == track.id else { return }
@@ -604,7 +679,8 @@ public final class PlaybackEngine {
         }
         wireRemoteCommands()
         onWillStartPlaying?()
-        try? startEngineIfNeeded()
+        // Refused, it stays paused, and play can be tried again.
+        do { try startEngineIfNeeded() } catch { return }
         // Mid-stall the node stays held; `resumeAfterBuffering` starts it once there is enough.
         if !isBuffering { activeNode.play() }
         if isCrossfading { idleNode.play() }
@@ -634,6 +710,7 @@ public final class PlaybackEngine {
     }
 
     private func stopEngineAndClearSchedule() {
+        configurationReloadTask?.cancel()
         // Bumped *before* the `stop()` calls, for exactly the reason `loadAndPlay` documents at
         // its own `stop()`: stopping a node immediately fires the completion handler of every
         // file still pending on it, and those handlers only stand down if the generation they
@@ -950,7 +1027,7 @@ public final class PlaybackEngine {
 
     private func loadAndPlay(track: Track, seekTo: Double = 0) async {
         Logger.playback.info("load \(track.id, privacy: .public) at \(seekTo, format: .fixed(precision: 1), privacy: .public)")
-        scheduleLostToInterruption = false
+        scheduleLost = false
         // Whatever was being fetched to follow the previous schedule no longer follows anything.
         prefetchNextTask?.cancel()
         prefetchNextTask = nil
@@ -1465,6 +1542,13 @@ public final class PlaybackEngine {
     /// check it's still current before treating the callback as real — a stale generation means
     /// it fired only because a *newer* load's `stop()` cancelled it.
     private func handleActiveNodeConsumedSegment() {
+        // An engine that stopped on its own (a call, a change of output) reports everything
+        // still scheduled as played. That is lost audio, not the end of the song.
+        guard engine.isRunning else {
+            Logger.playback.info("scheduled audio dropped by a stopped engine at \(self.currentTime, format: .fixed(precision: 1), privacy: .public)")
+            if currentTrack != nil { scheduleLost = true }
+            return
+        }
         guard var queue, let finishedTrack = currentTrack else { return }
         // The sleep timer's "end of this track": the next track becomes current as usual — in
         // gapless mode it is already chained and has just begun — and playback pauses at its

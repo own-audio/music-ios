@@ -734,6 +734,50 @@ struct PlaybackEngineStreamingTests {
         engine.stop()
     }
 
+    @Test("a change of output mid-song (Bluetooth switching for a call) goes on from the same place with sound, not over silence", arguments: [false, true])
+    func outputChangeReloadsAtPosition(fromFile: Bool) async throws {
+        let harness = try await makeHarness(suffix: "output-change-\(fromFile)", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        if fromFile { _ = try await harness.fileCache.localURL(trackId: "a") }
+        await engine.play(tracks: [makeTrack(id: "a"), makeTrack(id: "b")])
+        try await waitUntil(timeout: 10) { engine.isPlaying && engine.currentTime > 0.8 }
+
+        let before = engine.currentTime
+        engine.simulateOutputChange()
+        try await waitUntil(timeout: 5) { engine.isAudioEngineRunning && engine.currentTime > before + 0.3 }
+        #expect(engine.currentTrack?.id == "a", "the dropped audio is not the end of the song")
+        #expect(engine.isPlaying)
+        #expect(!engine.scheduleLost)
+        #expect(engine.currentTime < before + 1.5, "from where it was, not from a clock that ran on: \(before) -> \(engine.currentTime)")
+
+        // The rest of the song is really scheduled: it ends, and the next one follows.
+        try await waitUntil(timeout: 10) { engine.currentTrack?.id == "b" && engine.isPlaying }
+        #expect(engine.errorMessage == nil)
+        engine.stop()
+    }
+
+    @Test("a change of output while paused: play loads the song again from where it paused")
+    func outputChangeWhilePausedReloadsOnPlay() async throws {
+        let harness = try await makeHarness(suffix: "output-change-paused", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        _ = try await harness.fileCache.localURL(trackId: "a")
+        await engine.play(tracks: [makeTrack(id: "a")])
+        try await waitUntil(timeout: 10) { engine.isPlaying && engine.currentTime > 0.8 }
+        engine.pause()
+        let pausedAt = engine.currentTime
+
+        engine.simulateOutputChange()
+        try await Task.sleep(nanoseconds: 500_000_000)
+        #expect(!engine.isPlaying, "paused stays paused")
+        #expect(engine.scheduleLost)
+
+        engine.togglePlayPause()
+        try await waitUntil(timeout: 5) { engine.isPlaying && engine.currentTime > pausedAt + 0.3 }
+        #expect(engine.currentTime < pausedAt + 1.5)
+        try await waitUntil(timeout: 10) { engine.currentTrack == nil }
+        #expect(engine.errorMessage == nil)
+    }
+
     private func waitUntil(timeout: Double, _ condition: @MainActor () -> Bool) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline, !condition() { try await Task.sleep(nanoseconds: 50_000_000) }

@@ -9,6 +9,17 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Music comes back with sound after a phone call in the car. Bluetooth switches to the
+  hands-free profile for the call and back after it, and each switch stops the audio engine and
+  drops what was scheduled on it: the 1.0.1 fix reloaded the song only when the call ended, so
+  the switch that came after left the time running over silence, or skipped to the next song.
+  A change of output now loads the song again from where it was, paused or playing; audio the
+  stopped engine reports as played no longer counts as the song's end; music paused before a
+  call stays paused after it; and if iOS refuses the audio after a call, the player stays paused
+  instead of showing it plays. A reset of the media server is handled the same way.
+
 ### Added
 
 - Create Account and Sign In on the welcome screen open one sheet for own.audio's hosted
