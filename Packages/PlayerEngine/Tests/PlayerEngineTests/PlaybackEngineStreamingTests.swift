@@ -778,6 +778,31 @@ struct PlaybackEngineStreamingTests {
         #expect(engine.errorMessage == nil)
     }
 
+    @Test("pause keeps the exact position, not the last tick's: play after a change of output does not replay a bit")
+    func pauseKeepsExactPosition() async throws {
+        let harness = try await makeHarness(suffix: "pause-exact", audioData: try fixtureData("test-tone.mp3"))
+        let engine = harness.engine
+        _ = try await harness.fileCache.localURL(trackId: "a")
+        await engine.play(tracks: [makeTrack(id: "a")])
+        try await waitUntil(timeout: 10) { engine.isPlaying && engine.currentTime > 0.8 }
+        // Right after a tick, then most of a tick later: the tick's position is ~0.2 s behind.
+        let tickValue = engine.currentTime
+        try await waitUntil(timeout: 2) { engine.currentTime != tickValue }
+        try await Task.sleep(nanoseconds: 200_000_000)
+        let nodeAt = engine.positionNow()
+        engine.pause()
+        let pausedAt = engine.currentTime
+        #expect(nodeAt - tickValue > 0.1, "the setup: the last tick is behind the node (\(tickValue) vs \(nodeAt))")
+        #expect(abs(pausedAt - nodeAt) < 0.05, "paused at \(pausedAt), the node was at \(nodeAt)")
+
+        engine.simulateOutputChange()
+        try await Task.sleep(nanoseconds: 300_000_000)
+        engine.togglePlayPause()
+        try await waitUntil(timeout: 5) { engine.isPlaying && engine.currentTime > pausedAt + 0.05 }
+        #expect(engine.currentTime >= pausedAt, "never back before where it paused")
+        engine.stop()
+    }
+
     private func waitUntil(timeout: Double, _ condition: @MainActor () -> Bool) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline, !condition() { try await Task.sleep(nanoseconds: 50_000_000) }

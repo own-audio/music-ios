@@ -385,8 +385,9 @@ public final class PlaybackEngine {
             scheduleLost = true
             return
         }
-        // The node has been reset, so the clock can no longer be read from it.
-        let position = currentTime
+        // The node has been reset, so the clock can no longer be read from it: the last reading
+        // and the time since.
+        let position = positionNow()
         let trackId = currentTrack?.id
         stopTicking()
         scheduleLost = true
@@ -648,6 +649,9 @@ public final class PlaybackEngine {
 
     private func pauseAudioOnly() {
         guard isPlaying else { return }
+        // Before the nodes stop: a later reload (a change of output while paused) starts here.
+        currentTime = positionNow()
+        currentTimeReadAt = Date()
         playerA.pause()
         playerB.pause()
         isPlaying = false
@@ -1745,13 +1749,11 @@ public final class PlaybackEngine {
         // During a crossfade the active node is already the incoming one, with its own
         // boundary: the position is that track's, as the screen shows it.
         guard isPlaying else { return }
-        guard let nodeElapsedFrames = elapsedFrames(of: activeNode) else { return }
-        guard let boundary = boundaries.first(where: {
-            nodeElapsedFrames >= $0.startFrame && nodeElapsedFrames < $0.endFrame
-        }) ?? boundaries.first else { return }
+        guard let (nodeElapsedFrames, boundary) = nodePosition() else { return }
 
         currentTime = boundary.trackPositionOffsetSecs
             + Double(nodeElapsedFrames - boundary.startFrame) / boundary.sampleRate
+        currentTimeReadAt = Date()
         if !currentChapters.isEmpty, currentChapterIndex != shownChapterIndex {
             pushNowPlayingInfo()
         }
@@ -1809,6 +1811,31 @@ public final class PlaybackEngine {
     private func updateFormatSnapshot(_ info: AudioStreamDecoder.FormatInfo) {
         currentFormatSnapshot = info
         nowPlayingController.preferSampleRate(info.sampleRate)
+    }
+
+    /// Where the active node is, and the scheduled segment that position falls in.
+    private func nodePosition() -> (frames: AVAudioFramePosition, boundary: ScheduledBoundary)? {
+        guard let frames = elapsedFrames(of: activeNode),
+              let boundary = boundaries.first(where: { frames >= $0.startFrame && frames < $0.endFrame }) ?? boundaries.first
+        else { return nil }
+        return (frames, boundary)
+    }
+
+    /// When `currentTime` was last read from the node.
+    private var currentTimeReadAt: Date?
+
+    /// The position this moment, not at the last tick (a quarter of a second ago, a whole second
+    /// in the background). A song loaded again from the tick's position replayed that much: the
+    /// "same short bit played twice" when play came back after a pause or a change of output.
+    /// Read from the node when it can say; a node reset by a change of output no longer can, and
+    /// then the time since the last reading is added while it was playing.
+    func positionNow() -> Double {
+        if let (frames, boundary) = nodePosition() {
+            return boundary.trackPositionOffsetSecs + Double(frames - boundary.startFrame) / boundary.sampleRate
+        }
+        guard isPlaying, let readAt = currentTimeReadAt else { return currentTime }
+        let since = min(max(Date().timeIntervalSince(readAt), 0), 2)
+        return duration > 0 ? min(currentTime + since, duration) : currentTime + since
     }
 
     private func elapsedFrames(of node: AVAudioPlayerNode) -> AVAudioFramePosition? {
