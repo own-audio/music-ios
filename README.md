@@ -42,7 +42,8 @@ Free on the App Store for iPhone and iPad since 6 November 2026; runs on iOS 18 
 - Several servers at once, each with its home and outside addresses; iPad; CarPlay
 - With own.audio: smart playlists, identifying the library with MusicBrainz, and a library on
   the phone that follows the server's changes
-- English and Czech
+- English and Czech; Slovak, Hungarian, German, French, Spanish and Italian machine-translated,
+  awaiting review by native speakers
 
 ## Why you can trust it
 

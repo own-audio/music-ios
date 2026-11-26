@@ -9,8 +9,38 @@ package, merged into this repository — is in `docs/history/`.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-11-26
+
+### Added
+
+- The app in Slovak, Hungarian, German, French, Spanish (Spain) and Italian: every string of
+  the app, the widget, the Siri phrases and the local-network prompt. Machine-translated
+  following the shared glossary (`i18n/GLOSSARY.md` in the server repository), then reviewed
+  string by string against the English, the Czech and the places the app shows them (225
+  corrections: wrong meanings, agreement, one word per concept, Apple's own wording). Not yet
+  read by a native speaker.
+- The tab of decided proposals in an identify run has its own string, so languages that say
+  "OK" for the Done button no longer show "OK" on the tab.
+- A ninth App Store screenshot, the welcome screen (`9-welcome`), captioned "Private, on every
+  device" (cs "Soukromě, na všech zařízeních") as in own.audio Podcasts. Debug builds take
+  `-screenshotWordmark music` to hold the rotating word still for it.
+- `scripts/app-store-upload.swift` sends the release notes in `AppStore/<language>/whats_new.txt`
+  ("What's New"), once the app has a released version; App Store Connect refuses them on the
+  first one. `--only <name>` uploads that one screenshot and leaves the others as they are, and
+  a request App Store Connect answers with 401 or 500 is tried again (a POST only after a 401). Written for 1.0.2 in English and Czech.
+
+### Changed
+
+- Slovak, Hungarian, German, French, Spanish and Italian use the same words as the other own.audio apps and the web (the glossary's new rows): sentences the apps share read the same, French and Italian use the typographic apostrophe, and words like queue, two-factor sign-in, identify run, edition and logs are one word per language.
+
 ### Fixed
 
+- Play after a pause no longer repeats a short bit of the song (TestFlight, build 176: "the
+  same 0.2 s plays again"). When the output changed while paused — Bluetooth, CarPlay, another
+  app, the engine resting after 30 s — play loads the song again, from the position of the last
+  clock tick, which runs a quarter of a second behind (a second in the background). Pause now
+  takes the exact position from the player before it stops, and a reload after a change of
+  output mid-song adds the time since the last tick.
 - Music comes back with sound after a phone call in the car. Bluetooth switches to the
   hands-free profile for the call and back after it, and each switch stops the audio engine and
   drops what was scheduled on it: the 1.0.1 fix reloaded the song only when the call ended, so
@@ -19,6 +49,9 @@ package, merged into this repository — is in `docs/history/`.
   stopped engine reports as played no longer counts as the song's end; music paused before a
   call stays paused after it; and if iOS refuses the audio after a call, the player stays paused
   instead of showing it plays. A reset of the media server is handled the same way.
+- "Last used" on a device reads as one phrase in every language; Czech said "před 5 minut".
+
+## [1.0.2] - 2026-11-17
 
 ### Added
 

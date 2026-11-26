@@ -1,17 +1,20 @@
 #!/usr/bin/env swift
-// The App Store listing to App Store Connect: the texts in AppStore/<language>/ and the
+// The App Store listing to App Store Connect: the texts in AppStore/<language>/ (whats_new.txt
+// once the app has a released version) and the
 // captioned screenshots in AppStore/marketing/ (scripts/marketing-screenshots.swift), for every
 // language there is, on the version being prepared.
 //
 // Needs an App Store Connect API key (App Manager): the .p8 in ~/.appstoreconnect/private_keys/
 // and ASC_KEY_ID / ASC_ISSUER_ID in release.local.env (gitignored).
 //
-// Usage: swift scripts/app-store-upload.swift [--dry-run | --status]
+// Usage: swift scripts/app-store-upload.swift [--dry-run | --status] [--only <screenshot name>]
 import CryptoKit
 import Foundation
 
 let root = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent().deletingLastPathComponent()
 let dryRun = CommandLine.arguments.contains("--dry-run")
+/// `--only <name>`: just that screenshot (say 9-welcome), replacing its namesake and leaving the rest.
+let only = CommandLine.arguments.firstIndex(of: "--only").map { CommandLine.arguments[$0 + 1] }
 let bundleId = "audio.own.musicplayer"
 let api = URL(string: "https://api.appstoreconnect.apple.com")!
 
@@ -68,8 +71,16 @@ func call(_ method: String, _ path: String, _ body: [String: Any]? = nil) async 
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
     }
-    let (data, response) = try await URLSession.shared.data(for: request)
-    let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+    var (data, response) = try await URLSession.shared.data(for: request)
+    var status = (response as? HTTPURLResponse)?.statusCode ?? 0
+    // App Store Connect answers a valid token with 401, and anything with 500, now and then; the
+    // same request passes a little later. A POST is repeated only after a 401, which changed nothing.
+    for attempt in 1...8 where status == 401 || (status >= 500 && method != "POST") {
+        try await Task.sleep(nanoseconds: UInt64(attempt) * 3_000_000_000)
+        request.setValue("Bearer \(try token())", forHTTPHeaderField: "Authorization")
+        (data, response) = try await URLSession.shared.data(for: request)
+        status = (response as? HTTPURLResponse)?.statusCode ?? 0
+    }
     guard (200..<300).contains(status) else {
         throw Failure(description: "\(method) \(path) → \(status): \(String(decoding: data.prefix(600), as: UTF8.self))")
     }
@@ -95,6 +106,7 @@ print("app \(attribute(appItem, "name") ?? "?") (\(appId))")
 // The version being prepared: the editable one, else a new one at the app's version.
 let versions = items(try await call("GET", "v1/apps/\(appId)/appStoreVersions?filter[platform]=IOS"))
 for v in versions { print("  version \(attribute(v, "versionString") ?? "?") — \(attribute(v, "appStoreState") ?? "?")") }
+let hasReleased = versions.contains { attribute($0, "appStoreState") as? String == "READY_FOR_SALE" }
 let editable: Set<String> = ["PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "WAITING_FOR_REVIEW"]
 var versionId = versions.first { editable.contains(attribute($0, "appStoreState") as? String ?? "") }.map(id)
 if versionId == nil {
@@ -156,13 +168,15 @@ for (folder, shotFolder, locale) in locales {
 
     // Description, keywords, promotional text, links.
     guard let versionId else { continue }
-    let versionAttributes: [String: Any] = [
+    var versionAttributes: [String: Any] = [
         "description": text(folder, "description.txt") ?? "", "keywords": text(folder, "keywords.txt") ?? "",
         "promotionalText": text(folder, "promotional_text.txt") ?? "", "supportUrl": supportURL, "marketingUrl": marketingURL,
     ]
+    // App Store Connect refuses release notes on an app's first version.
+    if hasReleased, let whatsNew = text(folder, "whats_new.txt") { versionAttributes["whatsNew"] = whatsNew }
     var localizationId = versionLocalizations.first { attribute($0, "locale") as? String == locale }.map(id)
     if let existing = localizationId {
-        print("  version: update description, keywords, promotional text, links")
+        print("  version: update description, keywords, promotional text, links\(versionAttributes["whatsNew"] != nil ? ", what's new" : "")")
         if !dryRun { try await call("PATCH", "v1/appStoreVersionLocalizations/\(existing)", ["data": ["type": "appStoreVersionLocalizations", "id": existing, "attributes": versionAttributes]]) }
     } else {
         print("  version: add \(locale)")
@@ -180,13 +194,14 @@ for (folder, shotFolder, locale) in locales {
     let sets = items(try await call("GET", "v1/appStoreVersionLocalizations/\(localizationId)/appScreenshotSets"))
     for (deviceFolder, displayType) in displayTypes {
         let folderURL = root.appendingPathComponent("AppStore/marketing/\(shotFolder)/\(deviceFolder)")
-        let files = ((try? FileManager.default.contentsOfDirectory(atPath: folderURL.path)) ?? []).filter { $0.hasSuffix(".png") }.sorted()
+        let files = ((try? FileManager.default.contentsOfDirectory(atPath: folderURL.path)) ?? []).filter { $0.hasSuffix(".png") && (only == nil || $0 == "\(only!).png") }.sorted()
         guard !files.isEmpty else { print("  \(displayType): no screenshots in \(folderURL.path)"); continue }
         print("  \(displayType): \(files.count) screenshots")
         if dryRun { continue }
         var setId = sets.first { attribute($0, "screenshotDisplayType") as? String == displayType }.map(id)
         if let existing = setId {
-            for old in items(try await call("GET", "v1/appScreenshotSets/\(existing)/appScreenshots")) {
+            for old in items(try await call("GET", "v1/appScreenshotSets/\(existing)/appScreenshots"))
+            where only == nil || files.contains(attribute(old, "fileName") as? String ?? "") {
                 try await call("DELETE", "v1/appScreenshots/\(id(old))")
             }
         } else {

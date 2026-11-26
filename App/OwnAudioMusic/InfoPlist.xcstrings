@@ -37,10 +37,46 @@
             "value" : "Připojuje se k hudebnímu serveru ve vaší místní síti."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbindet sich mit dem Musikserver in deinem lokalen Netzwerk."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "Connects to the music server on your local network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se conecta al servidor de música de tu red local."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecte au serveur de musique de votre réseau local."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Csatlakozik a helyi hálózatán lévő zenei szerverhez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si collega al server musicale della tua rete locale."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pripája sa k hudobnému serveru vo vašej miestnej sieti."
           }
         }
       }

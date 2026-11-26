@@ -1,0 +1,7 @@
+New
+• own.audio Music now speaks Slovak, Hungarian, German, French, Spanish and Italian, as well as English and Czech. It follows your iPhone's language.
+
+Fixed
+• Music comes back with sound after a phone call in the car, when Bluetooth switches over for the call and back.
+• Play after a pause no longer repeats a short bit of the song.
+• "Last used" on the device list reads right in every language.

@@ -9,6 +9,42 @@
             "state" : "translated",
             "value" : "Pokračuj v poslechu v ${applicationName}"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hör in ${applicationName} weiter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue escuchando en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reprends l’écoute dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folytasd a hallgatást a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua ad ascoltare in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračuj v počúvaní v ${applicationName}"
+          }
         }
       }
     },
@@ -18,6 +54,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pusť dál mou hudbu v ${applicationName}"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setz meine Musik in ${applicationName} fort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanuda mi música en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reprends ma musique dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folytasd a zenémet a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprendi la mia musica in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pusti ďalej moju hudbu v ${applicationName}"
           }
         }
       }
@@ -29,6 +101,42 @@
             "state" : "translated",
             "value" : "Přehraj ${playlist} v ${applicationName}"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel ${playlist} in ${applicationName}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduce ${playlist} en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lis ${playlist} dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Játszd le: ${playlist} a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riproduci ${playlist} in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prehraj ${playlist} v ${applicationName}"
+          }
         }
       }
     },
@@ -38,6 +146,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přehraj můj playlist ${playlist} v ${applicationName}"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel meine Playlist ${playlist} in ${applicationName}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduce mi playlist ${playlist} en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lis ma playlist ${playlist} dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Játszd le a(z) ${playlist} listámat a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riproduci la mia playlist ${playlist} in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prehraj môj playlist ${playlist} v ${applicationName}"
           }
         }
       }
@@ -49,6 +193,42 @@
             "state" : "translated",
             "value" : "Přehraj album ${album} v ${applicationName}"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel das Album ${album} in ${applicationName}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduce el álbum ${album} en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lis l’album ${album} dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Játszd le a(z) ${album} albumot a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riproduci l’album ${album} in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prehraj album ${album} v ${applicationName}"
+          }
         }
       }
     },
@@ -58,6 +238,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pusť ${album} v ${applicationName}"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hör ${album} in ${applicationName}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escucha ${album} en ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoute ${album} dans ${applicationName}"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hallgasd meg: ${album} a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolta ${album} in ${applicationName}"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pusti ${album} v ${applicationName}"
           }
         }
       }

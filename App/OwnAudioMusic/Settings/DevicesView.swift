@@ -34,7 +34,7 @@ struct DevicesView: View {
                                 }
                                 Group {
                                     if let used = session.lastUsedAt {
-                                        Text("Last used \(used, style: .relative) ago")
+                                        Text("Last used \(used.formatted(.relative(presentation: .named)))")
                                     } else {
                                         Text("Signed in \(session.signedInAt, style: .date)")
                                     }

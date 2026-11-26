@@ -30,5 +30,9 @@
   "8-equalizer": [
     "Zvuk podle vás",
     "Šestipásmový ekvalizér s předvolbami"
+  ],
+  "9-welcome": [
+    "Soukromě, na všech zařízeních",
+    "Bez reklam a sledování; vaše hudba z own.audio, Navidrome nebo Jellyfinu"
   ]
 }

@@ -29,8 +29,13 @@ final class AppStoreScreenshots: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = [
             "-uiTestReset", "-AppleLanguages", "(\(env["SCREENSHOT_LANGUAGE"]!))", "-AppleLocale", czech ? "cs_CZ" : "en_US",
+            "-screenshotWordmark", "music",
         ]
         app.launchChecked()
+        // First, the app as it opens for someone with no server at all.
+        XCTAssertTrue(app.buttons["addServer.signUp"].waitForExistence(timeout: 15))
+        sleep(2)
+        save(app, "9-welcome")
         let ourName = t("Family Music", "Rodinná hudba")
 
         // Three servers, one of each kind; own.audio last, so it is the one shown.

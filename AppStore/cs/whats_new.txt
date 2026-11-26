@@ -1,0 +1,7 @@
+Nové
+• own.audio Music nově mluví slovensky, maďarsky, německy, francouzsky, španělsky a italsky, vedle angličtiny a češtiny. Řídí se jazykem vašeho iPhonu.
+
+Opravené
+• Po telefonátu v autě se hudba vrátí i se zvukem, když se Bluetooth kvůli hovoru přepne a zase zpátky.
+• Spuštění po pauze už neopakuje krátký kousek skladby.
+• Údaj „naposledy použito“ v seznamu zařízení se čte správně ve všech jazycích.

@@ -17,7 +17,8 @@ struct IdentifyRunView: View {
             case .review: "To Review"
             case .sure: "Sure"
             case .none: "Not Found"
-            case .decided: "Done"
+            // Its own key: "Done" is also the button that closes a sheet, which some languages say as "OK".
+            case .decided: "Decided"
             }
         }
     }

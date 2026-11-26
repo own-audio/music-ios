@@ -143,6 +143,13 @@ struct RotatingWordmark: View {
         .accessibilityLabel(Text(verbatim: "own.audio"))
         .task {
             guard words.count > 1 else { return }
+            #if DEBUG
+            // Screenshots: one word held still (`-screenshotWordmark music`), not caught mid-turn.
+            if let held = UserDefaults.standard.string(forKey: "screenshotWordmark"), let at = words.firstIndex(of: held) {
+                index = at
+                return
+            }
+            #endif
             while !Task.isCancelled {
                 try? await Task.sleep(for: interval)
                 guard !Task.isCancelled else { return }
